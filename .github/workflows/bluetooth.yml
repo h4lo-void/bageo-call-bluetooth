@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Bageo-Commercial
+# SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call>
+
+name: Bluetooth
+
+# Checks the Bluetooth hands-free program in bluetooth/ (Linux only).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - bluetooth/**
+      - .github/workflows/bluetooth.yml
+  pull_request:
+    paths:
+      - bluetooth/**
+      - .github/workflows/bluetooth.yml
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bluetooth
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python compiles
+        run: python3 -m py_compile bageo_bluetooth.py
+      - name: Shell scripts
+        run: |
+          sh -n install.sh
+          sh -n uninstall.sh
+          shellcheck -S warning -s sh install.sh uninstall.sh
