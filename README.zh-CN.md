@@ -1,100 +1,306 @@
-# Bageo 蓝牙
+<p align="center">
+  <img src="docs/images/banner.zh-CN.svg" width="900" alt="Bageo（八哥）：你的手机号，AI 帮你接。接电话、拦诈骗、代打电话。">
+</p>
 
-> **开发中。** 已经用真实电话测试过、可以使用，但还在持续修改。重要的电话先不要只靠它（见[免责声明](#免责声明)）。
+<p align="center">
+  <a href="README.md">English</a> · <a href="README.zh-TW.md">繁體中文</a> · <strong>简体中文</strong> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a> · <a href="README.es.md">Español</a> · <a href="README.fr.md">Français</a> · <a href="README.de.md">Deutsch</a> · <a href="README.pt.md">Português</a>
+</p>
 
-让 [Bageo](https://github.com/h4lo-void/bageo-call) 通过蓝牙接你手机的电话。iPhone、Android 都可以，手机不用装 App，也不用 Root。
+<p align="center">
+  <strong>AI 接电话、替你打电话的 AI 电话助理（Gemini Live＋你自己的手机号）</strong><br>
+  自托管、开源。不用 root 的手机（iPhone、Android 都行），旁边放一台有蓝牙的 Linux 电脑和它配对，电脑上的一个程序，再加上你自己的 Gemini 密钥。
+</p>
 
-一台有蓝牙的 Linux 电脑（树莓派、迷你主机、家里的服务器）会像汽车一样和手机配对。有电话打来时，它响几秒就接起来，交给 Bageo。Bageo 能看到来电号码，会和对方说话，说完自己挂断。
+<p align="center">
+  <a href="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/h4lo-void/bageo-call-bluetooth/releases"><img src="https://img.shields.io/github/v/release/h4lo-void/bageo-call-bluetooth?include_prereleases&sort=semver" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg" alt="许可证：AGPL-3.0-only"></a>
+  <a href="COMMERCIAL_LICENSE.md"><img src="https://img.shields.io/badge/商业授权-双重授权-gold.svg" alt="提供商业授权"></a>
+</p>
 
-[English](README.md) · [繁體中文](README.zh-TW.md) · [简体中文](README.zh-CN.md)
+> **蓝牙版，开发中。** 通过蓝牙使用 Bageo：一台有蓝牙的 Linux 电脑像车载免提一样接你手机的电话，手机不用 root、不用装 App，iPhone 也能用。这个版本没有短信，也没有白名单急事三方通话。设置方法：[bluetooth/README.zh-CN.md](bluetooth/README.zh-CN.md)。
 
-## 能做什么
+<table>
+  <tr>
+    <td width="25%" align="center" valign="top">
+      <img src="docs/images/icons/answer.svg" width="56" height="56" alt=""><br>
+      <strong>接电话</strong><br>
+      响一声就接，说话像真人，等对方说再见才挂。
+    </td>
+    <td width="25%" align="center" valign="top">
+      <img src="docs/images/icons/stall.svg" width="56" height="56" alt=""><br>
+      <strong>拦诈骗</strong><br>
+      认出推销和诈骗电话，装成问题特别多的客户，最长缠住对方 30 分钟。
+    </td>
+    <td width="25%" align="center" valign="top">
+      <img src="docs/images/icons/errand.svg" width="56" height="56" alt=""><br>
+      <strong>代打电话</strong><br>
+      写一句话交代，它就替你打；拿不准会先问你。
+    </td>
+    <td width="25%" align="center" valign="top">
+      <img src="docs/images/icons/languages.svg" width="56" height="56" alt=""><br>
+      <strong>会说九种语言</strong><br>
+      简中、繁中、英、日、韩、西、法、德、葡语都行；对方换语言，它就跟着换。
+    </td>
+  </tr>
+</table>
 
-- 接听来电：响约 3 秒后由 Bageo 接起，并拿到来电号码。
-- Bageo 说完会自己挂断；在 Bageo 黑名单上的号码直接拒接。
-- 在 Bageo 控制台切换“AI 接听”或“一般手机”。一般手机模式下，电话留在手机上给你接。
-- Bageo 的 AI 代打和回电，会通过这部手机拨出去。
-- AI 通话中又有电话打进来，会以忙线拒接，Bageo 会留下记录。
-- 你自己打出去、或在手机上自己接起的电话，留在手机上。想从 Bageo 手里接过电话，把那通电话的声音切回手机就行。
+<p align="center"><sub>名字取自八哥（bāgē）：一种会学身边的人说话的鸟。</sub></p>
 
-## 还不能做
+## 玩玩看：猜猜八哥怎么回
 
-- 短信：蓝牙免提没法收发短信，预约短信和短信转发仍要用 Bageo 的手机 App。
-- 有急事时接通你的三方通话（转接）：Bageo 会改为告诉对方你会尽快回电。
-- 同时接多部手机，以及比普通电话更好的音质。
-- 用 Windows 或 Mac 当蓝牙电脑。
+点开一通电话，再一句一句点下去。 <sub>演示对话，不是真实通话录音。</sub>
 
-## 需要什么
+<details>
+<summary><strong>包裹来电</strong>　包裹到了，但你正忙。</summary>
+<br>
 
-- 一个正在运行的 Bageo：装在这台电脑、另一台电脑或 Docker 里都可以。连到另一台电脑需要 Bageo 1.6.9 以上。
-- 一台有蓝牙、放在手机附近（约 10 米内）的 Linux 电脑：Debian、Ubuntu 或 Raspberry Pi OS。内置蓝牙或 USB 蓝牙都可以。
-- Windows 和 Mac 不能当蓝牙电脑：Windows 不让程序通过蓝牙接听、挂断电话，Mac 目前还不支持。Bageo 本身照样可以装在上面。
+> <strong>对方</strong>：你的包裹到了。
 
-## 安装
+<details>
+<summary>八哥怎么回？</summary>
+<br>
 
-```sh
-git clone https://github.com/h4lo-void/bageo-call-bluetooth.git
-cd bageo-call-bluetooth
-sudo ./install.sh
-```
+> <strong>八哥</strong>：你好，我是 AI 助理，帮忙接电话。包裹需要本人签收吗？
+>
+> <strong>对方</strong>：需要，今天下午五点前都能再配送。
 
-这会安装 BlueZ 和几个 Python 包，把蓝牙设成免提设备，并启动 `bageo-bluetooth` 服务。
+<details>
+<summary>然后呢？</summary>
+<br>
 
-## 连到 Bageo
+> <strong>八哥</strong>：我会转告，请本人再跟你确认时间。
 
-- **Bageo 在同一台电脑：** 不用做什么。
-- **Bageo 在另一台电脑或 Docker：** 在 Bageo 控制台打开“系统”→“用 IP 地址配对手机”→“生成配对码”，然后在蓝牙电脑上运行（换成 Bageo 的地址和页面上的配对码）：
+<strong>你收到的重点：</strong> 包裹需本人签收，下午五点前可再配送；等你确认时间。
 
-```sh
-sudo bageo-bluetooth link 192.168.1.20 123456
-sudo systemctl restart bageo-bluetooth
-```
+</details>
+</details>
+</details>
 
-如果 Bageo 要你先打开“手机也能用 Wi-Fi 连接”，打开后再生成一次配对码。
+<details>
+<summary><strong>推销电话</strong>　“有个超优惠方案”打来了。</summary>
+<br>
 
-## 配对手机
+> <strong>对方</strong>：有一笔低息贷款，今天就能办！
 
-- **Android：** 服务启动后 10 分钟内，打开“设置 → 蓝牙 → 配对新设备”，点“Bageo HF”，再点“配对”。
-- **iPhone：** iPhone 的列表不会显示电脑，要从蓝牙电脑这边配对。先在 iPhone 打开“设置 → 蓝牙”并停在这一页，然后运行：
+<details>
+<summary>八哥会挂掉吗？</summary>
+<br>
 
-```sh
-sudo bageo-bluetooth pair                      # 列出附近的手机
-sudo bageo-bluetooth pair 12:34:56:78:9A:BC    # 再到 iPhone 上点“配对”
-```
+> <strong>八哥</strong>：利息是月息还是年息？
+>
+> <strong>对方</strong>：先提供你的身份信息。
 
-配对好之后，手机会自己连回来。
+<details>
+<summary>八哥会给吗？</summary>
+<br>
 
-## 手机设置
+> <strong>八哥</strong>：先说说手续费怎么算？每个月要付多少？
 
-- **Android：** 同一部手机不要再开 Bageo 的手机 App，否则它会自己去接电话。
-- **iPhone：** “设置 → 辅助功能 → 触控 → 通话音频路由”保持“自动”。
-- **App 通话（LINE、WhatsApp、FaceTime）：** 手机不会告诉蓝牙设备这类电话在响，所以蓝牙电脑没法替你接。要让 Bageo 也接这类电话，请打开“自动接听来电”并设为 5 秒（iPhone 在“通话音频路由”里）。手机接起后把声音送过来，Bageo 就会接手。App 通话拿不到来电号码。
+<strong>你收到的重点：</strong> 一项个人信息都没给，问题倒是越问越多。这样最长可以缠住对方 30 分钟。
 
-## 使用须知
+</details>
+</details>
+</details>
 
-- 一次只能接一部手机，手机要在蓝牙电脑附近。
-- 双卡手机：程序看不出是哪张卡接的。号码国家判断错时，在 `/etc/default/bageo-bluetooth` 设置 `SIM_COUNTRY`（例如 `us`）。
-- AI 代打和回电要知道号码国家才会用这部手机。日志显示“number's country: unknown”时，也请设置 `SIM_COUNTRY`。
-- 有 PipeWire 或 PulseAudio 的桌面 Linux：它们也会用蓝牙免提。请另外插一个 USB 蓝牙，或关掉它们的免提功能。
+<details>
+<summary><strong>代打订位</strong>　交代一句，少打一通。</summary>
+<br>
 
-## 确认是否在运行
+> <strong>你交代</strong>：帮我订明晚四位，七点或七点半都可以。
 
-```sh
-journalctl -u bageo-bluetooth -f
-```
+<details>
+<summary>八哥怎么开口？</summary>
+<br>
 
-看到“Phone connected”表示手机连上了，每通电话的步骤都会列出来（号码只显示一部分）。Bageo 控制台也会看到这部手机。设置在 `/etc/default/bageo-bluetooth`，改完要重启服务。
+> <strong>八哥</strong>：你好，我是 AI 助理，想订明晚七点四位。
+>
+> <strong>餐厅</strong>：七点满了，七点半可以。
 
-## 卸载
+<details>
+<summary>八哥会答应吗？</summary>
+<br>
 
-```sh
-sudo ./uninstall.sh
-```
+> <strong>八哥</strong>：七点半也可以，麻烦订四位，谢谢。
+>
+> <strong>餐厅</strong>：好的，明晚七点半四位。
 
-## 免责声明
+<strong>你收到的重点：</strong> 明晚 19:30、四位，在你交代的范围内。超出范围的事，它会先问你。
 
-本项目是自托管软件，按“现状”提供、不附任何担保；作者不运营任何服务，也不会收到你的数据。部署的人要自行遵守当地关于通话录音、AI 身份披露和自动拨号的法律，并自负电信与 API 费用。请不要把它当成紧急求救、医疗或安全相关的唯一联系方式。使用前请先读 [LEGAL.md](LEGAL.md)；安全注意事项见 [SECURITY.md](SECURITY.md)。本项目与 Apple、Google 及 Bluetooth SIG 无关；iPhone、Android 与 Bluetooth 为其商标。
+</details>
+</details>
+</details>
 
-## 许可
+## 诈骗电话打来？八哥陪他慢慢聊
 
-`AGPL-3.0-only` 或商业许可，和 bageo-call 一样。详见 [LICENSING.md](LICENSING.md)。
+<p align="center">
+  <img src="docs/images/scene-stall.zh-CN.svg" width="760" alt="一通贷款推销电话。对方说你有一笔低息信用贷款额度批下来了，AI 问利息是按月还是按年；对方要核对身份证号，AI 继续提问。27 分钟后对方想挂电话，AI 说：诶等一下，我还有一个问题。结果：陪聊 27 分钟，没有给出任何个人信息，录音和摘要已保存。">
+</p>
+
+AI 一确定对方是推销或诈骗，就变成一个有兴趣、反应慢、爱问细节的客户：一直问、故意把数字听错，最长缠住对方 30 分钟，一项真实信息都不给。你会收到录音、文字记录和一段摘要。正常电话不会被误伤：银行核对刷卡、诊所、快递、家人。陪聊模式默认开启，一个开关就能关掉。[三道防线怎么判断](docs/zh-CN/FEATURES.md#拦截骚扰与诈骗电话加上陪聊模式)
+
+## 懒得打电话？写一句话就行
+
+<p align="center">
+  <img src="docs/images/scene-errand.zh-CN.svg" width="760" alt="一次 AI 代打。你交代：订明天晚上 7 点 4 位，7 点半也行。AI 以小明助理的身份打给餐厅；7 点满了，餐厅问 7 点半可不可以，AI 答应。结果：办好了，明天晚上 7 点半、4 位，可以一键添加到日历。">
+</p>
+
+订位、改期、问店家有没有货或几点开门，都可以交代。对方提到你没交代的事，AI 会先在屏幕上问你；它绝不自己答应任何事：你来不及回，它就说会跟你确认，然后客气收尾。[AI 代打的完整说明](docs/zh-CN/FEATURES.md#ai-代打替你打电话)
+
+## 外国人打来？八哥会说九种语言
+
+<p align="center">
+  <img src="docs/images/languages.zh-CN.svg" width="900" alt="Bageo 会说九种语言：英语、繁体中文、简体中文、日语、韩语、西班牙语、法语、德语、葡萄牙语，各用自己的方式说“喂？”。">
+</p>
+
+AI 的语音、内置提示词（简短通用的基本写法，可按自己的情况与风格自定义）、网页控制台和通知，九种语言都有。双卡手机每张 SIM 卡可以各设主要语言；国外号码打来，就用那个国家的语言开场；对方中途改说别的语言，AI 也跟着换。文字记录保留原文，每句附上翻译成你通知语言的对照。[语言与双卡的完整说明](docs/zh-CN/FEATURES.md#九种语言双卡文字记录附翻译)
+
+## 工作原理
+
+<p align="center">
+  <img src="docs/images/how-it-works.zh-CN.svg" width="900" alt="Bageo 的工作原理：对方通过运营商网络打到你的手机，手机用蓝牙把通话声音交给旁边那台 Linux 电脑，再交给你电脑上的 Bageo 程序，由它和 Gemini Live 对话。录音留在你的硬盘，通知发到 32 种渠道，一切在网页控制台里管理。">
+</p>
+
+手机只负责接通电话，其他事都在你自己的电脑上处理。手机还在响，AI 就已经连上，所以接起后约 **0.43 秒**开口（实测中位数）。一通电话的完整过程：[架构](docs/zh-CN/ARCHITECTURE.md)。
+
+## 为什么选 Bageo
+
+| | 架在 SIP 线路或虚拟号码上的 AI 电话服务 | Bageo |
+|---|---|---|
+| **号码** | 服务商提供的号码，或把你的来电转移过去 | 你原来的手机号，AI 拨出时显示的也是它 |
+| **费用** | 月费或按分钟计费 | 没有平台月费，只付 Gemini 用量和运营商的号码费用 |
+| **数据** | 存在服务商的服务器上 | 你硬盘上 `data/` 文件夹里的普通文件 |
+| **代价** | 注册账号就能用 | 要一台放在手机旁、有蓝牙的 Linux 电脑，和一台一直开着的电脑 |
+
+## 还能做这些
+
+<table>
+  <tr>
+    <td width="33%" align="center" valign="top">
+      <img src="docs/images/icons/calendar.svg" width="56" height="56" alt=""><br>
+      <strong>预约等你点头</strong><br>
+      开启日程预约后，对方想约时间会先进待处理事项，等你决定，AI 再回拨通知对方。
+    </td>
+    <td width="33%" align="center" valign="top">
+      <img src="docs/images/icons/contacts.svg" width="56" height="56" alt=""><br>
+      <strong>认得谁打来</strong><br>
+      通讯录可以从 vCard、Excel、PDF、名片照片导入。每个人可以分成普通联系人、白名单、黑名单或陪聊名单。
+    </td>
+    <td width="33%" align="center" valign="top">
+      <img src="docs/images/icons/switch.svg" width="56" height="56" alt=""><br>
+      <strong>一键切回普通手机</strong><br>
+      在控制台切换 AI 接听和普通手机。选普通手机时，电话留在你的手机上。
+    </td>
+  </tr>
+  <tr>
+    <td width="33%" align="center" valign="top">
+      <img src="docs/images/icons/sound.svg" width="56" height="56" alt=""><br>
+      <strong>听起来像真的在打电话</strong><br>
+      可以垫背景音：居家、办公室、街边、夜市等 12 种。
+    </td>
+    <td width="33%" align="center" valign="top">
+      <img src="docs/images/icons/notify.svg" width="56" height="56" alt=""><br>
+      <strong>32 种通知渠道</strong><br>
+      每通电话结束，摘要会发到 Telegram、飞书、企业微信、钉钉等渠道。可以直接在通知里点按钮处理，也能在聊天室下指令。
+    </td>
+    <td width="33%" align="center" valign="top">
+      <img src="docs/images/icons/local.svg" width="56" height="56" alt=""><br>
+      <strong>数据留在自己手里</strong><br>
+      录音和文字记录都是你硬盘上的普通文件，不用在我们这里注册账号。
+    </td>
+  </tr>
+</table>
+
+每一项的完整说明：[功能总览](docs/zh-CN/FEATURES.md)。
+
+## 需要准备什么
+
+1. **一部有 SIM 卡的手机**，iPhone 或 Android 都行，不用 root，也不用装 App。
+2. **一台有蓝牙的 Linux 电脑**，放在手机附近（约 10 米内）：Debian、Ubuntu 或 Raspberry Pi OS。可以就是运行 Bageo 的那一台。
+3. **一台运行 Bageo 的电脑**，需要接电话的时段开着：Windows 10/11、macOS、Linux 或 Docker。
+4. **一个 Gemini API 密钥**，在 [Google AI Studio](https://aistudio.google.com/apikey) 获取，Google 按用量计费。
+
+## 快速开始
+
+蓝牙那台电脑要是 Linux；Bageo 本身也可以运行在 Windows、macOS 或 Docker 上。
+
+1. **下载**：从 [Releases](https://github.com/h4lo-void/bageo-call-bluetooth/releases) 下载适合你系统的文件：Windows 用 `bageo-call-bluetooth-<version>-windows-x64-setup.exe`，macOS 用 `bageo-call-bluetooth-<version>-macos-arm64.dmg`（Apple 芯片）或 `bageo-call-bluetooth-<version>-macos-x64.dmg`（Intel），Linux 用 `bageo-call-bluetooth-<version>-linux-x64.tar.gz`。用 Docker 的话，在这个 repo 运行 `docker compose up -d --build` 自己构建。
+2. **安装并启动**：Windows 双击 `setup.exe` 安装，再点桌面上的“Bageo”快捷方式。macOS 打开 `.dmg`，把 Bageo 拖进“应用程序”，再点一下它。Linux 解压后运行 `./start.sh`。控制台会在 <http://localhost:8787/> 打开；设好控制台密码后，这台电脑和同一 Wi-Fi 下的设备也可以用 <http://bageo.local/> 打开。
+3. **填写基本设置**：在“**设置**”里填上 Gemini API 密钥、你的名字和语言，按 ▶ 试听各个声音，选一个。
+4. **连接手机**（只需一次）：在蓝牙那台电脑上运行 `sudo ./bluetooth/install.sh`（Linux 下载包里已附），再把手机和它配对。Bageo 运行在另一台电脑或 Docker 里时，用控制台生成的配对码把两边连起来。详细说明见 [bluetooth/README.zh-CN.md](bluetooth/README.zh-CN.md)。
+5. **打一通试试**：用另一部手机拨打它的号码，响一声，AI 就接了。
+
+卡住了？每一步的详细说明：[开始使用](docs/zh-CN/GETTING_STARTED.md) · [手机设置](bluetooth/README.zh-CN.md)。
+
+## 文档
+
+| | |
+|---|---|
+| **上手** | [开始使用](docs/zh-CN/GETTING_STARTED.md) · [手机设置](bluetooth/README.zh-CN.md) · [故障排查与常见问题](docs/zh-CN/TROUBLESHOOTING.md) |
+| **使用** | [功能总览](docs/zh-CN/FEATURES.md) · [聊天室指令与通知交互](docs/zh-CN/CHAT_COMMANDS.md) · [编写提示词](docs/zh-CN/PROMPTS.md) · [设置参考](docs/zh-CN/SETTINGS.md) · [通知](docs/zh-CN/NOTIFICATIONS.md) |
+| **深入** | [架构](docs/zh-CN/ARCHITECTURE.md) · [API](docs/zh-CN/API.md) · [MCP](docs/zh-CN/MCP.md) · [路线图](docs/zh-CN/ROADMAP.md) · [更新日志](CHANGELOG.md) · [`bluetooth/`](bluetooth/README.zh-CN.md) |
+| **法律** | [隐私、安全与法律](docs/zh-CN/PRIVACY_AND_LEGAL.md) · [法律免责声明与使用限制](LEGAL.md) · [双重授权与商业授权](COMMERCIAL_LICENSE.md) · [全项目技术与安全审计报告](AUDIT_REPORT.md) |
+
+**测试状态**：超过 1,400 个自动化测试、234 通模拟通话（28 种语言），并通过蓝牙在 Pixel 9 上实机测过。[详细状态](docs/zh-CN/FEATURES.md#测试状态)。其他手机和语言的使用反馈最有帮助，请见 [CONTRIBUTING.md](CONTRIBUTING.md)（英文）。
+
+## 常见问题
+
+<details>
+<summary><strong>AI 可以用我原来的手机号接电话吗？</strong></summary>
+
+可以，这正是 Bageo 的用途。你的手机像和车子配对一样，用蓝牙和一台 Linux 电脑配对，AI 就用你的号码接电话，也从这个号码拨出。切到“普通手机”时，电话留在你的手机上。
+
+</details>
+
+<details>
+<summary><strong>一定要 root 吗？iPhone 能用吗？</strong></summary>
+
+不用 root，也不用装 App，iPhone 和 Android 都可以。Bageo 用的是车载免提那一套蓝牙功能。
+
+</details>
+
+<details>
+<summary><strong>支持哪些手机和电脑？</strong></summary>
+
+能和车载免提配对的手机，原则上都能用。实测过 Google Pixel 9 的真实通话；iPhone 也能配对，但测得比较少。蓝牙那台电脑要是 Linux（Debian、Ubuntu 或 Raspberry Pi OS）；Windows 和 macOS 不能当蓝牙电脑，但可以运行 Bageo。见[蓝牙设置](bluetooth/README.zh-CN.md)。
+
+</details>
+
+<details>
+<summary><strong>要花多少钱？</strong></summary>
+
+个人与开源社区免费使用（`AGPL-3.0-only`；如需闭源商用或商业托管请[取得商业授权](COMMERCIAL_LICENSE.md)）。AI 处理的每通电话（不论来电还是拨出），Google 都会按用量收取 Gemini Live 的语音费用；摘要只是发给 Gemini 最便宜模型的一小段文字。试听声音和拒接语音都是预录的，不花钱。另外就是运营商的号码费用和电脑的电费；想设上限，可以在 Google 账号里设置预算。
+
+</details>
+
+<details>
+<summary><strong>让 AI 接电话合法吗？</strong></summary>
+
+要看你和通话对象在哪里。通话录音、披露 AI 身份、自动拨出的电话，各有各的规定。“AI 助理”身份第一句话就会表明是 AI；“本人”身份则直接以你的身份说话、不会表明是 AI。开始使用前，请先读[隐私、安全与法律](docs/zh-CN/PRIVACY_AND_LEGAL.md)。
+
+</details>
+
+<details>
+<summary><strong>能离线、不用 Google 吗？</strong></summary>
+
+不能。实时语音用的是 Gemini Live，需要网络和 Gemini 密钥。摘要可以通过 Ollama 使用本地模型（见[摘要与日历](docs/zh-CN/SETTINGS.md#摘要与日历)）；完全本地的语音流程不在支持的配置里（见[路线图](docs/zh-CN/ROADMAP.md)）。
+
+</details>
+
+## 请负责任地使用
+
+- **各地法律不同。** 通话录音，以及让 AI 在不告知对方的情况下与人通话，在很多地方都受到限制。“AI 助理”接听身份一开口就表明是 AI；以助理身份代打时，AI 会自称是你的助理；选“本人”时则直接以你的身份说话、不主动或被问时表明是 AI。请先弄清楚你和通话对象所在地的规定。
+- **AI 不做任何承诺。** 它绝不答应付款、定金、合同、密码或验证码，预约也要等你决定。但它毕竟是 AI：摘要和代打结果一定要看。
+- **紧急情况不要依赖它。** AI 代打绝不会拨打紧急电话。
+- **这个版本还在开发中。** 重要的电话先不要只靠它。
+
+## 许可证与法律责任声明
+
+本项目采用<strong>双重授权（Dual Licensing）</strong>模式发布（版权所有 © 2026 **h4lo-void**，见 [LICENSING.md](LICENSING.md)）：
+
+- **社区开源授权：** [GNU Affero 通用公共许可证第 3.0 版（仅限 `AGPL-3.0-only`）](LICENSE) 及 [LICENSING.md](LICENSING.md) 所列第 7 条附加条款——个人与开源社区免费使用；任何修改版本只要允许他人通过网络或电话线路交互，即须按第 13 条免费公开完整衍生源代码。
+- **取得商业授权：** 若企业、电信／云总机运营商、呼叫中心或硬件厂商不愿按 `AGPL-3.0-only` 开源，可向原作者洽购书面商业授权，详见 [**双重授权与商业授权条款（COMMERCIAL_LICENSE.md）**](COMMERCIAL_LICENSE.md)。
+
+**免责声明与使用须知：** 本项目为自托管软件，按“现状（AS IS）”提供且不附任何担保；作者不运维任何服务，软件也不会把数据传回给作者。部署者须自行负责遵守当地通话录音、AI 披露与自动拨号相关法律，并自负资费账单风险。使用前请详阅 [**法律免责声明与使用须知（LEGAL.md）**](LEGAL.md)、[隐私、安全与法律](docs/zh-CN/PRIVACY_AND_LEGAL.md) 及 [v1.0 AI 辅助内部审查笔记](AUDIT_REPORT.md)（`gemini-4-carbon`，非第三方审计）。第三方声明（含 OpenCC `Apache-2.0` 字典）见 [NOTICE.md](NOTICE.md)。本项目与 Google LLC、Apple Inc.、Bluetooth SIG 无关；Android 与 Gemini 是 Google LLC 的商标，iPhone 是 Apple Inc. 的商标，Bluetooth 是 Bluetooth SIG 的商标。
+
+<!-- SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call> -->

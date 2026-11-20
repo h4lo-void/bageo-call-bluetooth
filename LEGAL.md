@@ -6,7 +6,7 @@
 
 ## 繁體中文
 
-本文件說明 Bageo（八哥，`bageo-call`，含藍牙免持程式 `bageo-call-bluetooth`）之免責聲明、風險提示與使用須知。本文件不構成法律意見；如有法規疑問，請諮詢合格律師。授權條款見 [`LICENSE`](LICENSE)、[`LICENSING.md`](LICENSING.md) 與 [`COMMERCIAL_LICENSE.md`](https://github.com/h4lo-void/bageo-call/blob/main/COMMERCIAL_LICENSE.md)。
+本文件說明 Bageo（八哥，`bageo-call`）之免責聲明、風險提示與使用須知。本文件不構成法律意見；如有法規疑問，請諮詢合格律師。授權條款見 [`LICENSE`](LICENSE)、[`LICENSING.md`](LICENSING.md) 與 [`COMMERCIAL_LICENSE.md`](COMMERCIAL_LICENSE.md)。
 
 ### 1. 按現狀提供與自架性質
 
@@ -30,7 +30,7 @@
 - 電話騷擾、惡意占線、濫發垃圾簡訊、未經同意之商業電話行銷或大量自動撥號（Robocalling）；
 - 未經許可架設商業話務轉接機房（如 SIM Box／貓池），或干擾緊急報案救難專線。
 
-開源授權（[`LICENSE`](LICENSE)）僅授予著作權與專利上之軟體權利，並不豁免任何使用者遵守當地刑法、電信法與隱私法規之義務。商業授權（[`COMMERCIAL_LICENSE.md`](https://github.com/h4lo-void/bageo-call/blob/main/COMMERCIAL_LICENSE.md)）另受雙方簽署之書面合約約束。
+開源授權（[`LICENSE`](LICENSE)）僅授予著作權與專利上之軟體權利，並不豁免任何使用者遵守當地刑法、電信法與隱私法規之義務。商業授權（[`COMMERCIAL_LICENSE.md`](COMMERCIAL_LICENSE.md)）另受雙方簽署之書面合約約束。
 
 本文件以繁體中文版為準；英文版與簡體中文版為翻譯參考。
 
@@ -38,7 +38,7 @@
 
 ## English
 
-This document sets out general disclaimers, operational risks, and usage notices for Bageo (`bageo-call`, including the Bluetooth hands-free program `bageo-call-bluetooth`). Nothing here is legal advice; consult a qualified lawyer if you have questions about applicable law. License terms are in [`LICENSE`](LICENSE), [`LICENSING.md`](LICENSING.md), and [`COMMERCIAL_LICENSE.md`](https://github.com/h4lo-void/bageo-call/blob/main/COMMERCIAL_LICENSE.md).
+This document sets out general disclaimers, operational risks, and usage notices for Bageo (`bageo-call`). Nothing here is legal advice; consult a qualified lawyer if you have questions about applicable law. License terms are in [`LICENSE`](LICENSE), [`LICENSING.md`](LICENSING.md), and [`COMMERCIAL_LICENSE.md`](COMMERCIAL_LICENSE.md).
 
 ### 1. Provided "AS IS" & Self-Hosted Nature
 
@@ -62,7 +62,7 @@ As a compliance reminder and usage notice (and not as an additional condition on
 - Harassment, spam text messages, unconsented telemarketing, or mass automated dialing (robocalling);
 - Operating unlicensed commercial SIM boxes / call-termination gateways, or interfering with emergency lines.
 
-Open-source licensing ([`LICENSE`](LICENSE)) grants copyright and patent permissions only and does not exempt any user from criminal, telecommunications, wiretapping, or privacy laws. Any separate Commercial License ([`COMMERCIAL_LICENSE.md`](https://github.com/h4lo-void/bageo-call/blob/main/COMMERCIAL_LICENSE.md)) is governed by its signed written contract.
+Open-source licensing ([`LICENSE`](LICENSE)) grants copyright and patent permissions only and does not exempt any user from criminal, telecommunications, wiretapping, or privacy laws. Any separate Commercial License ([`COMMERCIAL_LICENSE.md`](COMMERCIAL_LICENSE.md)) is governed by its signed written contract.
 
 The Traditional Chinese text of this document governs; the English and Simplified Chinese sections are translations for convenience.
 
@@ -70,7 +70,7 @@ The Traditional Chinese text of this document governs; the English and Simplifie
 
 ## 简体中文
 
-本文件说明 Bageo（八哥，`bageo-call`，含蓝牙免提程序 `bageo-call-bluetooth`）的免责声明、风险提示与使用须知。本文件不构成法律意见；如有法规疑问，请咨询合格律师。许可证条款见 [`LICENSE`](LICENSE)、[`LICENSING.md`](LICENSING.md) 与 [`COMMERCIAL_LICENSE.md`](https://github.com/h4lo-void/bageo-call/blob/main/COMMERCIAL_LICENSE.md)。
+本文件说明 Bageo（八哥，`bageo-call`）的免责声明、风险提示与使用须知。本文件不构成法律意见；如有法规疑问，请咨询合格律师。许可证条款见 [`LICENSE`](LICENSE)、[`LICENSING.md`](LICENSING.md) 与 [`COMMERCIAL_LICENSE.md`](COMMERCIAL_LICENSE.md)。
 
 ### 1. 按现状提供与自托管性质
 
@@ -94,7 +94,7 @@ The Traditional Chinese text of this document governs; the English and Simplifie
 - 电话骚扰、恶意占线、滥发垃圾短信、未经同意的商业电话营销或批量自动拨号（Robocalling）；
 - 未经许可架设商业话务中继机房（如 SIM Box／猫池），或干扰紧急报警救援专线。
 
-开源许可证（[`LICENSE`](LICENSE)）仅授予著作权与专利上的软件权利，并不豁免任何使用者遵守当地刑法、电信法与隐私法规的义务。商业授权（[`COMMERCIAL_LICENSE.md`](https://github.com/h4lo-void/bageo-call/blob/main/COMMERCIAL_LICENSE.md)）另受双方签署的书面合同约束。
+开源许可证（[`LICENSE`](LICENSE)）仅授予著作权与专利上的软件权利，并不豁免任何使用者遵守当地刑法、电信法与隐私法规的义务。商业授权（[`COMMERCIAL_LICENSE.md`](COMMERCIAL_LICENSE.md)）另受双方签署的书面合同约束。
 
 本文件以繁体中文版为准；英文版与简体中文版为翻译参考。
 

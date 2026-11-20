@@ -1,0 +1,3549 @@
+// SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Bageo-Commercial
+// SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call>
+
+//! Languages: which one the AI speaks, the phrases the call logic listens for,
+//! and the words used in notifications.
+//!
+//! Traditional Chinese (Taiwan) is the language this project grew up in and
+//! the only one exercised on real calls. Simplified Chinese reuses its prompts
+//! (converted); every other language shares one set of English instructions
+//! ([`crate::prompts`]) filled in with that language's phrases from [`phrases`].
+//!
+//! The settings value lives in a process-wide slot ([`set_current`]) because
+//! the Live session's helpers are free functions. Unset (unit tests) = zh-TW.
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Lang {
+    ZhTw,
+    ZhCn,
+    En,
+    Ja,
+    Ko,
+    Es,
+    Fr,
+    De,
+    Pt,
+}
+
+pub const ALL: [Lang; 9] = [
+    Lang::En,
+    Lang::ZhTw,
+    Lang::ZhCn,
+    Lang::Ja,
+    Lang::Ko,
+    Lang::Es,
+    Lang::Fr,
+    Lang::De,
+    Lang::Pt,
+];
+
+impl Lang {
+    /// Settings / UI code (`en`, `zh-TW`, …). Unknown → English.
+    pub fn parse(s: &str) -> Lang {
+        let t = s.trim().to_ascii_lowercase().replace('_', "-");
+        match t.as_str() {
+            "zh-tw" | "zh-hant" | "zh-hk" | "zh" => Lang::ZhTw,
+            "zh-cn" | "zh-hans" | "zh-sg" => Lang::ZhCn,
+            _ => match t.split('-').next().unwrap_or("") {
+                "ja" => Lang::Ja,
+                "ko" => Lang::Ko,
+                "es" => Lang::Es,
+                "fr" => Lang::Fr,
+                "de" => Lang::De,
+                "pt" => Lang::Pt,
+                _ => Lang::En,
+            },
+        }
+    }
+
+    pub fn code(self) -> &'static str {
+        match self {
+            Lang::ZhTw => "zh-TW",
+            Lang::ZhCn => "zh-CN",
+            Lang::En => "en",
+            Lang::Ja => "ja",
+            Lang::Ko => "ko",
+            Lang::Es => "es",
+            Lang::Fr => "fr",
+            Lang::De => "de",
+            Lang::Pt => "pt",
+        }
+    }
+
+    pub fn is_zh(self) -> bool {
+        matches!(self, Lang::ZhTw | Lang::ZhCn)
+    }
+
+}
+
+/// What the running agent is set to (settings `language`, `notify_language`,
+/// `answer_style`, `owner_name`, `country_code`), for the Live session's free functions.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Active {
+    /// The language the AI speaks with callers.
+    pub lang: Lang,
+    /// The language of what the owner reads: notifications, call summaries,
+    /// the notes in the web console's call list, appointment cards (settings
+    /// `notify_language`; empty there = `lang`).
+    pub notify_lang: Lang,
+    /// Answer as the owner's AI assistant instead of as the owner.
+    pub assistant: bool,
+    pub owner: String,
+    /// Other names callers use for the owner (settings `owner_aliases`).
+    pub owner_aliases: Vec<String>,
+    /// Country calling code of the phone's SIM, digits only (`886`, `1`, `81`).
+    pub country_code: String,
+    /// Names speech-to-text keeps getting wrong → how they should read
+    /// (settings `name_corrections`).
+    pub name_fixes: Vec<(String, String)>,
+}
+
+impl Default for Active {
+    /// Unset (unit tests): Taiwan, answering as the owner — what the call
+    /// logic was written and tested with.
+    fn default() -> Self {
+        Self {
+            lang: Lang::ZhTw,
+            notify_lang: Lang::ZhTw,
+            assistant: false,
+            owner: String::new(),
+            owner_aliases: Vec::new(),
+            country_code: "886".to_string(),
+            name_fixes: Vec::new(),
+        }
+    }
+}
+
+static ACTIVE: std::sync::RwLock<Option<Active>> = std::sync::RwLock::new(None);
+
+/// Set at startup and on every settings save.
+pub fn set_active(a: Active) {
+    *ACTIVE.write().unwrap_or_else(|e| e.into_inner()) = Some(a);
+}
+
+pub fn active() -> Active {
+    ACTIVE
+        .read()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
+        .unwrap_or_default()
+}
+
+pub fn current() -> Lang {
+    active().lang
+}
+
+/// The language of what the owner reads ([`Active::notify_lang`]).
+pub fn notify_lang() -> Lang {
+    active().notify_lang
+}
+
+/// The phrases of what the owner reads (notifications, summaries, cards).
+pub fn notify_phrases() -> &'static Phrases {
+    phrases(notify_lang())
+}
+
+/// [`kv_sep`] for what the owner reads.
+pub fn notify_kv_sep() -> &'static str {
+    notify_phrases().sep
+}
+
+/// [`zh_or`] for what the owner reads (fallback summaries, notes for the
+/// summary model).
+pub fn notify_zh_or(zh_tw: &str, en: &str) -> String {
+    zh_or_in(notify_lang(), zh_tw, en)
+}
+
+/// [`zh_or`] in a given language: Chinese for the two Chinese languages,
+/// English for every other one.
+pub fn zh_or_in(lang: Lang, zh_tw: &str, en: &str) -> String {
+    match lang {
+        Lang::ZhTw => zh_tw.to_string(),
+        Lang::ZhCn => crate::zh_convert::to_cn(zh_tw),
+        _ => en.to_string(),
+    }
+}
+
+/// Text the owner reads (summaries, notifications, Telegram replies): put into
+/// Traditional Chinese (Taiwan) when that is the notification language — the
+/// summary model and speech-to-text often write Simplified — and left as it is
+/// otherwise (the conversion would rewrite Japanese kanji and Simplified Chinese).
+pub fn for_owner(text: &str) -> String {
+    for_owner_in(notify_lang(), text)
+}
+
+/// [`for_owner`] for a given notification language.
+pub fn for_owner_in(lang: Lang, text: &str) -> String {
+    if lang == Lang::ZhTw {
+        crate::zh_tw::for_reading(text)
+    } else {
+        text.to_string()
+    }
+}
+
+/// `wrong=right` lines of the setting `name_corrections` as pairs; lines
+/// without both sides are dropped.
+pub fn parse_name_fixes(lines: &[String]) -> Vec<(String, String)> {
+    lines
+        .iter()
+        .filter_map(|l| l.split_once('=').or_else(|| l.split_once('→')))
+        .map(|(a, b)| (a.trim().to_string(), b.trim().to_string()))
+        .filter(|(a, b)| !a.is_empty() && !b.is_empty() && a != b)
+        .take(50)
+        .collect()
+}
+
+/// Apply name corrections to a text. In a language written with spaces a name
+/// is replaced as a whole word only ("Jon" → "John" leaves "Jones" alone);
+/// Chinese, Japanese and Korean, whose names run into the next word, as before.
+pub fn fix_names_with(text: &str, fixes: &[(String, String)]) -> String {
+    let mut out = text.to_string();
+    for (wrong, right) in fixes {
+        if out.contains(wrong.as_str()) {
+            out = replace_name(&out, wrong, right);
+        }
+    }
+    out
+}
+
+/// Han, kana or Hangul: no word boundary is needed around a name in them.
+fn runs_into_words(c: char) -> bool {
+    matches!(c as u32,
+        0x1100..=0x11FF | 0x3040..=0x30FF | 0x3130..=0x318F | 0x31F0..=0x31FF
+        | 0x3400..=0x4DBF | 0x4E00..=0x9FFF | 0xAC00..=0xD7AF | 0xF900..=0xFAFF)
+}
+
+/// A letter or digit of a language written with spaces between words.
+fn word_char(c: char) -> bool {
+    c.is_alphanumeric() && !runs_into_words(c)
+}
+
+/// `text` with `wrong` replaced by `right` where it is a whole word: its first
+/// (last) letter, when of a spaced language, may not follow (precede) another one.
+fn replace_name(text: &str, wrong: &str, right: &str) -> String {
+    let check_start = wrong.chars().next().is_some_and(word_char);
+    let check_end = wrong.chars().next_back().is_some_and(word_char);
+    if !check_start && !check_end {
+        return text.replace(wrong, right);
+    }
+    let mut out = String::with_capacity(text.len());
+    let mut last = 0;
+    for (i, _) in text.match_indices(wrong) {
+        let end = i + wrong.len();
+        let joined_before = check_start && text[..i].chars().next_back().is_some_and(word_char);
+        let joined_after = check_end && text[end..].chars().next().is_some_and(word_char);
+        if joined_before || joined_after {
+            continue;
+        }
+        out.push_str(&text[last..i]);
+        out.push_str(right);
+        last = end;
+    }
+    out.push_str(&text[last..]);
+    out
+}
+
+/// A transcript or summary with the owner's name corrections applied
+/// (speech-to-text mishears names the same way every time).
+pub fn fix_names(text: &str) -> String {
+    let fixes = active().name_fixes;
+    if fixes.is_empty() {
+        return text.to_string();
+    }
+    fix_names_with(text, &fixes)
+}
+
+/// Country calling code of the phone's SIM (digits); empty = not set, numbers
+/// are compared as they are written.
+pub fn country_code() -> String {
+    active()
+        .country_code
+        .chars()
+        .filter(|c| c.is_ascii_digit())
+        .collect()
+}
+
+/// Main language of a country, by calling code, for the countries whose
+/// language the AI speaks: a call from there opens in it when the phone app
+/// does not say which SIM took the call (see `gemini_live::call_lang_plan`).
+const CALLING_CODE_LANGS: &[(&str, Lang)] = &[
+    // US / Canada, UK, Australia, New Zealand, Ireland
+    ("1", Lang::En),
+    ("44", Lang::En),
+    ("61", Lang::En),
+    ("64", Lang::En),
+    ("353", Lang::En),
+    // Singapore
+    ("65", Lang::En),
+    ("81", Lang::Ja),
+    ("82", Lang::Ko),
+    // Spain, Mexico, Argentina, Colombia, Chile, Peru, Venezuela
+    ("34", Lang::Es),
+    ("52", Lang::Es),
+    ("54", Lang::Es),
+    ("57", Lang::Es),
+    ("56", Lang::Es),
+    ("51", Lang::Es),
+    ("58", Lang::Es),
+    // France, Belgium
+    ("33", Lang::Fr),
+    ("32", Lang::Fr),
+    // Germany, Austria, Switzerland
+    ("49", Lang::De),
+    ("43", Lang::De),
+    ("41", Lang::De),
+    // Brazil, Portugal
+    ("55", Lang::Pt),
+    ("351", Lang::Pt),
+    ("86", Lang::ZhCn),
+    // Taiwan, Hong Kong, Macau
+    ("886", Lang::ZhTw),
+    ("852", Lang::ZhTw),
+    ("853", Lang::ZhTw),
+];
+
+/// The language of the country an international number (`+…`) belongs to,
+/// when it is one the AI speaks. Unknown country or no `+`: `None`.
+pub fn calling_code_lang(number: &str) -> Option<Lang> {
+    let n: String = number
+        .chars()
+        .filter(|c| c.is_ascii_digit() || *c == '+')
+        .collect();
+    longest_code_match(n.strip_prefix('+')?, CALLING_CODE_LANGS)
+}
+
+/// The entry with the longest calling code that starts `digits`: a `+1xxx`
+/// entry wins over `+1`, and `+351` / `+353` never fall back to a shorter code.
+fn longest_code_match(digits: &str, table: &[(&str, Lang)]) -> Option<Lang> {
+    table
+        .iter()
+        .filter(|&&(code, _)| !code.is_empty() && digits.starts_with(code))
+        .max_by_key(|&&(code, _)| code.len())
+        .map(|&(_, lang)| lang)
+}
+
+/// Main language of a country (ISO 3166 alpha-2), for the countries whose
+/// language the AI speaks: what a caller from there most likely speaks (see
+/// `gemini_live::call_lang_plan`). Other countries are left out, so their
+/// callers are not taken for speakers of a language they may not know.
+const COUNTRY_LANGS: &[(&str, Lang)] = &[
+    ("us", Lang::En),
+    ("ca", Lang::En),
+    ("gb", Lang::En),
+    ("ie", Lang::En),
+    ("au", Lang::En),
+    ("nz", Lang::En),
+    ("gg", Lang::En),
+    ("im", Lang::En),
+    ("je", Lang::En),
+    ("sg", Lang::En),
+    // English-speaking members of the North American plan (+1).
+    ("ag", Lang::En),
+    ("ai", Lang::En),
+    ("as", Lang::En),
+    ("bb", Lang::En),
+    ("bm", Lang::En),
+    ("bs", Lang::En),
+    ("dm", Lang::En),
+    ("gd", Lang::En),
+    ("gu", Lang::En),
+    ("jm", Lang::En),
+    ("kn", Lang::En),
+    ("ky", Lang::En),
+    ("lc", Lang::En),
+    ("mp", Lang::En),
+    ("ms", Lang::En),
+    ("sx", Lang::En),
+    ("tc", Lang::En),
+    ("tt", Lang::En),
+    ("vc", Lang::En),
+    ("vg", Lang::En),
+    ("vi", Lang::En),
+    ("jp", Lang::Ja),
+    ("kr", Lang::Ko),
+    ("es", Lang::Es),
+    ("mx", Lang::Es),
+    ("ar", Lang::Es),
+    ("co", Lang::Es),
+    ("cl", Lang::Es),
+    ("pe", Lang::Es),
+    ("ve", Lang::Es),
+    ("ec", Lang::Es),
+    ("bo", Lang::Es),
+    ("py", Lang::Es),
+    ("uy", Lang::Es),
+    ("gt", Lang::Es),
+    ("hn", Lang::Es),
+    ("sv", Lang::Es),
+    ("ni", Lang::Es),
+    ("cr", Lang::Es),
+    ("pa", Lang::Es),
+    ("cu", Lang::Es),
+    ("do", Lang::Es),
+    ("pr", Lang::Es),
+    // France with its overseas departments and territories, Belgium, Monaco.
+    ("fr", Lang::Fr),
+    ("re", Lang::Fr),
+    ("yt", Lang::Fr),
+    ("gp", Lang::Fr),
+    ("bl", Lang::Fr),
+    ("mf", Lang::Fr),
+    ("mq", Lang::Fr),
+    ("gf", Lang::Fr),
+    ("pm", Lang::Fr),
+    ("nc", Lang::Fr),
+    ("pf", Lang::Fr),
+    ("wf", Lang::Fr),
+    ("be", Lang::Fr),
+    ("mc", Lang::Fr),
+    ("de", Lang::De),
+    ("at", Lang::De),
+    ("ch", Lang::De),
+    ("li", Lang::De),
+    ("br", Lang::Pt),
+    ("pt", Lang::Pt),
+    ("cn", Lang::ZhCn),
+    ("tw", Lang::ZhTw),
+    ("hk", Lang::ZhTw),
+    ("mo", Lang::ZhTw),
+];
+
+/// The main language of a country (ISO 3166 alpha-2, any case) when the AI
+/// speaks it ([`COUNTRY_LANGS`]); other countries: `None`.
+pub fn country_lang(iso: &str) -> Option<Lang> {
+    let iso = iso.trim();
+    COUNTRY_LANGS
+        .iter()
+        .find(|&&(c, _)| c.eq_ignore_ascii_case(iso))
+        .map(|&(_, lang)| lang)
+}
+
+/// A line that exists in Chinese and English only (fallback summaries, notes
+/// for the summary model): Chinese for the two Chinese settings, English for
+/// every other language.
+pub fn zh_or(zh_tw: &str, en: &str) -> String {
+    match current() {
+        Lang::ZhTw => zh_tw.to_string(),
+        Lang::ZhCn => crate::zh_convert::to_cn(zh_tw),
+        _ => en.to_string(),
+    }
+}
+
+/// Between a label and its value in the agent's language ("Number: …", "號碼：…").
+pub fn kv_sep() -> &'static str {
+    phrases(current()).sep
+}
+
+/// A phrase template with its `{}` filled in.
+pub fn fill(template: &str, value: &str) -> String {
+    template.replacen("{}", value, 1)
+}
+
+/// `text` in the language's quotation marks.
+pub fn quoted(lang: Lang, text: &str) -> String {
+    let (open, close) = phrases(lang).quote;
+    format!("{open}{text}{close}")
+}
+
+/// A date and time as notifications show it, in the language's own order:
+/// "Nov 13, 08:09", "11月13日 08:09", "13.11. 08:09". The time is whatever
+/// zone the caller converted it to (the machine's local time, see `TZ`).
+pub fn date_time(lang: Lang, t: &chrono::NaiveDateTime) -> String {
+    t.format(phrases(lang).dt_fmt).to_string()
+}
+
+/// A date alone ("Nov 13", "11月13日", "13.11.").
+pub fn date_only(lang: Lang, d: &chrono::NaiveDate) -> String {
+    d.format(phrases(lang).date_fmt).to_string()
+}
+
+/// How long something lasted, the way people say it: seconds under a minute
+/// and a half, whole minutes from there ("72 秒", "10 min").
+pub fn duration(lang: Lang, secs: f64) -> String {
+    let p = phrases(lang);
+    let secs = if secs.is_finite() { secs.max(0.0) } else { 0.0 };
+    if secs < 90.0 {
+        fill(p.u_sec, &format!("{secs:.0}"))
+    } else {
+        fill(p.u_min, &format!("{:.0}", secs / 60.0))
+    }
+}
+
+/// Everything language-specific that is a short phrase or a word list.
+pub struct Phrases {
+    /// English name of the language, for the model's instructions.
+    pub name_en: &'static str,
+    /// Speech-to-text hint (BCP-47).
+    pub stt: &'static str,
+    /// How a person answers the phone.
+    pub hello: &'static str,
+    pub hello_again: &'static str,
+    /// Answer to a caller who keeps saying hello.
+    pub im_here: &'static str,
+    pub still_there: &'static str,
+    pub bye: &'static str,
+    pub go_ahead: &'static str,
+    pub no_thanks: &'static str,
+    pub think_about_it: &'static str,
+    pub wait_one_more: &'static str,
+    /// Lines that make the caller wait or say the AI is looking something up,
+    /// in this language (the prompt names them as things not to say).
+    pub no_wait: &'static str,
+    /// Speaker labels of the dialogue in the web record: the caller, the AI.
+    pub d_caller: &'static str,
+    pub d_ai: &'static str,
+    /// Stand-in when no owner name is set.
+    pub owner_fallback: &'static str,
+    /// Blocked-number announcement.
+    pub unavailable: &'static str,
+    /// Voice sample on the settings page (AI's three lines).
+    pub preview: [&'static str; 3],
+    // Notifications
+    pub n_incoming: &'static str,
+    pub n_outgoing: &'static str,
+    pub n_summary: &'static str,
+    pub n_blocked: &'static str,
+    pub n_voicemail: &'static str,
+    pub n_number: &'static str,
+    pub n_phone: &'static str,
+    pub n_time: &'static str,
+    pub n_reason: &'static str,
+    pub n_length: &'static str,
+    pub n_seconds: &'static str,
+    pub n_hidden: &'static str,
+    pub n_unknown: &'static str,
+    pub n_details: &'static str,
+    pub n_recording: &'static str,
+    /// `{}` = the announcement text.
+    pub n_blocked_done: &'static str,
+    /// Label of the calendar suggestion line.
+    pub n_calendar: &'static str,
+    pub n_test_title: &'static str,
+    pub n_test_body: &'static str,
+    /// Held-back calls of one number, in one message. `{number}` = the number,
+    /// `{count}` = how many calls.
+    pub n_repeat_title: &'static str,
+    pub n_repeat_body: &'static str,
+    // Post-call summary lines
+    pub s_caller: &'static str,
+    pub s_matter: &'static str,
+    pub s_reply: &'static str,
+    pub s_todo: &'static str,
+    pub s_no_summary: &'static str,
+    pub s_ai_failed: &'static str,
+    // Formats
+    /// Between a label and its value ("Number: …", "號碼：…").
+    pub sep: &'static str,
+    /// Between listed words.
+    pub list_sep: &'static str,
+    /// Quotation marks around a quoted phrase.
+    pub quote: (&'static str, &'static str),
+    /// chrono format of a date and time in notifications ([`date_time`]).
+    pub dt_fmt: &'static str,
+    /// chrono format of a date alone ([`date_only`]).
+    pub date_fmt: &'static str,
+    /// `{}` seconds / `{}` minutes ([`duration`]).
+    pub u_sec: &'static str,
+    pub u_min: &'static str,
+    // Summaries written without the summary model. `{}` = a length
+    // ([`duration`]) or the words that were named.
+    pub s_no_service: &'static str,
+    pub s_see_transcript: &'static str,
+    pub s_no_transcript: &'static str,
+    pub s_listen_recording: &'static str,
+    pub s_unclear: &'static str,
+    pub s_ai_fail_matter: &'static str,
+    pub s_call_back_if_known: &'static str,
+    /// First line put above a summary when the AI never connected.
+    pub s_ai_fail_prefix: &'static str,
+    pub s_stall_topic: &'static str,
+    pub s_stall_topic_kw: &'static str,
+    pub s_stall_reply: &'static str,
+    /// Nothing to do.
+    pub s_nothing: &'static str,
+    // Voicemail (older menu flow): how the caller wants an answer. `{}` = the
+    // number or address, or a length.
+    pub vm_call_back_to: &'static str,
+    pub vm_call_back_unknown: &'static str,
+    pub vm_email_to: &'static str,
+    pub vm_email_unknown: &'static str,
+    pub vm_call_back_unchecked: &'static str,
+    pub vm_no_reply: &'static str,
+    pub vm_no_choice: &'static str,
+    pub vm_decide_callback: &'static str,
+    pub vm_length: &'static str,
+    pub vm_no_transcript: &'static str,
+    pub vm_task_failed: &'static str,
+    // Telegram task cards, their buttons and the follow-up message
+    pub tc_status: &'static str,
+    pub tc_pending: &'static str,
+    pub tc_transcript: &'static str,
+    pub tc_confirm: &'static str,
+    pub tc_ignore: &'static str,
+    pub tc_confirm_ack: &'static str,
+    pub tc_ignore_ack: &'static str,
+    pub tc_task: &'static str,
+    pub tc_ignored_task: &'static str,
+    pub tc_done: &'static str,
+    pub tc_in_progress: &'static str,
+    pub tc_failed: &'static str,
+    pub tc_confirm_failed: &'static str,
+    pub tc_ignore_failed: &'static str,
+    // Why a task could not be carried out (`fulfill`, Gmail).
+    // `{}` = the time that was not understood / the error.
+    pub f_callback_waiting: &'static str,
+    pub f_callback_whitelist: &'static str,
+    pub f_callback_no_number: &'static str,
+    pub f_callback_send_failed: &'static str,
+    pub f_email_no_address: &'static str,
+    pub f_gmail_missing: &'static str,
+    pub f_bad_time: &'static str,
+    pub f_openclaw_failed: &'static str,
+    pub g_bad_address: &'static str,
+    pub g_no_recipient: &'static str,
+    pub g_bad_recipient: &'static str,
+    pub g_short_password: &'static str,
+    // The e-mail and the calendar event a task sends. `{}` = the caller.
+    pub e_subject: &'static str,
+    pub e_summary: &'static str,
+    pub e_empty: &'static str,
+    pub e_appointment: &'static str,
+    // Appointments the AI takes on a call (`appointments`): the Telegram card,
+    // its buttons and results, the summary line and the text to the caller.
+    /// Weekday names, Monday first.
+    pub ap_weekdays: [&'static str; 7],
+    /// chrono format of an appointment's time; `{}` = the weekday.
+    pub ap_dt_fmt: &'static str,
+    /// chrono format of an end time on the same day ("15:00–16:00").
+    pub ap_end_fmt: &'static str,
+    pub ap_confirm: &'static str,
+    pub ap_decline: &'static str,
+    pub ap_card_title: &'static str,
+    pub ap_what: &'static str,
+    pub ap_name: &'static str,
+    pub ap_pending: &'static str,
+    pub ap_replaced: &'static str,
+    pub ap_time_unconfirmed: &'static str,
+    pub ap_confirmed: &'static str,
+    pub ap_declined: &'static str,
+    pub ap_already: &'static str,
+    /// The link that adds an accepted appointment to the owner's calendar; `{}` = the link.
+    pub ap_cal_link: &'static str,
+    /// An event that no longer stands could not be deleted; `{}` = when and what.
+    pub ap_void_failed: &'static str,
+    /// The summary judged the call a sales call afterwards: the event the call
+    /// put in the calendar was deleted; `{}` = when and what.
+    pub ap_sales_voided: &'static str,
+    /// After the pending line of the summary: where to confirm; `{}` = the
+    /// call's page in the web console.
+    pub ap_web_confirm: &'static str,
+    /// The same without a known console address.
+    pub ap_web_console: &'static str,
+    /// Label of the web link on the Telegram card.
+    pub ap_web_label: &'static str,
+    /// A goodbye when it ends what was said.
+    pub farewells: &'static [&'static str],
+    /// The caller is done ("that's all") when it ends what they said.
+    pub wrapups: &'static [&'static str],
+}
+
+pub fn phrases(lang: Lang) -> &'static Phrases {
+    match lang {
+        Lang::ZhTw => &ZH_TW,
+        Lang::ZhCn => &ZH_CN,
+        Lang::En => &EN,
+        Lang::Ja => &JA,
+        Lang::Ko => &KO,
+        Lang::Es => &ES,
+        Lang::Fr => &FR,
+        Lang::De => &DE,
+        Lang::Pt => &PT,
+    }
+}
+
+// The Chinese word lists stay in `gemini_live` (they predate this module and
+// carry their own tests); the entries here are only the display phrases.
+static ZH_TW: Phrases = Phrases {
+    name_en: "Traditional Chinese (Taiwan Mandarin)",
+    stt: "zh-TW",
+    hello: "喂？",
+    hello_again: "喂？你好？",
+    im_here: "有，我在，聽得到，請說",
+    still_there: "喂？還在嗎？",
+    bye: "掰掰",
+    go_ahead: "可以啊，你說",
+    no_thanks: "喔不用了，謝謝",
+    think_about_it: "這個我要再想一下",
+    wait_one_more: "欸等一下，我還有一個問題",
+    no_wait: "「等一下」「我查一下」「我看一下行程」「稍等」",
+    d_caller: "對方",
+    d_ai: "接聽",
+    owner_fallback: "機主",
+    unavailable: "此號碼目前無法接通，請稍後再撥。",
+    preview: [
+        "喂？你好。",
+        "喔，是包裹喔，好啊，那你先幫我放管理室就好，謝謝喔。",
+        "好，掰掰。",
+    ],
+    n_incoming: "來電",
+    n_outgoing: "去電",
+    n_summary: "通話摘要",
+    n_blocked: "黑名單來電",
+    n_voicemail: "語音留言",
+    n_number: "號碼",
+    n_phone: "手機",
+    n_time: "時間",
+    n_reason: "原因",
+    n_length: "長度",
+    n_seconds: "秒",
+    n_hidden: "未顯示號碼",
+    n_unknown: "未知",
+    n_details: "逐字稿／錄音",
+    n_recording: "聽錄音",
+    n_blocked_done: "已播「{}」後掛斷，沒有用 AI",
+    n_calendar: "行事曆",
+    n_test_title: "測試通知",
+    n_test_body: "這是 Bageo 的測試通知，看到這則就代表設定成功。",
+    n_repeat_title: "同一號碼連續來電",
+    n_repeat_body: "{number} 這一分鐘內又打了 {count} 通，沒有另外通知。",
+    s_caller: "對方",
+    s_matter: "事情",
+    s_reply: "AI 回覆",
+    s_todo: "要處理",
+    s_no_summary: "（沒有摘要，請看網頁逐字稿）",
+    s_ai_failed: "AI 沒接上，沒講話",
+    sep: "：",
+    list_sep: "、",
+    quote: ("「", "」"),
+    dt_fmt: "%-m月%-d日 %H:%M",
+    date_fmt: "%-m月%-d日",
+    u_sec: "{} 秒",
+    u_min: "{} 分鐘",
+    s_no_service: "（沒有設定摘要服務，沒有摘要）",
+    s_see_transcript: "請看網頁逐字稿",
+    s_no_transcript: "通話約 {}，沒有可用的逐字稿",
+    s_listen_recording: "請到網頁聽錄音",
+    s_unclear: "聽不清楚",
+    s_ai_fail_matter: "AI 沒接上，約 {}後系統掛斷，對方沒聽到回應",
+    s_call_back_if_known: "認得這號碼的話回電",
+    s_ai_fail_prefix: "【AI 沒接上，系統直接掛斷】",
+    s_stall_topic: "推銷／詐騙電話",
+    s_stall_topic_kw: "推銷／詐騙電話（提到：{}）",
+    s_stall_reply: "故意陪他聊了約 {}，沒給資料也沒答應",
+    s_nothing: "不用",
+    vm_call_back_to: "要求回電：{}（已按1確認）",
+    vm_call_back_unknown: "要求回電此來電號碼（已按1確認，但號碼未知）",
+    vm_email_to: "要求回信：{}（已按1確認）",
+    vm_email_unknown: "要求回信（已按1確認，但地址未知）",
+    vm_call_back_unchecked: "要求回電（未核對號碼）",
+    vm_no_reply: "不需回覆（純轉達）",
+    vm_no_choice: "未選擇回覆方式（通話提前結束）",
+    vm_decide_callback: "要不要回電請自己確認",
+    vm_length: "留言約 {}",
+    vm_no_transcript: "留言約 {}，逐字稿失敗，請聽錄音",
+    vm_task_failed: "語音留言（轉錄失敗，待人工處理）",
+    tc_status: "狀態",
+    tc_pending: "待確認",
+    tc_transcript: "逐字稿",
+    tc_confirm: "確認",
+    tc_ignore: "忽略",
+    tc_confirm_ack: "已確認，執行中…",
+    tc_ignore_ack: "已忽略",
+    tc_task: "任務",
+    tc_ignored_task: "已忽略任務",
+    tc_done: "已完成",
+    tc_in_progress: "已確認（進行中）",
+    tc_failed: "履行失敗",
+    tc_confirm_failed: "確認失敗",
+    tc_ignore_failed: "忽略失敗",
+    f_callback_waiting: "回撥已排程，但手機的控制連線離線 — 請確認手機已連上主程式後再按一次確認",
+    f_callback_whitelist: "回撥號碼不在白名單 — 請至「設定」加入允許回撥的號碼（或前綴*）後再確認",
+    f_callback_no_number: "回撥號碼缺失 — 任務沒有聯絡方式，來電號碼也是空的",
+    f_callback_send_failed: "回撥發送失敗",
+    f_email_no_address: "此任務要寄信，但沒有回覆信箱 — 請從通話逐字稿補齊聯絡方式，或改忽略",
+    f_gmail_missing: "Gmail 憑證未設定 — 請至「設定」分頁填寫 Gmail 帳號與應用程式密碼後再確認",
+    f_bad_time: "無法解析時間提示「{}」",
+    f_openclaw_failed: "OpenClaw 轉派失敗：{}（請檢查設定中的 OpenClaw URL / Token）",
+    g_bad_address: "Gmail 帳號格式不正確 — 請至「設定」分頁檢查 Gmail 帳號",
+    g_no_recipient: "寄件失敗：收件信箱是空的",
+    g_bad_recipient: "寄件失敗：收件信箱格式不正確",
+    g_short_password: "Gmail 應用程式密碼太短 — 請至「設定」分頁重新填寫（不會顯示密碼內容）",
+    e_subject: "語音留言回覆",
+    e_summary: "摘要",
+    e_empty: "（沒有摘要或逐字稿）",
+    e_appointment: "預約 — {}",
+    ap_weekdays: ["週一", "週二", "週三", "週四", "週五", "週六", "週日"],
+    ap_dt_fmt: "%-m/%-d（{}）%H:%M",
+    ap_end_fmt: "%H:%M",
+    ap_confirm: "同意",
+    ap_decline: "不同意",
+    ap_card_title: "預約待確認",
+    ap_what: "事由",
+    ap_name: "稱呼",
+    ap_pending: "預約待你確認",
+    ap_replaced: "通話中改過時間，先排入的「{}」還在行事曆上，請自己刪掉",
+    ap_time_unconfirmed: "對方沒有確認過這個時間，回覆前請先跟對方確認",
+    ap_confirmed: "已同意預約",
+    ap_declined: "已婉拒預約",
+    ap_already: "這個預約已經處理過了",
+    ap_cal_link: "加入行事曆：{}",
+    ap_void_failed: "通話中排入的「{}」已作廢，但沒能從行事曆刪掉，請自己刪",
+    ap_sales_voided: "判定是推銷電話，已取消通話中排入的預約：{}",
+    ap_web_confirm: "到網頁確認：{}",
+    ap_web_console: "到網頁控制台確認",
+    ap_web_label: "網頁確認",
+    farewells: &[],
+    wrapups: &[],
+};
+
+static ZH_CN: Phrases = Phrases {
+    name_en: "Simplified Chinese (Mainland Mandarin)",
+    stt: "cmn-CN",
+    hello: "喂？",
+    hello_again: "喂？你好？",
+    im_here: "在的，我在，听得到，你说",
+    still_there: "喂？还在吗？",
+    bye: "拜拜",
+    go_ahead: "可以，你说",
+    no_thanks: "哦不用了，谢谢",
+    think_about_it: "这个我得再想想",
+    wait_one_more: "哎等一下，我还有个问题",
+    no_wait: "“等一下”“我查一下”“我看一下行程”“稍等”",
+    d_caller: "对方",
+    d_ai: "接听",
+    owner_fallback: "机主",
+    unavailable: "您拨打的号码暂时无法接通，请稍后再拨。",
+    preview: [
+        "喂？你好。",
+        "哦，是快递啊，行，那你先帮我放门口就好，谢谢啊。",
+        "好，拜拜。",
+    ],
+    n_incoming: "来电",
+    n_outgoing: "去电",
+    n_summary: "通话摘要",
+    n_blocked: "黑名单来电",
+    n_voicemail: "语音留言",
+    n_number: "号码",
+    n_phone: "手机",
+    n_time: "时间",
+    n_reason: "原因",
+    n_length: "时长",
+    n_seconds: "秒",
+    n_hidden: "未显示号码",
+    n_unknown: "未知",
+    n_details: "通话记录／录音",
+    n_recording: "听录音",
+    n_blocked_done: "已播放「{}」后挂断，没有使用 AI",
+    n_calendar: "日历",
+    n_test_title: "测试通知",
+    n_test_body: "这是 Bageo 的测试通知，看到这条就说明设置成功。",
+    n_repeat_title: "同一号码连续来电",
+    n_repeat_body: "{number} 这一分钟内又打了 {count} 个电话，没有另外通知。",
+    s_caller: "对方",
+    s_matter: "事情",
+    s_reply: "AI 回复",
+    s_todo: "要处理",
+    s_no_summary: "（没有摘要，请看网页通话记录）",
+    s_ai_failed: "AI 没接上，没说话",
+    sep: "：",
+    list_sep: "、",
+    quote: ("“", "”"),
+    dt_fmt: "%-m月%-d日 %H:%M",
+    date_fmt: "%-m月%-d日",
+    u_sec: "{} 秒",
+    u_min: "{} 分钟",
+    s_no_service: "（没有设置摘要服务，没有摘要）",
+    s_see_transcript: "请看网页通话记录",
+    s_no_transcript: "通话约 {}，没有可用的通话记录",
+    s_listen_recording: "请到网页听录音",
+    s_unclear: "听不清楚",
+    s_ai_fail_matter: "AI 没接上，约 {}后系统挂断，对方没听到回应",
+    s_call_back_if_known: "认得这个号码的话回电",
+    s_ai_fail_prefix: "【AI 没接上，系统直接挂断】",
+    s_stall_topic: "推销／诈骗电话",
+    s_stall_topic_kw: "推销／诈骗电话（提到：{}）",
+    s_stall_reply: "故意陪他聊了约 {}，没给信息也没答应",
+    s_nothing: "不用",
+    vm_call_back_to: "要求回电：{}（已按1确认）",
+    vm_call_back_unknown: "要求回电到这个来电号码（已按1确认，但号码未知）",
+    vm_email_to: "要求回邮件：{}（已按1确认）",
+    vm_email_unknown: "要求回邮件（已按1确认，但地址未知）",
+    vm_call_back_unchecked: "要求回电（未核对号码）",
+    vm_no_reply: "不需要回复（只是转达）",
+    vm_no_choice: "没有选择回复方式（通话提前结束）",
+    vm_decide_callback: "要不要回电请自己确认",
+    vm_length: "留言约 {}",
+    vm_no_transcript: "留言约 {}，转写失败，请听录音",
+    vm_task_failed: "语音留言（转写失败，待人工处理）",
+    tc_status: "状态",
+    tc_pending: "待确认",
+    tc_transcript: "文字记录",
+    tc_confirm: "确认",
+    tc_ignore: "忽略",
+    tc_confirm_ack: "已确认，正在处理…",
+    tc_ignore_ack: "已忽略",
+    tc_task: "任务",
+    tc_ignored_task: "已忽略任务",
+    tc_done: "已完成",
+    tc_in_progress: "已确认（处理中）",
+    tc_failed: "执行失败",
+    tc_confirm_failed: "确认失败",
+    tc_ignore_failed: "忽略失败",
+    f_callback_waiting: "回拨已排好，但手机的控制连接已断开 — 请确认手机已连上主程序后再点一次确认",
+    f_callback_whitelist: "回拨号码不在白名单里 — 请到“设置”添加允许回拨的号码（或前缀*）后再确认",
+    f_callback_no_number: "缺少回拨号码 — 任务没有联系方式，来电号码也是空的",
+    f_callback_send_failed: "回拨发送失败",
+    f_email_no_address: "这个任务要发邮件，但没有回复邮箱 — 请从文字记录补上联系方式，或者忽略",
+    f_gmail_missing: "Gmail 凭据未设置 — 请到“设置”填写 Gmail 账号和应用专用密码后再确认",
+    f_bad_time: "无法解析时间提示“{}”",
+    f_openclaw_failed: "OpenClaw 转交失败：{}（请检查设置里的 OpenClaw URL / Token）",
+    g_bad_address: "Gmail 账号格式不对 — 请到“设置”检查 Gmail 账号",
+    g_no_recipient: "发送失败：收件邮箱是空的",
+    g_bad_recipient: "发送失败：收件邮箱格式不对",
+    g_short_password: "Gmail 应用专用密码太短 — 请到“设置”重新填写（不会显示密码内容）",
+    e_subject: "语音留言回复",
+    e_summary: "摘要",
+    e_empty: "（没有摘要或文字记录）",
+    e_appointment: "预约 — {}",
+    ap_weekdays: ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+    ap_dt_fmt: "%-m月%-d日（{}）%H:%M",
+    ap_end_fmt: "%H:%M",
+    ap_confirm: "同意",
+    ap_decline: "不同意",
+    ap_card_title: "预约待确认",
+    ap_what: "事由",
+    ap_name: "称呼",
+    ap_pending: "预约待你确认",
+    ap_replaced: "通话中改过时间，先排入的“{}”还在日历上，请自己删掉",
+    ap_time_unconfirmed: "对方没有确认过这个时间，回复前请先跟对方确认",
+    ap_confirmed: "已同意预约",
+    ap_declined: "已婉拒预约",
+    ap_already: "这个预约已经处理过了",
+    ap_cal_link: "添加到日历：{}",
+    ap_void_failed: "通话中排入的“{}”已作废，但没能从日历删掉，请自己删",
+    ap_sales_voided: "判定是推销电话，已取消通话中排入的预约：{}",
+    ap_web_confirm: "到网页确认：{}",
+    ap_web_console: "到网页控制台确认",
+    ap_web_label: "网页确认",
+    farewells: &[],
+    wrapups: &[],
+};
+
+static EN: Phrases = Phrases {
+    name_en: "English",
+    stt: "en-US",
+    hello: "Hello?",
+    hello_again: "Hello? Hi?",
+    im_here: "Yes, I'm here, I can hear you. Go ahead.",
+    still_there: "Hello? Are you still there?",
+    bye: "Bye",
+    go_ahead: "Sure, go ahead",
+    no_thanks: "Oh, no thanks",
+    think_about_it: "I'd have to think about that",
+    wait_one_more: "Oh wait, I've got one more question",
+    no_wait: "\"just a sec\", \"give me a moment\", \"let me see\"",
+    d_caller: "Caller",
+    d_ai: "AI",
+    owner_fallback: "the owner",
+    unavailable: "The number you have dialed is not available right now. Please try again later.",
+    preview: [
+        "Hello?",
+        "Oh, a package? Sure, just leave it at the front door, thanks a lot.",
+        "Okay, bye.",
+    ],
+    n_incoming: "Incoming call",
+    n_outgoing: "Outgoing call",
+    n_summary: "Call summary",
+    n_blocked: "Blocked number called",
+    n_voicemail: "Voicemail",
+    n_number: "Number",
+    n_phone: "Phone",
+    n_time: "Time",
+    n_reason: "Reason",
+    n_length: "Length",
+    n_seconds: "s",
+    n_hidden: "Hidden number",
+    n_unknown: "Unknown",
+    n_details: "Transcript / recording",
+    n_recording: "Recording",
+    n_blocked_done: "Played \"{}\" and hung up. The AI was not used.",
+    n_calendar: "Calendar",
+    n_test_title: "Test notification",
+    n_test_body: "This is a test notification from Bageo. If you can read it, the channel works.",
+    n_repeat_title: "Repeated calls from one number",
+    n_repeat_body: "More calls from {number} in the last minute: {count}. They were not sent one by one.",
+    s_caller: "Caller",
+    s_matter: "About",
+    s_reply: "AI said",
+    s_todo: "To do",
+    s_no_summary: "(No summary — see the transcript in the web console.)",
+    s_ai_failed: "The AI did not connect and said nothing",
+    sep: ": ",
+    list_sep: ", ",
+    quote: ("\"", "\""),
+    dt_fmt: "%b %-d, %H:%M",
+    date_fmt: "%b %-d",
+    u_sec: "{} s",
+    u_min: "{} min",
+    s_no_service: "No summary service is set up",
+    s_see_transcript: "See the transcript in the web console",
+    s_no_transcript: "The call lasted about {}; there is no usable transcript",
+    s_listen_recording: "Listen to the recording in the web console",
+    s_unclear: "Unclear",
+    s_ai_fail_matter: "The AI did not connect; the system hung up after about {} and the caller heard nothing",
+    s_call_back_if_known: "Call back if you know the number",
+    s_ai_fail_prefix: "[The AI did not connect; the system hung up]",
+    s_stall_topic: "Sales / scam call",
+    s_stall_topic_kw: "Sales / scam call (mentioned: {})",
+    s_stall_reply: "Kept them talking for about {}; gave no data and agreed to nothing",
+    s_nothing: "Nothing",
+    vm_call_back_to: "Wants a call back: {} (confirmed with 1)",
+    vm_call_back_unknown: "Wants a call back on this number (confirmed with 1, but the number is unknown)",
+    vm_email_to: "Wants a reply by email: {} (confirmed with 1)",
+    vm_email_unknown: "Wants a reply by email (confirmed with 1, but the address is unknown)",
+    vm_call_back_unchecked: "Wants a call back (number not checked)",
+    vm_no_reply: "No reply needed (message only)",
+    vm_no_choice: "No reply method chosen (the call ended early)",
+    vm_decide_callback: "Decide whether to call back",
+    vm_length: "about {}",
+    vm_no_transcript: "A message of about {}; it could not be transcribed. Listen to the recording",
+    vm_task_failed: "Voicemail (could not be transcribed; needs a look)",
+    tc_status: "Status",
+    tc_pending: "Waiting for you",
+    tc_transcript: "Transcript",
+    tc_confirm: "Confirm",
+    tc_ignore: "Ignore",
+    tc_confirm_ack: "Confirmed, working on it…",
+    tc_ignore_ack: "Ignored",
+    tc_task: "Task",
+    tc_ignored_task: "Task ignored",
+    tc_done: "Done",
+    tc_in_progress: "Confirmed (in progress)",
+    tc_failed: "Failed",
+    tc_confirm_failed: "Could not confirm",
+    tc_ignore_failed: "Could not ignore",
+    f_callback_waiting: "The call back is scheduled, but the phone's control link is offline. Make sure the phone is connected to the agent, then confirm again.",
+    f_callback_whitelist: "The call-back number is not on the allowed list. Add it (or a prefix ending in *) in Settings, then confirm again.",
+    f_callback_no_number: "No number to call back: the task has no contact and the caller's number is empty.",
+    f_callback_send_failed: "Could not send the call back",
+    f_email_no_address: "This task sends an email but has no reply address. Add the contact from the transcript, or ignore the task.",
+    f_gmail_missing: "Gmail is not set up. Enter the Gmail address and app password in Settings, then confirm again.",
+    f_bad_time: "Could not read the time \"{}\"",
+    f_openclaw_failed: "Could not hand the task to OpenClaw: {} (check the OpenClaw URL and token in Settings)",
+    g_bad_address: "The Gmail address does not look right. Check it in Settings.",
+    g_no_recipient: "Not sent: no recipient address",
+    g_bad_recipient: "Not sent: the recipient address does not look right",
+    g_short_password: "The Gmail app password is too short. Enter it again in Settings (it is never shown).",
+    e_subject: "Reply to your voicemail",
+    e_summary: "Summary",
+    e_empty: "(No summary or transcript)",
+    e_appointment: "Appointment — {}",
+    ap_weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    ap_dt_fmt: "{}, %b %-d, %-I:%M %p",
+    ap_end_fmt: "%-I:%M %p",
+    ap_confirm: "Accept",
+    ap_decline: "Decline",
+    ap_card_title: "Appointment to confirm",
+    ap_what: "What",
+    ap_name: "Name",
+    ap_pending: "Appointment to confirm",
+    ap_replaced: "The time changed during the call; the earlier \"{}\" is still in your calendar. Please delete it.",
+    ap_time_unconfirmed: "The caller never confirmed this time read back; check it with them before you answer",
+    ap_confirmed: "Appointment accepted",
+    ap_declined: "Appointment declined",
+    ap_already: "This appointment has already been handled",
+    ap_cal_link: "Add it to your calendar: {}",
+    ap_void_failed: "\"{}\" from the call was canceled but couldn't be removed from your calendar. Please delete it yourself.",
+    ap_sales_voided: "Judged a sales call, so the appointment booked during the call was canceled: {}",
+    ap_web_confirm: "confirm in the web console: {}",
+    ap_web_console: "confirm in the web console",
+    ap_web_label: "Confirm on the web",
+    farewells: &[
+        "bye", "bye bye", "bye now", "goodbye", "good bye", "see you", "see ya", "see you later",
+        "talk to you later", "talk later", "talk soon", "speak soon", "take care",
+        "have a good day", "have a nice day", "have a great day", "have a wonderful day",
+        "have a lovely day", "have a good one", "have a good evening", "have a great evening",
+        "have a good night", "good night", "cheers", "byebye",
+    ],
+    wrapups: &[
+        "that's all", "that is all", "that's it", "that's everything", "nothing else",
+        "i'll let you go", "won't keep you", "gotta go", "got to go", "have to go",
+        "i'll call back", "call back later", "i'll try again later",
+    ],
+};
+
+static JA: Phrases = Phrases {
+    name_en: "Japanese",
+    stt: "ja-JP",
+    hello: "もしもし？",
+    hello_again: "もしもし？聞こえますか？",
+    im_here: "はい、聞こえてますよ。どうぞ。",
+    still_there: "もしもし？聞こえてますか？",
+    bye: "失礼します",
+    go_ahead: "はい、大丈夫ですよ、どうぞ",
+    no_thanks: "あ、結構です",
+    think_about_it: "それはちょっと考えさせてください",
+    wait_one_more: "あ、すみません、もう一つだけ聞いてもいいですか",
+    no_wait: "「ちょっと待って」「確認するから待って」「調べてみるね」「少々お待ちください」",
+    d_caller: "相手",
+    d_ai: "AI",
+    owner_fallback: "持ち主",
+    unavailable: "おかけになった電話は、現在おつなぎできません。しばらくしてからおかけ直しください。",
+    preview: [
+        "もしもし？",
+        "あ、荷物ですか。じゃあ玄関の前に置いといてください、ありがとうございます。",
+        "はい、失礼します。",
+    ],
+    n_incoming: "着信",
+    n_outgoing: "発信",
+    n_summary: "通話の要約",
+    n_blocked: "拒否リストの番号から着信",
+    n_voicemail: "留守番電話",
+    n_number: "番号",
+    n_phone: "端末",
+    n_time: "時刻",
+    n_reason: "理由",
+    n_length: "長さ",
+    n_seconds: "秒",
+    n_hidden: "非通知",
+    n_unknown: "不明",
+    n_details: "文字起こし／録音",
+    n_recording: "録音",
+    n_blocked_done: "「{}」を流して切断しました（AI は使っていません）",
+    n_calendar: "カレンダー",
+    n_test_title: "テスト通知",
+    n_test_body: "Bageo からのテスト通知です。これが届いていれば設定は完了です。",
+    n_repeat_title: "同じ番号から連続着信",
+    n_repeat_body: "{number} から、この1分間にさらに{count}回の着信がありましたが、1回ずつの通知は省きました。",
+    s_caller: "相手",
+    s_matter: "用件",
+    s_reply: "AI の返答",
+    s_todo: "対応",
+    s_no_summary: "（要約なし。Web の文字起こしを確認してください）",
+    s_ai_failed: "AI が接続できず、何も話していません",
+    sep: "：",
+    list_sep: "、",
+    quote: ("「", "」"),
+    dt_fmt: "%-m月%-d日 %H:%M",
+    date_fmt: "%-m月%-d日",
+    u_sec: "{}秒",
+    u_min: "{}分",
+    s_no_service: "要約サービスが設定されていないため、要約はありません",
+    s_see_transcript: "Web の文字起こしを確認してください",
+    s_no_transcript: "約{}の通話で、使える文字起こしがありません",
+    s_listen_recording: "Web で録音を聞いてください",
+    s_unclear: "聞き取れず",
+    s_ai_fail_matter: "AI が接続できず、約{}後にシステムが切断しました。相手には何も聞こえていません",
+    s_call_back_if_known: "心当たりのある番号なら折り返してください",
+    s_ai_fail_prefix: "【AI が接続できず、システムが切断】",
+    s_stall_topic: "営業／詐欺の電話",
+    s_stall_topic_kw: "営業／詐欺の電話（話に出たもの：{}）",
+    s_stall_reply: "わざと約{}話を引き延ばしました。情報は渡さず、何も約束していません",
+    s_nothing: "なし",
+    vm_call_back_to: "折り返し希望：{}（1 で確認済み）",
+    vm_call_back_unknown: "この番号への折り返し希望（1 で確認済み、ただし番号不明）",
+    vm_email_to: "メールでの返信希望：{}（1 で確認済み）",
+    vm_email_unknown: "メールでの返信希望（1 で確認済み、ただしアドレス不明）",
+    vm_call_back_unchecked: "折り返し希望（番号は未確認）",
+    vm_no_reply: "返信不要（伝言のみ）",
+    vm_no_choice: "返信方法の選択なし（通話が途中で終了）",
+    vm_decide_callback: "折り返すかどうかはご自身で判断してください",
+    vm_length: "約{}",
+    vm_no_transcript: "約{}の伝言。文字起こしに失敗したので録音を聞いてください",
+    vm_task_failed: "留守番電話（文字起こし失敗、要確認）",
+    tc_status: "状態",
+    tc_pending: "確認待ち",
+    tc_transcript: "文字起こし",
+    tc_confirm: "確認",
+    tc_ignore: "無視",
+    tc_confirm_ack: "確認しました。処理中…",
+    tc_ignore_ack: "無視しました",
+    tc_task: "タスク",
+    tc_ignored_task: "タスクを無視しました",
+    tc_done: "完了",
+    tc_in_progress: "確認済み（処理中）",
+    tc_failed: "失敗",
+    tc_confirm_failed: "確認できませんでした",
+    tc_ignore_failed: "無視できませんでした",
+    f_callback_waiting: "折り返しは予約しましたが、スマホの制御接続がオフラインです。スマホがエージェントに接続されていることを確かめて、もう一度確認を押してください",
+    f_callback_whitelist: "折り返し先の番号が許可リストにありません。「設定」で番号（または * で終わる先頭部分）を追加してから確認してください",
+    f_callback_no_number: "折り返し先の番号がありません。タスクに連絡先がなく、着信番号も空です",
+    f_callback_send_failed: "折り返しを送れませんでした",
+    f_email_no_address: "このタスクはメールを送りますが、返信先アドレスがありません。文字起こしから連絡先を補うか、無視してください",
+    f_gmail_missing: "Gmail が設定されていません。「設定」で Gmail アドレスとアプリ パスワードを入力してから確認してください",
+    f_bad_time: "時刻「{}」を読み取れませんでした",
+    f_openclaw_failed: "OpenClaw に引き渡せませんでした：{}（「設定」の OpenClaw URL とトークンを確認してください）",
+    g_bad_address: "Gmail アドレスの形式が正しくありません。「設定」で確認してください",
+    g_no_recipient: "送信できません：宛先アドレスが空です",
+    g_bad_recipient: "送信できません：宛先アドレスの形式が正しくありません",
+    g_short_password: "Gmail のアプリ パスワードが短すぎます。「設定」で入力し直してください（内容は表示されません）",
+    e_subject: "留守番電話へのお返事",
+    e_summary: "要約",
+    e_empty: "（要約も文字起こしもありません）",
+    e_appointment: "予約 — {}",
+    ap_weekdays: ["月", "火", "水", "木", "金", "土", "日"],
+    ap_dt_fmt: "%-m/%-d（{}）%H:%M",
+    ap_end_fmt: "%H:%M",
+    ap_confirm: "承諾",
+    ap_decline: "お断り",
+    ap_card_title: "予約の確認待ち",
+    ap_what: "用件",
+    ap_name: "お名前",
+    ap_pending: "予約の確認待ち",
+    ap_replaced: "通話中に時間が変わりました。先に登録した「{}」がカレンダーに残っているので削除してください",
+    ap_time_unconfirmed: "相手はこの時間を確認していません。返事の前に相手に確認してください",
+    ap_confirmed: "予約を承諾しました",
+    ap_declined: "予約をお断りしました",
+    ap_already: "この予約はすでに処理済みです",
+    ap_cal_link: "カレンダーに追加：{}",
+    ap_void_failed: "通話中に登録した「{}」は取り消しになりましたが、カレンダーから削除できませんでした。ご自身で削除してください",
+    ap_sales_voided: "営業電話と判断したため、通話中に登録した予約を取り消しました：{}",
+    ap_web_confirm: "Web 画面で確認：{}",
+    ap_web_console: "Web コンソールで確認してください",
+    ap_web_label: "Web で確認",
+    farewells: &[
+        "さようなら", "失礼します", "失礼いたします", "失礼致します", "じゃあね", "じゃあまた",
+        "ではまた", "またね", "バイバイ", "ばいばい", "切りますね", "お疲れ様でした",
+        "お疲れさまでした",
+    ],
+    wrapups: &[
+        "以上です", "それだけです", "また連絡します", "またご連絡します", "またかけます",
+        "かけ直します", "掛け直します",
+        // Not 「それでは」 alone: it opens what comes next too (「それでは伝言です」).
+        // 「それでは失礼します」「それではまた」 end on their own farewells.
+        // Alone, 「よろしくお願いします」 also ends a caller's introduction at the
+        // start of a business call: only after 「では」 does it close one.
+        "ではよろしくお願いいたします", "ではよろしくお願いします", "じゃあよろしくお願いします",
+    ],
+};
+
+static KO: Phrases = Phrases {
+    name_en: "Korean",
+    stt: "ko-KR",
+    hello: "여보세요?",
+    hello_again: "여보세요? 들리세요?",
+    im_here: "네, 듣고 있어요. 말씀하세요.",
+    still_there: "여보세요? 아직 계세요?",
+    bye: "네, 들어가세요",
+    go_ahead: "네, 괜찮아요. 말씀하세요",
+    no_thanks: "아, 괜찮습니다",
+    think_about_it: "그건 좀 생각해 볼게요",
+    wait_one_more: "아 그런데요, 하나만 더 물어볼게요",
+    no_wait: "\"잠깐만요\", \"확인해 볼게요\", \"잠시만 기다려 주세요\", \"조금만 기다려 주세요\", \"기다려 줄래?\"",
+    d_caller: "상대",
+    d_ai: "AI",
+    owner_fallback: "주인",
+    unavailable: "지금은 전화를 받을 수 없습니다. 잠시 후 다시 걸어 주시기 바랍니다.",
+    preview: [
+        "여보세요?",
+        "아, 택배요? 네, 그럼 문 앞에 놔 주세요. 감사합니다.",
+        "네, 들어가세요.",
+    ],
+    n_incoming: "수신 전화",
+    n_outgoing: "발신 전화",
+    n_summary: "통화 요약",
+    n_blocked: "차단 번호에서 전화",
+    n_voicemail: "음성 메시지",
+    n_number: "번호",
+    n_phone: "기기",
+    n_time: "시간",
+    n_reason: "사유",
+    n_length: "길이",
+    n_seconds: "초",
+    n_hidden: "발신번호 표시 제한",
+    n_unknown: "알 수 없음",
+    n_details: "대화 기록／녹음",
+    n_recording: "녹음",
+    n_blocked_done: "「{}」 안내 후 끊었습니다 (AI 사용 안 함)",
+    n_calendar: "캘린더",
+    n_test_title: "테스트 알림",
+    n_test_body: "Bageo 테스트 알림입니다. 이 메시지가 보이면 설정이 완료된 것입니다.",
+    n_repeat_title: "같은 번호에서 연속 전화",
+    n_repeat_body: "{number} 번호에서 지난 1분 동안 {count}번 더 전화가 왔지만, 하나씩 알리지는 않았습니다.",
+    s_caller: "상대",
+    s_matter: "용건",
+    s_reply: "AI 답변",
+    s_todo: "할 일",
+    s_no_summary: "(요약 없음. 웹 콘솔의 대화 기록을 확인하세요)",
+    s_ai_failed: "AI가 연결되지 않아 아무 말도 하지 않았습니다",
+    sep: ": ",
+    list_sep: ", ",
+    quote: ("\"", "\""),
+    dt_fmt: "%-m월 %-d일 %H:%M",
+    date_fmt: "%-m월 %-d일",
+    u_sec: "{}초",
+    u_min: "{}분",
+    s_no_service: "요약 서비스가 설정되지 않아 요약이 없습니다",
+    s_see_transcript: "웹 콘솔에서 대화 기록을 확인하세요",
+    s_no_transcript: "약 {} 통화했지만 쓸 수 있는 대화 기록이 없습니다",
+    s_listen_recording: "웹 콘솔에서 녹음을 들어 보세요",
+    s_unclear: "알아듣기 어려움",
+    s_ai_fail_matter: "AI가 연결되지 않아 약 {} 뒤 시스템이 끊었습니다. 상대는 아무 말도 듣지 못했습니다",
+    s_call_back_if_known: "아는 번호라면 다시 전화하세요",
+    s_ai_fail_prefix: "[AI 연결 실패, 시스템이 끊음]",
+    s_stall_topic: "영업/사기 전화",
+    s_stall_topic_kw: "영업/사기 전화 (언급: {})",
+    s_stall_reply: "일부러 약 {} 동안 붙잡아 두었습니다. 정보는 주지 않았고 아무것도 동의하지 않았습니다",
+    s_nothing: "없음",
+    vm_call_back_to: "회신 전화 요청: {} (1번으로 확인)",
+    vm_call_back_unknown: "이 번호로 회신 전화 요청 (1번으로 확인, 번호는 알 수 없음)",
+    vm_email_to: "이메일 회신 요청: {} (1번으로 확인)",
+    vm_email_unknown: "이메일 회신 요청 (1번으로 확인, 주소는 알 수 없음)",
+    vm_call_back_unchecked: "회신 전화 요청 (번호 확인 안 됨)",
+    vm_no_reply: "회신 필요 없음 (전달만)",
+    vm_no_choice: "회신 방법 선택 안 함 (통화가 일찍 끝남)",
+    vm_decide_callback: "다시 전화할지 직접 판단하세요",
+    vm_length: "약 {}",
+    vm_no_transcript: "약 {} 길이의 메시지입니다. 받아쓰기에 실패했으니 녹음을 들어 보세요",
+    vm_task_failed: "음성 메시지 (받아쓰기 실패, 확인 필요)",
+    tc_status: "상태",
+    tc_pending: "확인 대기",
+    tc_transcript: "대화 기록",
+    tc_confirm: "확인",
+    tc_ignore: "무시",
+    tc_confirm_ack: "확인했습니다. 처리 중…",
+    tc_ignore_ack: "무시했습니다",
+    tc_task: "작업",
+    tc_ignored_task: "작업을 무시했습니다",
+    tc_done: "완료",
+    tc_in_progress: "확인됨 (진행 중)",
+    tc_failed: "실패",
+    tc_confirm_failed: "확인하지 못했습니다",
+    tc_ignore_failed: "무시하지 못했습니다",
+    f_callback_waiting: "회신 전화를 예약했지만 휴대폰 제어 연결이 끊겨 있습니다. 휴대폰이 에이전트에 연결됐는지 확인한 뒤 다시 확인을 누르세요",
+    f_callback_whitelist: "회신할 번호가 허용 목록에 없습니다. 설정에서 번호(또는 *로 끝나는 앞자리)를 추가한 뒤 다시 확인하세요",
+    f_callback_no_number: "회신할 번호가 없습니다. 작업에 연락처가 없고 발신 번호도 비어 있습니다",
+    f_callback_send_failed: "회신 전화를 보내지 못했습니다",
+    f_email_no_address: "이메일을 보내는 작업인데 회신 주소가 없습니다. 대화 기록에서 연락처를 채우거나 무시하세요",
+    f_gmail_missing: "Gmail이 설정되지 않았습니다. 설정에서 Gmail 주소와 앱 비밀번호를 입력한 뒤 다시 확인하세요",
+    f_bad_time: "시간 \"{}\"을(를) 읽지 못했습니다",
+    f_openclaw_failed: "OpenClaw에 넘기지 못했습니다: {} (설정의 OpenClaw URL과 토큰을 확인하세요)",
+    g_bad_address: "Gmail 주소 형식이 올바르지 않습니다. 설정에서 확인하세요",
+    g_no_recipient: "보내지 못했습니다: 받는 주소가 비어 있습니다",
+    g_bad_recipient: "보내지 못했습니다: 받는 주소 형식이 올바르지 않습니다",
+    g_short_password: "Gmail 앱 비밀번호가 너무 짧습니다. 설정에서 다시 입력하세요 (내용은 표시되지 않습니다)",
+    e_subject: "음성 메시지에 대한 회신",
+    e_summary: "요약",
+    e_empty: "(요약이나 대화 기록이 없습니다)",
+    e_appointment: "예약 — {}",
+    ap_weekdays: ["월", "화", "수", "목", "금", "토", "일"],
+    ap_dt_fmt: "%-m/%-d({}) %H:%M",
+    ap_end_fmt: "%H:%M",
+    ap_confirm: "수락",
+    ap_decline: "거절",
+    ap_card_title: "예약 확인 대기",
+    ap_what: "용건",
+    ap_name: "이름",
+    ap_pending: "예약 확인 대기",
+    ap_replaced: "통화 중에 시간이 바뀌었습니다. 먼저 등록한 \"{}\" 일정이 캘린더에 남아 있으니 직접 지워 주세요",
+    ap_time_unconfirmed: "상대방이 이 시간을 확인하지 않았습니다. 답하기 전에 먼저 확인해 주세요",
+    ap_confirmed: "예약을 수락했습니다",
+    ap_declined: "예약을 거절했습니다",
+    ap_already: "이미 처리된 예약입니다",
+    ap_cal_link: "캘린더에 추가: {}",
+    ap_void_failed: "통화 중에 등록한 \"{}\" 일정은 취소됐지만 캘린더에서 지우지 못했습니다. 직접 지워 주세요",
+    ap_sales_voided: "영업 전화로 판단해 통화 중에 등록한 예약을 취소했습니다: {}",
+    ap_web_confirm: "웹에서 확인: {}",
+    ap_web_console: "웹 콘솔에서 확인하세요",
+    ap_web_label: "웹에서 확인",
+    farewells: &[
+        "안녕히 계세요", "안녕히계세요", "안녕히 가세요", "들어가세요", "끊을게요", "끊겠습니다",
+        "수고하세요", "좋은 하루 되세요", "좋은 하루 보내세요", "바이바이", "다음에 봬요", "다음에 뵙겠습니다",
+    ],
+    wrapups: &[
+        "이상입니다", "그게 다예요", "다시 전화드릴게요", "다시 전화드리겠습니다",
+        "다시 연락드릴게요", "다시 연락드리겠습니다",
+    ],
+};
+
+static ES: Phrases = Phrases {
+    name_en: "Spanish",
+    stt: "es-ES",
+    hello: "¿Sí? ¿Diga?",
+    hello_again: "¿Hola? ¿Me oye?",
+    im_here: "Sí, estoy aquí, le oigo bien. Dígame.",
+    still_there: "¿Hola? ¿Sigue ahí?",
+    bye: "Adiós",
+    go_ahead: "Sí, claro, dígame",
+    no_thanks: "Ah, no, gracias",
+    think_about_it: "Eso tendría que pensarlo",
+    wait_one_more: "Ay, una cosa más, tengo otra pregunta",
+    no_wait: "\"un momento\", \"espera, que lo miro\", \"déjame ver\"",
+    d_caller: "Llamante",
+    d_ai: "IA",
+    owner_fallback: "el dueño",
+    unavailable: "El número al que llama no está disponible en este momento. Por favor, inténtelo más tarde.",
+    preview: [
+        "¿Sí? ¿Diga?",
+        "Ah, ¿un paquete? Vale, déjelo en la puerta, muchas gracias.",
+        "Vale, adiós.",
+    ],
+    n_incoming: "Llamada entrante",
+    n_outgoing: "Llamada saliente",
+    n_summary: "Resumen de la llamada",
+    n_blocked: "Llamada de un número bloqueado",
+    n_voicemail: "Mensaje de voz",
+    n_number: "Número",
+    n_phone: "Teléfono",
+    n_time: "Hora",
+    n_reason: "Motivo",
+    n_length: "Duración",
+    n_seconds: "s",
+    n_hidden: "Número oculto",
+    n_unknown: "Desconocido",
+    n_details: "Transcripción / grabación",
+    n_recording: "Grabación",
+    n_blocked_done: "Se reprodujo «{}» y se colgó. No se usó la IA.",
+    n_calendar: "Calendario",
+    n_test_title: "Notificación de prueba",
+    n_test_body: "Esta es una notificación de prueba de Bageo. Si la ves, el canal funciona.",
+    n_repeat_title: "Llamadas repetidas de un mismo número",
+    n_repeat_body: "Más llamadas de {number} en el último minuto: {count}. No se avisó de cada una.",
+    s_caller: "Quién",
+    s_matter: "Asunto",
+    s_reply: "La IA dijo",
+    s_todo: "Pendiente",
+    s_no_summary: "(Sin resumen: consulta la transcripción en la consola web.)",
+    s_ai_failed: "La IA no se conectó y no dijo nada",
+    sep: ": ",
+    list_sep: ", ",
+    quote: ("«", "»"),
+    dt_fmt: "%d/%m %H:%M",
+    date_fmt: "%d/%m",
+    u_sec: "{} s",
+    u_min: "{} min",
+    s_no_service: "No hay ningún servicio de resúmenes configurado",
+    s_see_transcript: "Consulta la transcripción en la consola web",
+    s_no_transcript: "La llamada duró unos {} y no hay transcripción útil",
+    s_listen_recording: "Escucha la grabación en la consola web",
+    s_unclear: "No se entiende",
+    s_ai_fail_matter: "La IA no se conectó; el sistema colgó tras unos {} y la persona no oyó nada",
+    s_call_back_if_known: "Devuelve la llamada si conoces el número",
+    s_ai_fail_prefix: "[La IA no se conectó; el sistema colgó]",
+    s_stall_topic: "Llamada de ventas / estafa",
+    s_stall_topic_kw: "Llamada de ventas / estafa (mencionó: {})",
+    s_stall_reply: "Lo entretuvo unos {}; no dio datos ni aceptó nada",
+    s_nothing: "Nada",
+    vm_call_back_to: "Pide que le devuelvas la llamada: {} (confirmado con 1)",
+    vm_call_back_unknown: "Pide que le devuelvas la llamada a este número (confirmado con 1, pero el número es desconocido)",
+    vm_email_to: "Pide respuesta por correo: {} (confirmado con 1)",
+    vm_email_unknown: "Pide respuesta por correo (confirmado con 1, pero la dirección es desconocida)",
+    vm_call_back_unchecked: "Pide que le devuelvas la llamada (número sin comprobar)",
+    vm_no_reply: "No hace falta responder (solo un recado)",
+    vm_no_choice: "No eligió cómo responder (la llamada terminó antes)",
+    vm_decide_callback: "Decide si devuelves la llamada",
+    vm_length: "unos {}",
+    vm_no_transcript: "Un mensaje de unos {}; no se pudo transcribir. Escucha la grabación",
+    vm_task_failed: "Mensaje de voz (no se pudo transcribir; hay que revisarlo)",
+    tc_status: "Estado",
+    tc_pending: "Pendiente de confirmar",
+    tc_transcript: "Transcripción",
+    tc_confirm: "Confirmar",
+    tc_ignore: "Ignorar",
+    tc_confirm_ack: "Confirmado, en marcha…",
+    tc_ignore_ack: "Ignorado",
+    tc_task: "Tarea",
+    tc_ignored_task: "Tarea ignorada",
+    tc_done: "Hecha",
+    tc_in_progress: "Confirmada (en curso)",
+    tc_failed: "Falló",
+    tc_confirm_failed: "No se pudo confirmar",
+    tc_ignore_failed: "No se pudo ignorar",
+    f_callback_waiting: "La devolución de llamada está programada, pero la conexión de control del teléfono está desconectada. Comprueba que el teléfono esté conectado al agente y vuelve a confirmar.",
+    f_callback_whitelist: "El número para devolver la llamada no está en la lista permitida. Añádelo (o un prefijo terminado en *) en Ajustes y vuelve a confirmar.",
+    f_callback_no_number: "No hay número para devolver la llamada: la tarea no tiene contacto y el número de quien llamó está vacío.",
+    f_callback_send_failed: "No se pudo enviar la devolución de llamada",
+    f_email_no_address: "Esta tarea envía un correo, pero no tiene dirección de respuesta. Añade el contacto a partir de la transcripción o ignora la tarea.",
+    f_gmail_missing: "Gmail no está configurado. Escribe la dirección de Gmail y la contraseña de aplicación en Ajustes y vuelve a confirmar.",
+    f_bad_time: "No se pudo entender la hora «{}»",
+    f_openclaw_failed: "No se pudo pasar la tarea a OpenClaw: {} (revisa la URL y el token de OpenClaw en Ajustes)",
+    g_bad_address: "La dirección de Gmail no parece correcta. Revísala en Ajustes.",
+    g_no_recipient: "No se envió: falta la dirección del destinatario",
+    g_bad_recipient: "No se envió: la dirección del destinatario no parece correcta",
+    g_short_password: "La contraseña de aplicación de Gmail es demasiado corta. Vuelve a escribirla en Ajustes (nunca se muestra).",
+    e_subject: "Respuesta a su mensaje de voz",
+    e_summary: "Resumen",
+    e_empty: "(Sin resumen ni transcripción)",
+    e_appointment: "Cita — {}",
+    ap_weekdays: ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"],
+    ap_dt_fmt: "{} %-d/%-m, %H:%M",
+    ap_end_fmt: "%H:%M",
+    ap_confirm: "Aceptar",
+    ap_decline: "Rechazar",
+    ap_card_title: "Cita por confirmar",
+    ap_what: "Motivo",
+    ap_name: "Nombre",
+    ap_pending: "Cita por confirmar",
+    ap_replaced: "La hora cambió durante la llamada; \"{}\" sigue en tu calendario, bórralo tú",
+    ap_time_unconfirmed: "Quien llamó no confirmó esta hora; compruébala con esa persona antes de responder",
+    ap_confirmed: "Cita aceptada",
+    ap_declined: "Cita rechazada",
+    ap_already: "Esta cita ya se gestionó",
+    ap_cal_link: "Añádela al calendario: {}",
+    ap_void_failed: "\"{}\" de la llamada quedó anulada, pero no se pudo quitar del calendario; bórrala tú",
+    ap_sales_voided: "Se consideró una llamada comercial, así que se canceló la cita reservada durante la llamada: {}",
+    ap_web_confirm: "confírmala en la consola web: {}",
+    ap_web_console: "confírmala en la consola web",
+    ap_web_label: "Confirmar en la web",
+    farewells: &[
+        "adiós", "adios", "hasta luego", "hasta pronto", "hasta mañana", "nos vemos", "chao",
+        "chau", "que tenga buen día", "que tenga un buen día", "que tengas buen día",
+        "que tenga un excelente día", "que tengas un excelente día", "que tenga excelente día",
+        "que tenga un lindo día", "que tengas un lindo día", "que tenga un feliz día",
+        "que tengas un feliz día", "que tenga buena tarde", "que tenga una buena tarde",
+        "que tenga excelente tarde", "cuídese", "cuídate", "un saludo", "órale gracias", "orale gracias",
+    ],
+    wrapups: &[
+        "eso es todo", "nada más", "eso sería todo", "le dejo", "te dejo", "tengo que irme",
+        "me tengo que ir", "le llamo luego", "vuelvo a llamar",
+    ],
+};
+
+static FR: Phrases = Phrases {
+    name_en: "French",
+    stt: "fr-FR",
+    hello: "Allô ?",
+    hello_again: "Allô ? Vous m'entendez ?",
+    im_here: "Oui, je suis là, je vous entends bien. Allez-y.",
+    still_there: "Allô ? Vous êtes toujours là ?",
+    bye: "Au revoir",
+    go_ahead: "Oui, bien sûr, allez-y",
+    no_thanks: "Ah non, merci",
+    think_about_it: "Ça, il faudrait que j'y réfléchisse",
+    wait_one_more: "Ah, attendez, j'ai encore une question",
+    no_wait: "« un instant », « attendez, je regarde », « laissez-moi vérifier »",
+    d_caller: "Appelant",
+    d_ai: "IA",
+    owner_fallback: "le propriétaire",
+    unavailable: "Le numéro que vous avez composé n'est pas disponible pour le moment. Veuillez rappeler ultérieurement.",
+    preview: [
+        "Allô ?",
+        "Ah, un colis ? D'accord, laissez-le devant la porte, merci beaucoup.",
+        "D'accord, au revoir.",
+    ],
+    n_incoming: "Appel entrant",
+    n_outgoing: "Appel sortant",
+    n_summary: "Résumé de l'appel",
+    n_blocked: "Appel d'un numéro bloqué",
+    n_voicemail: "Message vocal",
+    n_number: "Numéro",
+    n_phone: "Téléphone",
+    n_time: "Heure",
+    n_reason: "Motif",
+    n_length: "Durée",
+    n_seconds: "s",
+    n_hidden: "Numéro masqué",
+    n_unknown: "Inconnu",
+    n_details: "Transcription / enregistrement",
+    n_recording: "Enregistrement",
+    n_blocked_done: "Annonce « {} » diffusée, puis raccroché. L'IA n'a pas été utilisée.",
+    n_calendar: "Agenda",
+    n_test_title: "Notification de test",
+    n_test_body: "Ceci est une notification de test de Bageo. Si vous la voyez, le canal fonctionne.",
+    n_repeat_title: "Appels répétés du même numéro",
+    n_repeat_body: "Autres appels de {number} en une minute : {count}. Ils n'ont pas été signalés un par un.",
+    s_caller: "Qui",
+    s_matter: "Objet",
+    s_reply: "Réponse de l'IA",
+    s_todo: "À faire",
+    s_no_summary: "(Pas de résumé : voir la transcription dans la console web.)",
+    s_ai_failed: "L'IA ne s'est pas connectée et n'a rien dit",
+    sep: " : ",
+    list_sep: ", ",
+    quote: ("« ", " »"),
+    dt_fmt: "%d/%m %H:%M",
+    date_fmt: "%d/%m",
+    u_sec: "{} s",
+    u_min: "{} min",
+    s_no_service: "Aucun service de résumé n'est configuré",
+    s_see_transcript: "Voir la transcription dans la console web",
+    s_no_transcript: "L'appel a duré environ {} et aucune transcription n'est exploitable",
+    s_listen_recording: "Écouter l'enregistrement dans la console web",
+    s_unclear: "Pas clair",
+    s_ai_fail_matter: "L'IA ne s'est pas connectée ; le système a raccroché après environ {} et l'appelant n'a rien entendu",
+    s_call_back_if_known: "Rappeler si vous connaissez le numéro",
+    s_ai_fail_prefix: "[L'IA ne s'est pas connectée ; le système a raccroché]",
+    s_stall_topic: "Démarchage / arnaque",
+    s_stall_topic_kw: "Démarchage / arnaque (a parlé de : {})",
+    s_stall_reply: "L'a fait parler environ {} ; aucune donnée transmise, rien accepté",
+    s_nothing: "Rien",
+    vm_call_back_to: "Souhaite être rappelé : {} (confirmé avec 1)",
+    vm_call_back_unknown: "Souhaite être rappelé à ce numéro (confirmé avec 1, mais le numéro est inconnu)",
+    vm_email_to: "Souhaite une réponse par e-mail : {} (confirmé avec 1)",
+    vm_email_unknown: "Souhaite une réponse par e-mail (confirmé avec 1, mais l'adresse est inconnue)",
+    vm_call_back_unchecked: "Souhaite être rappelé (numéro non vérifié)",
+    vm_no_reply: "Pas de réponse nécessaire (simple message)",
+    vm_no_choice: "Aucun moyen de réponse choisi (l'appel s'est terminé avant)",
+    vm_decide_callback: "À vous de voir s'il faut rappeler",
+    vm_length: "environ {}",
+    vm_no_transcript: "Un message d'environ {} ; la transcription a échoué. Écoutez l'enregistrement",
+    vm_task_failed: "Message vocal (transcription impossible, à vérifier)",
+    tc_status: "État",
+    tc_pending: "En attente de confirmation",
+    tc_transcript: "Transcription",
+    tc_confirm: "Confirmer",
+    tc_ignore: "Ignorer",
+    tc_confirm_ack: "Confirmé, en cours…",
+    tc_ignore_ack: "Ignoré",
+    tc_task: "Tâche",
+    tc_ignored_task: "Tâche ignorée",
+    tc_done: "Terminée",
+    tc_in_progress: "Confirmée (en cours)",
+    tc_failed: "Échec",
+    tc_confirm_failed: "Confirmation impossible",
+    tc_ignore_failed: "Impossible d'ignorer",
+    f_callback_waiting: "Le rappel est programmé, mais la liaison de contrôle du téléphone est hors ligne. Vérifiez que le téléphone est connecté à l'agent, puis confirmez à nouveau.",
+    f_callback_whitelist: "Le numéro à rappeler n'est pas dans la liste autorisée. Ajoutez-le (ou un préfixe terminé par *) dans les réglages, puis confirmez à nouveau.",
+    f_callback_no_number: "Aucun numéro à rappeler : la tâche n'a pas de contact et le numéro de l'appelant est vide.",
+    f_callback_send_failed: "Impossible d'envoyer le rappel",
+    f_email_no_address: "Cette tâche envoie un e-mail mais n'a pas d'adresse de réponse. Ajoutez le contact à partir de la transcription, ou ignorez la tâche.",
+    f_gmail_missing: "Gmail n'est pas configuré. Saisissez l'adresse Gmail et le mot de passe d'application dans les réglages, puis confirmez à nouveau.",
+    f_bad_time: "Impossible de comprendre l'heure « {} »",
+    f_openclaw_failed: "Impossible de transmettre la tâche à OpenClaw : {} (vérifiez l'URL et le jeton OpenClaw dans les réglages)",
+    g_bad_address: "L'adresse Gmail ne semble pas correcte. Vérifiez-la dans les réglages.",
+    g_no_recipient: "Non envoyé : aucune adresse de destinataire",
+    g_bad_recipient: "Non envoyé : l'adresse du destinataire ne semble pas correcte",
+    g_short_password: "Le mot de passe d'application Gmail est trop court. Saisissez-le à nouveau dans les réglages (il n'est jamais affiché).",
+    e_subject: "Réponse à votre message vocal",
+    e_summary: "Résumé",
+    e_empty: "(Ni résumé ni transcription)",
+    e_appointment: "Rendez-vous — {}",
+    ap_weekdays: ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."],
+    ap_dt_fmt: "{} %d/%m à %Hh%M",
+    ap_end_fmt: "%Hh%M",
+    ap_confirm: "Accepter",
+    ap_decline: "Refuser",
+    ap_card_title: "Rendez-vous à confirmer",
+    ap_what: "Objet",
+    ap_name: "Nom",
+    ap_pending: "Rendez-vous à confirmer",
+    ap_replaced: "L'heure a changé pendant l'appel ; « {} » est toujours dans votre agenda, supprimez-le vous-même",
+    ap_time_unconfirmed: "Le correspondant n'a pas confirmé cette heure ; vérifiez-la avec lui avant de répondre",
+    ap_confirmed: "Rendez-vous accepté",
+    ap_declined: "Rendez-vous refusé",
+    ap_already: "Ce rendez-vous a déjà été traité",
+    ap_cal_link: "Ajoutez-le à votre agenda : {}",
+    ap_void_failed: "« {} » de l'appel n'est plus valable mais n'a pas pu être retiré de l'agenda ; supprimez-le vous-même",
+    ap_sales_voided: "Appel jugé commercial : le rendez-vous ajouté pendant l'appel a été annulé : {}",
+    ap_web_confirm: "à confirmer dans la console web : {}",
+    ap_web_console: "à confirmer dans la console web",
+    ap_web_label: "Confirmer sur le web",
+    farewells: &[
+        "au revoir", "à bientôt", "a bientot", "à plus", "à plus tard", "à tout à l'heure",
+        "à demain", "bonne journée", "bonne journee", "excellente journée", "très bonne journée",
+        "bonne soirée", "bonne fin de journée", "ciao",
+    ],
+    wrapups: &[
+        "c'est tout", "rien d'autre", "je vous laisse", "je te laisse", "je vous laisse à vos occupations",
+        "je te laisse à tes occupations", "je dois y aller",
+        "je rappellerai", "je vous rappelle",
+    ],
+};
+
+static DE: Phrases = Phrases {
+    name_en: "German",
+    stt: "de-DE",
+    hello: "Hallo?",
+    hello_again: "Hallo? Hören Sie mich?",
+    im_here: "Ja, ich bin dran, ich höre Sie gut. Bitte.",
+    still_there: "Hallo? Sind Sie noch dran?",
+    bye: "Tschüss",
+    go_ahead: "Ja klar, schießen Sie los",
+    no_thanks: "Ach nein, danke",
+    think_about_it: "Das müsste ich mir noch überlegen",
+    wait_one_more: "Ach, eine Frage hab ich noch",
+    no_wait: "„Moment mal“, „warte, ich schau nach“, „lass mich kurz nachsehen“",
+    d_caller: "Anrufer",
+    d_ai: "KI",
+    owner_fallback: "der Besitzer",
+    unavailable: "Der gewünschte Gesprächspartner ist zurzeit nicht erreichbar. Bitte versuchen Sie es später noch einmal.",
+    preview: [
+        "Hallo?",
+        "Ach, ein Paket? Gut, stellen Sie es einfach vor die Tür, vielen Dank.",
+        "Okay, tschüss.",
+    ],
+    n_incoming: "Eingehender Anruf",
+    n_outgoing: "Ausgehender Anruf",
+    n_summary: "Anrufzusammenfassung",
+    n_blocked: "Anruf von gesperrter Nummer",
+    n_voicemail: "Sprachnachricht",
+    n_number: "Nummer",
+    n_phone: "Telefon",
+    n_time: "Zeit",
+    n_reason: "Grund",
+    n_length: "Dauer",
+    n_seconds: "s",
+    n_hidden: "Unterdrückte Nummer",
+    n_unknown: "Unbekannt",
+    n_details: "Transkript / Aufnahme",
+    n_recording: "Aufnahme",
+    n_blocked_done: "Ansage „{}“ abgespielt und aufgelegt. Die KI wurde nicht verwendet.",
+    n_calendar: "Kalender",
+    n_test_title: "Testbenachrichtigung",
+    n_test_body: "Dies ist eine Testbenachrichtigung von Bageo. Wenn du sie siehst, funktioniert der Kanal.",
+    n_repeat_title: "Wiederholte Anrufe derselben Nummer",
+    n_repeat_body: "Weitere Anrufe von {number} in der letzten Minute: {count}. Sie wurden nicht einzeln gemeldet.",
+    s_caller: "Anrufer",
+    s_matter: "Anliegen",
+    s_reply: "KI-Antwort",
+    s_todo: "Zu tun",
+    s_no_summary: "(Keine Zusammenfassung – siehe Transkript in der Web-Konsole.)",
+    s_ai_failed: "Die KI konnte sich nicht verbinden und hat nichts gesagt",
+    sep: ": ",
+    list_sep: ", ",
+    quote: ("„", "“"),
+    dt_fmt: "%d.%m. %H:%M",
+    date_fmt: "%d.%m.",
+    u_sec: "{} s",
+    u_min: "{} Min.",
+    s_no_service: "Es ist kein Zusammenfassungsdienst eingerichtet",
+    s_see_transcript: "Transkript in der Web-Konsole ansehen",
+    s_no_transcript: "Der Anruf dauerte etwa {}; es gibt kein brauchbares Transkript",
+    s_listen_recording: "Aufnahme in der Web-Konsole anhören",
+    s_unclear: "Unklar",
+    s_ai_fail_matter: "Die KI konnte sich nicht verbinden; das System hat nach etwa {} aufgelegt, der Anrufer hat nichts gehört",
+    s_call_back_if_known: "Zurückrufen, wenn du die Nummer kennst",
+    s_ai_fail_prefix: "[KI nicht verbunden; das System hat aufgelegt]",
+    s_stall_topic: "Werbe- / Betrugsanruf",
+    s_stall_topic_kw: "Werbe- / Betrugsanruf (erwähnt: {})",
+    s_stall_reply: "Etwa {} hingehalten; keine Daten gegeben, nichts zugesagt",
+    s_nothing: "Nichts",
+    vm_call_back_to: "Möchte zurückgerufen werden: {} (mit 1 bestätigt)",
+    vm_call_back_unknown: "Möchte unter dieser Nummer zurückgerufen werden (mit 1 bestätigt, Nummer aber unbekannt)",
+    vm_email_to: "Möchte eine Antwort per E-Mail: {} (mit 1 bestätigt)",
+    vm_email_unknown: "Möchte eine Antwort per E-Mail (mit 1 bestätigt, Adresse aber unbekannt)",
+    vm_call_back_unchecked: "Möchte zurückgerufen werden (Nummer nicht geprüft)",
+    vm_no_reply: "Keine Antwort nötig (nur zur Info)",
+    vm_no_choice: "Keine Antwortart gewählt (der Anruf endete vorher)",
+    vm_decide_callback: "Selbst entscheiden, ob du zurückrufst",
+    vm_length: "etwa {}",
+    vm_no_transcript: "Eine Nachricht von etwa {}; sie konnte nicht transkribiert werden. Bitte die Aufnahme anhören",
+    vm_task_failed: "Sprachnachricht (Transkription fehlgeschlagen, bitte ansehen)",
+    tc_status: "Status",
+    tc_pending: "Wartet auf Bestätigung",
+    tc_transcript: "Transkript",
+    tc_confirm: "Bestätigen",
+    tc_ignore: "Ignorieren",
+    tc_confirm_ack: "Bestätigt, wird erledigt…",
+    tc_ignore_ack: "Ignoriert",
+    tc_task: "Aufgabe",
+    tc_ignored_task: "Aufgabe ignoriert",
+    tc_done: "Erledigt",
+    tc_in_progress: "Bestätigt (läuft)",
+    tc_failed: "Fehlgeschlagen",
+    tc_confirm_failed: "Bestätigen fehlgeschlagen",
+    tc_ignore_failed: "Ignorieren fehlgeschlagen",
+    f_callback_waiting: "Der Rückruf ist geplant, aber die Steuerverbindung des Telefons ist offline. Prüfe, ob das Telefon mit dem Agenten verbunden ist, und bestätige dann erneut.",
+    f_callback_whitelist: "Die Rückrufnummer steht nicht auf der erlaubten Liste. Füge sie (oder einen Anfang mit * am Ende) in den Einstellungen hinzu und bestätige dann erneut.",
+    f_callback_no_number: "Keine Rückrufnummer: Die Aufgabe hat keinen Kontakt und die Nummer des Anrufers ist leer.",
+    f_callback_send_failed: "Rückruf konnte nicht gesendet werden",
+    f_email_no_address: "Diese Aufgabe sendet eine E-Mail, hat aber keine Antwortadresse. Ergänze den Kontakt aus dem Transkript oder ignoriere die Aufgabe.",
+    f_gmail_missing: "Gmail ist nicht eingerichtet. Gib in den Einstellungen die Gmail-Adresse und das App-Passwort ein und bestätige dann erneut.",
+    f_bad_time: "Die Zeitangabe „{}“ war nicht lesbar",
+    f_openclaw_failed: "Übergabe an OpenClaw fehlgeschlagen: {} (OpenClaw-URL und -Token in den Einstellungen prüfen)",
+    g_bad_address: "Die Gmail-Adresse sieht nicht richtig aus. Bitte in den Einstellungen prüfen.",
+    g_no_recipient: "Nicht gesendet: keine Empfängeradresse",
+    g_bad_recipient: "Nicht gesendet: Die Empfängeradresse sieht nicht richtig aus",
+    g_short_password: "Das Gmail-App-Passwort ist zu kurz. Bitte in den Einstellungen neu eingeben (es wird nie angezeigt).",
+    e_subject: "Antwort auf Ihre Sprachnachricht",
+    e_summary: "Zusammenfassung",
+    e_empty: "(Keine Zusammenfassung und kein Transkript)",
+    e_appointment: "Termin — {}",
+    ap_weekdays: ["Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa.", "So."],
+    ap_dt_fmt: "{}, %d.%m., %H:%M",
+    ap_end_fmt: "%H:%M",
+    ap_confirm: "Zusagen",
+    ap_decline: "Absagen",
+    ap_card_title: "Termin zu bestätigen",
+    ap_what: "Anlass",
+    ap_name: "Name",
+    ap_pending: "Termin zu bestätigen",
+    ap_replaced: "Die Zeit hat sich im Gespräch geändert; „{}“ steht noch in deinem Kalender, lösch es selbst",
+    ap_time_unconfirmed: "Der Anrufer hat diese Uhrzeit nicht bestätigt; kläre sie mit ihm, bevor du antwortest",
+    ap_confirmed: "Termin zugesagt",
+    ap_declined: "Termin abgesagt",
+    ap_already: "Dieser Termin wurde bereits bearbeitet",
+    ap_cal_link: "In den Kalender eintragen: {}",
+    ap_void_failed: "„{}“ aus dem Gespräch gilt nicht mehr, konnte aber nicht aus dem Kalender gelöscht werden; lösch es selbst",
+    ap_sales_voided: "Als Werbeanruf eingestuft, daher wurde der im Gespräch eingetragene Termin gelöscht: {}",
+    ap_web_confirm: "im Web bestätigen: {}",
+    ap_web_console: "in der Web-Konsole bestätigen",
+    ap_web_label: "Im Web bestätigen",
+    farewells: &[
+        "tschüss", "tschüs", "tschuess", "auf wiederhören", "auf wiedersehen", "wiederhören",
+        "bis bald", "bis später", "bis dann", "schönen tag noch", "schönen tag", "einen schönen tag",
+        "schönen abend noch", "mach's gut", "machs gut", "ciao",
+    ],
+    wrapups: &[
+        "das war's", "das wars", "das wäre alles", "das ist alles", "sonst nichts",
+        "ich muss los", "ich muss auflegen", "ich melde mich wieder", "ich rufe später an",
+    ],
+};
+
+static PT: Phrases = Phrases {
+    name_en: "Portuguese",
+    stt: "pt-BR",
+    hello: "Alô?",
+    hello_again: "Alô? Está me ouvindo?",
+    im_here: "Sim, estou aqui, estou ouvindo bem. Pode falar.",
+    still_there: "Alô? Ainda está aí?",
+    bye: "Tchau",
+    go_ahead: "Claro, pode falar",
+    no_thanks: "Ah, não, obrigado",
+    think_about_it: "Isso eu teria que pensar",
+    wait_one_more: "Ah, espera, tenho mais uma pergunta",
+    no_wait: "\"só um momento\", \"espera que eu vou ver\", \"deixa eu verificar\"",
+    d_caller: "Chamador",
+    d_ai: "IA",
+    owner_fallback: "o dono",
+    unavailable: "O número chamado não está disponível no momento. Por favor, tente novamente mais tarde.",
+    preview: [
+        "Alô?",
+        "Ah, uma encomenda? Tá bom, pode deixar na porta, muito obrigado.",
+        "Tá bom, tchau.",
+    ],
+    n_incoming: "Chamada recebida",
+    n_outgoing: "Chamada efetuada",
+    n_summary: "Resumo da chamada",
+    n_blocked: "Chamada de número bloqueado",
+    n_voicemail: "Mensagem de voz",
+    n_number: "Número",
+    n_phone: "Telefone",
+    n_time: "Hora",
+    n_reason: "Motivo",
+    n_length: "Duração",
+    n_seconds: "s",
+    n_hidden: "Número oculto",
+    n_unknown: "Desconhecido",
+    n_details: "Transcrição / gravação",
+    n_recording: "Gravação",
+    n_blocked_done: "Foi reproduzido \"{}\" e a chamada foi encerrada. A IA não foi usada.",
+    n_calendar: "Calendário",
+    n_test_title: "Notificação de teste",
+    n_test_body: "Esta é uma notificação de teste do Bageo. Se você está vendo isto, o canal funciona.",
+    n_repeat_title: "Chamadas repetidas do mesmo número",
+    n_repeat_body: "Mais chamadas de {number} no último minuto: {count}. Elas não foram avisadas uma a uma.",
+    s_caller: "Quem",
+    s_matter: "Assunto",
+    s_reply: "A IA disse",
+    s_todo: "A fazer",
+    s_no_summary: "(Sem resumo — veja a transcrição no console web.)",
+    s_ai_failed: "A IA não conectou e não disse nada",
+    sep: ": ",
+    list_sep: ", ",
+    quote: ("\"", "\""),
+    dt_fmt: "%d/%m %H:%M",
+    date_fmt: "%d/%m",
+    u_sec: "{} s",
+    u_min: "{} min",
+    s_no_service: "Nenhum serviço de resumo configurado",
+    s_see_transcript: "Veja a transcrição no console web",
+    s_no_transcript: "A chamada durou cerca de {} e não há transcrição utilizável",
+    s_listen_recording: "Ouça a gravação no console web",
+    s_unclear: "Não deu para entender",
+    s_ai_fail_matter: "A IA não conectou; o sistema desligou depois de cerca de {} e a pessoa não ouviu nada",
+    s_call_back_if_known: "Retorne a ligação se conhecer o número",
+    s_ai_fail_prefix: "[A IA não conectou; o sistema desligou]",
+    s_stall_topic: "Ligação de vendas / golpe",
+    s_stall_topic_kw: "Ligação de vendas / golpe (mencionou: {})",
+    s_stall_reply: "Prendeu a pessoa na linha por cerca de {}; não deu dados nem concordou com nada",
+    s_nothing: "Nada",
+    vm_call_back_to: "Pede retorno da ligação: {} (confirmado com 1)",
+    vm_call_back_unknown: "Pede retorno para este número (confirmado com 1, mas o número é desconhecido)",
+    vm_email_to: "Pede resposta por e-mail: {} (confirmado com 1)",
+    vm_email_unknown: "Pede resposta por e-mail (confirmado com 1, mas o endereço é desconhecido)",
+    vm_call_back_unchecked: "Pede retorno da ligação (número não conferido)",
+    vm_no_reply: "Não precisa responder (só um recado)",
+    vm_no_choice: "Não escolheu como receber a resposta (a chamada terminou antes)",
+    vm_decide_callback: "Decida se vai retornar a ligação",
+    vm_length: "cerca de {}",
+    vm_no_transcript: "Uma mensagem de cerca de {}; não foi possível transcrever. Ouça a gravação",
+    vm_task_failed: "Mensagem de voz (não foi possível transcrever; precisa de atenção)",
+    tc_status: "Status",
+    tc_pending: "Aguardando confirmação",
+    tc_transcript: "Transcrição",
+    tc_confirm: "Confirmar",
+    tc_ignore: "Ignorar",
+    tc_confirm_ack: "Confirmado, em andamento…",
+    tc_ignore_ack: "Ignorado",
+    tc_task: "Tarefa",
+    tc_ignored_task: "Tarefa ignorada",
+    tc_done: "Concluída",
+    tc_in_progress: "Confirmada (em andamento)",
+    tc_failed: "Falhou",
+    tc_confirm_failed: "Não foi possível confirmar",
+    tc_ignore_failed: "Não foi possível ignorar",
+    f_callback_waiting: "O retorno está agendado, mas a conexão de controle do telefone está offline. Verifique se o telefone está conectado ao agente e confirme de novo.",
+    f_callback_whitelist: "O número de retorno não está na lista permitida. Adicione-o (ou um prefixo terminado em *) nas Configurações e confirme de novo.",
+    f_callback_no_number: "Não há número para retornar: a tarefa não tem contato e o número de quem ligou está vazio.",
+    f_callback_send_failed: "Não foi possível enviar o retorno",
+    f_email_no_address: "Esta tarefa envia um e-mail, mas não tem endereço de resposta. Complete o contato a partir da transcrição ou ignore a tarefa.",
+    f_gmail_missing: "O Gmail não está configurado. Informe o endereço do Gmail e a senha de app nas Configurações e confirme de novo.",
+    f_bad_time: "Não foi possível entender o horário \"{}\"",
+    f_openclaw_failed: "Não foi possível passar a tarefa para o OpenClaw: {} (confira a URL e o token do OpenClaw nas Configurações)",
+    g_bad_address: "O endereço do Gmail não parece certo. Confira nas Configurações.",
+    g_no_recipient: "Não enviado: falta o endereço do destinatário",
+    g_bad_recipient: "Não enviado: o endereço do destinatário não parece certo",
+    g_short_password: "A senha de app do Gmail é curta demais. Digite de novo nas Configurações (ela nunca é exibida).",
+    e_subject: "Resposta à sua mensagem de voz",
+    e_summary: "Resumo",
+    e_empty: "(Sem resumo nem transcrição)",
+    e_appointment: "Compromisso — {}",
+    ap_weekdays: ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"],
+    ap_dt_fmt: "{}, %d/%m %H:%M",
+    ap_end_fmt: "%H:%M",
+    ap_confirm: "Aceitar",
+    ap_decline: "Recusar",
+    ap_card_title: "Compromisso a confirmar",
+    ap_what: "Assunto",
+    ap_name: "Nome",
+    ap_pending: "Compromisso a confirmar",
+    ap_replaced: "O horário mudou durante a ligação; \"{}\" continua na sua agenda, apague você mesmo",
+    ap_time_unconfirmed: "Quem ligou não confirmou este horário; confirme com a pessoa antes de responder",
+    ap_confirmed: "Compromisso aceito",
+    ap_declined: "Compromisso recusado",
+    ap_already: "Este compromisso já foi resolvido",
+    ap_cal_link: "Adicione à agenda: {}",
+    ap_void_failed: "\"{}\" da ligação não vale mais, mas não foi possível tirar da agenda; apague você mesmo",
+    ap_sales_voided: "Considerada uma ligação de vendas, o compromisso marcado durante a ligação foi cancelado: {}",
+    ap_web_confirm: "confirme no console web: {}",
+    ap_web_console: "confirme no console web",
+    ap_web_label: "Confirmar na web",
+    farewells: &[
+        "tchau", "adeus", "até logo", "até mais", "até breve", "até amanhã", "tenha um bom dia",
+        "tenha um ótimo dia", "tenha uma boa tarde", "tenha uma ótima tarde",
+        "tenha uma boa noite", "um abraço",
+    ],
+    wrapups: &[
+        "é só isso", "só isso", "mais nada", "é tudo", "tenho que ir", "preciso desligar",
+        "ligo depois", "volto a ligar",
+    ],
+};
+
+/// Languages whose word lists are matched as whole words (spaces between words).
+const WORD_LANGS: [Lang; 5] = [Lang::En, Lang::Es, Lang::Fr, Lang::De, Lang::Pt];
+/// Languages written without spaces: matched as substrings.
+const RUN_LANGS: [Lang; 2] = [Lang::Ja, Lang::Ko];
+
+/// Lowercase of the text. Rust lowers a Turkish capital İ to "i" plus a combining
+/// dot (U+0307), so "İyi" would never match "iyi": the dot is dropped.
+fn lowercase(text: &str) -> String {
+    text.to_lowercase().replace('\u{307}', "")
+}
+
+/// Lowercase words of `text`, punctuation dropped (apostrophes kept inside words).
+fn words(text: &str) -> Vec<String> {
+    lowercase(text)
+        .replace('’', "'")
+        .split(|c: char| !(c.is_alphanumeric() || c == '\''))
+        .map(|w| w.trim_matches('\'').to_string())
+        .filter(|w| !w.is_empty())
+        .collect()
+}
+
+/// Punctuation that ends a clause: what stands between "No" and "that's all" in
+/// "No, that's all", and before a closing "falou" in "Certo, falou".
+const CLAUSE_MARKS: &str = ",.;:!?…，。；：！？、";
+
+/// The same words as [`words`], and for each of them whether one of
+/// [`CLAUSE_MARKS`] stands between it and the word before.
+fn words_after_marks(text: &str) -> (Vec<String>, Vec<bool>) {
+    let mut ws = Vec::new();
+    let mut after_mark = Vec::new();
+    let mut word = String::new();
+    let mut mark = false;
+    for c in lowercase(text).replace('’', "'").chars().chain(std::iter::once(' ')) {
+        if c.is_alphanumeric() || c == '\'' {
+            word.push(c);
+            continue;
+        }
+        let w = word.trim_matches('\'');
+        if !w.is_empty() {
+            ws.push(w.to_string());
+            after_mark.push(mark);
+            mark = false;
+        }
+        word.clear();
+        mark |= CLAUSE_MARKS.contains(c);
+    }
+    (ws, after_mark)
+}
+
+/// `phrase` (space-separated words) ends `words`, with at most `slack` words after it.
+/// `after_mark`: where the punctuation was ([`words_after_marks`]).
+fn phrase_near_end(words: &[String], after_mark: &[bool], phrase: &str, slack: usize) -> bool {
+    let p = self::words(phrase);
+    if p.is_empty() || words.len() < p.len() {
+        return false;
+    }
+    let last_start = words.len() - p.len();
+    let first_start = last_start.saturating_sub(slack);
+    let key = p.join(" ");
+    // "Hace tiempo que no nos vemos" (we haven't seen each other in ages) is
+    // no goodbye: a negation right before the phrase rules it out. The "no" of
+    // "No, that's all" is an answer, not a negation.
+    let negated = |i: usize| {
+        let direct = i > 0
+            && NEGATIONS.contains(&words[i - 1].as_str())
+            && !no_is_the_answer(&key, &words[i - 1], after_mark.get(i).copied().unwrap_or(false));
+        // "Não é só isso" (that is not all): the negation stands before the "é".
+        let over_the_verb = i > 1
+            && words[i - 1] == "é"
+            && ["não", "nao"].contains(&words[i - 2].as_str())
+            && !after_mark.get(i - 1).copied().unwrap_or(false);
+        direct || over_the_verb
+    };
+    // "Say bye to grandma" is said to someone else on the caller's side.
+    let to_someone_else = |i: usize| {
+        let after = &words[i + p.len()..];
+        after.first().is_some_and(|w| w == "to")
+            && after.get(1).is_some_and(|w| !["you", "y'all", "all", "everyone", "everybody"].contains(&w.as_str()))
+    };
+    (first_start..=last_start).any(|i| {
+        words[i..i + p.len()] == p[..]
+            && !negated(i)
+            && !to_someone_else(i)
+            && followed_as_a_goodbye(&key, &words[i + p.len()..])
+    })
+}
+
+/// Asked "anything else?", callers answer "No, that's all" / "No, nada más":
+/// the "no" before these is their answer, not a negation.
+const NOTHING_MORE: &[&str] = &[
+    "that's all", "that is all", "that's it", "that's everything", "nothing else", "nada más",
+    "eso es todo", "eso sería todo", "mais nada",
+];
+/// The same in Portuguese, where these words also follow a real negation
+/// ("Isso não é tudo", "Não só isso": there is more to come). The "não" is the
+/// answer only with a comma or a full stop after it: "Não, é só isso".
+const NOTHING_MORE_AFTER_A_MARK: &[&str] = &["é só isso", "só isso", "é tudo"];
+
+/// The "no" (`word_before`) right before the phrase `key` answers a question
+/// rather than negating it. `mark_between`: punctuation stands between the two.
+fn no_is_the_answer(key: &str, word_before: &str, mark_between: bool) -> bool {
+    ["no", "não", "nao"].contains(&word_before)
+        && (NOTHING_MORE.contains(&key) || (mark_between && NOTHING_MORE_AFTER_A_MARK.contains(&key)))
+}
+
+/// What is left with someone, or what they are left to do, after "je vous
+/// laisse" / "je te laisse": "Je vous laisse mon numéro", "Je vous laisse réfléchir".
+const FR_LEFT_WITH: &[&str] = &[
+    "mon", "ma", "mes", "un", "une", "le", "la", "les", "du", "des", "ce", "cet", "cette", "ces", "votre",
+    "vos", "ton", "ta", "tes", "son", "sa", "ses", "notre", "nos", "leur", "quelques", "réfléchir", "voir",
+    "faire", "choisir", "décider", "regarder", "vérifier", "parler", "finir", "continuer", "y", "deux", "trois",
+    "quatre", "cinq", "six", "dix", "vingt", "plusieurs", "tout", "toutes",
+];
+/// The same after "le dejo" / "te dejo": "Te dejo mi número", "Le dejo el paquete".
+const ES_LEFT_WITH: &[&str] = &[
+    "el", "la", "los", "las", "un", "una", "unos", "unas", "mi", "mis", "tu", "tus", "su", "sus", "este",
+    "esta", "esto", "eso", "aquí", "todo", "dicho", "saber", "pensar", "ver", "elegir", "decidir", "dos", "tres",
+    "cuatro", "cinco", "diez", "veinte", "varios", "varias", "algunos", "algunas",
+];
+
+/// Phrases that are no goodbye when one of these words comes right after them:
+/// "I'll take care of it", "That's all right", "C'est tout à fait", "Je vous
+/// laisse mon numéro", "Na razie nie wiem" ("I don't know yet"). Any other word
+/// after them — a name, a title, a particle, another goodbye — leaves them one:
+/// "Je vous laisse, madame", "Das ist alles, Herr Müller", "No to na razie, Ania".
+const CANCELLED_BY: &[(&str, &[&str])] = &[
+    ("take care", &["of"]),
+    ("that's all", &["right", "good", "fine", "true", "wrong"]),
+    ("that is all", &["right", "good", "fine", "true", "wrong"]),
+    ("c'est tout", &["à", "près", "de", "ce", "le", "la"]),
+    ("je vous rappelle", &["que"]),
+    (
+        "nada más",
+        &["quería", "queria", "quiero", "para", "que", "llamaba", "llamo", "llamar", "un", "una", "le", "te"],
+    ),
+    ("je vous laisse", FR_LEFT_WITH),
+    ("je te laisse", FR_LEFT_WITH),
+    ("à plus", &["de", "cher", "ou"]),
+    // "Ciao, sono Marco" is a greeting: the words that go on after it.
+    (
+        "ciao",
+        &[
+            "sono", "mi", "chiamo", "volevo", "vorrei", "ho", "sei", "senti", "scusa", "scusi", "posso", "parlo", "ti", "chi", "come",
+            "c'è", "dimmi", "dammi", "ascolta", "dove", "quando", "hai", "puoi", "è",
+        ],
+    ),
+    ("le dejo", ES_LEFT_WITH),
+    ("te dejo", ES_LEFT_WITH),
+    (
+        "das ist alles",
+        &[
+            "sehr", "zu", "ganz", "ziemlich", "total", "völlig", "nicht", "noch", "nur", "was", "in", "im",
+            "kein", "keine", "quatsch", "unsinn", "falsch", "richtig", "teuer", "kompliziert", "schwierig",
+            "egal", "bereits", "schon", "gelogen", "bezahlt", "erledigt", "andere", "anders", "gut", "klar",
+            "wahr", "neu", "kaputt", "weg", "fertig", "möglich",
+        ],
+    ),
+    (
+        "é tudo",
+        &[
+            "verdade", "mentira", "que", "o", "isso", "muito", "culpa", "igual", "novo", "diferente", "a",
+            "um", "uma", "meu", "minha", "bem", "errado", "caro", "barato", "mais", "tão", "tao",
+        ],
+    ),
+    (
+        "na razie",
+        &[
+            "nie", "nic", "to", "jest", "tak", "tylko", "mam", "jestem", "wiem", "mogę", "będę", "bez",
+            "wszystko", "w", "na", "z", "po", "się", "jeszcze", "mi", "nam", "brak", "nikogo", "czekam",
+            "czekamy", "są", "sa", "był", "byl",
+        ],
+    ),
+];
+
+/// The same for a next word that starts like this: "Je vous laisse l'adresse",
+/// "à plus d'un titre".
+const CANCELLED_BY_START: &[(&str, &[&str])] = &[
+    ("je vous laisse", &["l'", "d'"]),
+    ("je te laisse", &["l'", "d'"]),
+    ("à plus", &["d'"]),
+];
+
+/// The words after a phrase (its words joined by spaces: key) leave it a goodbye.
+fn followed_as_a_goodbye(key: &str, after: &[String]) -> bool {
+    let Some(next) = after.first() else {
+        return true;
+    };
+    // "Take care of yourself" is the goodbye itself.
+    if key == "take care" && next == "of" && after.get(1).is_some_and(|w| w == "yourself" || w == "yourselves") {
+        return true;
+    }
+    // "Je vous laisse 20 euros", "Le dejo 3 paquetes": something is left, in figures.
+    if matches!(key, "je vous laisse" | "je te laisse" | "le dejo" | "te dejo") && next.starts_with(|c: char| c.is_ascii_digit()) {
+        return false;
+    }
+    !CANCELLED_BY.iter().any(|(k, ws)| *k == key && ws.contains(&next.as_str()))
+        // "Je vous laisse, d'accord ?" asks nothing to be left: still a goodbye.
+        && (next == "d'accord"
+            || !CANCELLED_BY_START.iter().any(|(k, starts)| *k == key && starts.iter().any(|s| next.starts_with(s))))
+}
+
+/// Words that turn a following goodbye phrase into something else.
+const NEGATIONS: &[&str] = &[
+    "no", "not", "never", "nunca", "pas", "nicht", "nie", "não", "nao",
+    // Vietnamese, Indonesian ("đừng tạm biệt vội", "jangan dadah dulu")
+    "không", "khong", "đừng", "chưa", "chẳng", "jangan", "tidak", "tak", "belum", "bukan",
+];
+
+/// `marker` sits within `slack` characters of the end of a text without spaces.
+fn run_near_end(compact: &str, marker: &str, slack: usize) -> bool {
+    let m: String = marker.chars().filter(|c| c.is_alphanumeric()).collect();
+    compact
+        .rfind(&m)
+        .is_some_and(|i| compact[i + m.len()..].chars().count() <= slack)
+}
+
+fn ends_on(text: &str, pick: fn(&Phrases) -> &'static [&'static str], slack_words: usize, slack_chars: usize) -> bool {
+    let (ws, after_mark) = words_after_marks(text);
+    if WORD_LANGS
+        .iter()
+        .any(|l| pick(phrases(*l)).iter().any(|m| phrase_near_end(&ws, &after_mark, m, slack_words)))
+    {
+        return true;
+    }
+    let compact: String = text.chars().filter(|c| c.is_alphanumeric()).collect();
+    RUN_LANGS
+        .iter()
+        .any(|l| pick(phrases(*l)).iter().any(|m| run_near_end(&compact, m, slack_chars)))
+}
+
+fn is_question(text: &str) -> bool {
+    let t = text.trim_end();
+    t.ends_with('?') || t.ends_with('？') || t.ends_with("か。") || t.ends_with("까요")
+}
+
+/// Thanks that people add after their goodbye or wrap-up (「好的，那就先這樣，謝謝您」,
+/// "That's all, thank you so much"). Longer ones first: "muchas gracias" before
+/// "gracias", so nothing of them is left behind.
+const THANKS: &[&str] = &[
+    "thank you so much", "thank you very much", "thanks so much", "thanks a lot", "many thanks",
+    "thank you", "thanks", "thx",
+    "muchísimas gracias", "muchas gracias", "gracias", "merci beaucoup", "merci bien", "merci",
+    "vielen dank", "danke schön", "danke schon", "dankeschön", "danke",
+    "muito obrigado", "muito obrigada", "obrigado", "obrigada", "valeu",
+    "grazie mille", "molte grazie", "mille grazie", "grazie tante", "grazie infinite", "grazie",
+    "どうもありがとうございました", "どうもありがとうございます", "ありがとうございました",
+    "ありがとうございます", "ありがとう",
+    "감사합니다", "고맙습니다", "감사해요", "고마워요",
+    "謝謝您", "謝謝你", "謝謝妳", "謝謝", "谢谢您", "谢谢你", "谢谢", "感謝您", "感謝你", "感謝",
+    "感谢您", "感谢你", "感谢", "多謝", "多谢",
+    "cảm ơn", "cám ơn", "terima kasih", "makasih",
+    "большое спасибо", "спасибо",
+    "شكرا جزيلا", "شكراً جزيلاً", "شكرا لك", "شكراً لك", "شكرا", "شكراً",
+    "बहुत धन्यवाद", "बहुत शुक्रिया", "धन्यवाद", "शुक्रिया",
+    "çok teşekkür ederim", "teşekkür ederim", "teşekkürler", "sağ olun", "sağ ol", "sağolun", "sağol",
+];
+
+fn is_latin_letter(c: char) -> bool {
+    c.is_ascii_alphabetic() || ('\u{00C0}'..='\u{024F}').contains(&c) || ('\u{1E00}'..='\u{1EFF}').contains(&c)
+}
+
+/// `text` without `suffix` (lowercase) at its end, compared without case; a
+/// Latin suffix must be a whole word ("thanks", not the end of another word).
+fn strip_suffix_nocase<'a>(text: &'a str, suffix: &str) -> Option<&'a str> {
+    let n = suffix.chars().count();
+    if n == 0 {
+        return None;
+    }
+    let (start, _) = text.char_indices().rev().nth(n - 1)?;
+    if lowercase(&text[start..]) != suffix {
+        return None;
+    }
+    let head = &text[..start];
+    let latin = suffix.chars().next().is_some_and(is_latin_letter);
+    if latin && head.chars().next_back().is_some_and(char::is_alphanumeric) {
+        return None;
+    }
+    Some(head)
+}
+
+fn trim_end_marks(t: &str) -> &str {
+    t.trim_end_matches(|c: char| !c.is_alphanumeric())
+}
+
+/// What was said, without the thanks (and punctuation) at its end: the words
+/// before them decide whether the caller is leaving. Thanks alone leave nothing
+/// — a bare 「謝謝」 is no goodbye.
+pub fn strip_trailing_thanks(text: &str) -> &str {
+    let mut t = trim_end_marks(text);
+    'again: loop {
+        for thanks in THANKS {
+            if let Some(head) = strip_suffix_nocase(t, thanks) {
+                t = trim_end_marks(head);
+                continue 'again;
+            }
+        }
+        return t;
+    }
+}
+
+/// "Hold on", "one moment", 「等一下，我去拿」: the caller is leaving the phone for a
+/// while or putting us through, so a long quiet line is expected. Matched
+/// anywhere in what they said: Chinese as requests only ([`zh_asks_to_hold`]),
+/// Japanese, Korean and Thai as runs of letters, the others as whole words.
+const HOLD_RUNS: &[&str] = &[
+    "少々お待ち", "ちょっと待って", "お待ちください",
+    "잠시만요", "잠깐만요", "잠시만기다려",
+    "รอสักครู่", "รอแป๊บ", "แป๊บนึง",
+];
+const HOLD_WORDS: &[&str] = &[
+    "hold on", "one moment", "just a sec", "just a second", "let me check", "hang on",
+    "un momento", "espere", "um momento", "só um minuto", "so um minuto", "un instant",
+    "ne quittez pas", "einen moment", "bleiben sie dran",
+    "chờ chút", "đợi chút", "chờ một chút", "đợi một chút", "cho chut",
+    "tunggu sebentar", "sebentar ya", "mohon tunggu",
+];
+
+pub fn asks_to_hold(text: &str) -> bool {
+    if zh_asks_to_hold(text) {
+        return true;
+    }
+    let runs = squeeze(text);
+    if HOLD_RUNS.iter().any(|m| runs.contains(squeeze(m).as_str())) {
+        return true;
+    }
+    let ws = words(text);
+    HOLD_WORDS.iter().any(|m| has_phrase(&ws, m))
+}
+
+/// Chinese asking us to hold on. 「等一下」 is also "later" (「我等一下要出門」「那我等
+/// 一下再打給你」): it counts only as a request — in one of these forms, or on
+/// its own (「好，等一下。」).
+const ZH_HOLD_REQUESTS: &[&str] = &[
+    "等一下喔", "等一下哦", "等一下下", "等我一下", "你等一下", "您等一下", "妳等一下", "請等一下",
+    "稍等", "我查一下", "我去拿", "幫你轉", "幫您轉", "轉接", "等等喔", "等等哦",
+];
+
+fn zh_asks_to_hold(text: &str) -> bool {
+    let t: String = crate::zh_tw::norm(text).chars().filter(|c| !c.is_whitespace()).collect();
+    if ZH_HOLD_REQUESTS.iter().any(|m| t.contains(m)) {
+        return true;
+    }
+    ["等一下", "等等"].iter().any(|m| {
+        t.match_indices(m).any(|(i, _)| {
+            let before = t[..i].chars().next_back();
+            let after = t[i + m.len()..].chars().next();
+            // Nothing of the sentence around it but a lead-in like 「好，」「那」.
+            after.map_or(true, |c| !c.is_alphanumeric())
+                && before.map_or(true, |c| !c.is_alphanumeric() || "好嗯欸喂啊那".contains(c))
+        })
+    })
+}
+
+// Goodbyes in languages the AI has no phrase set for but answers a caller in:
+// Vietnamese, Thai, Indonesian, Russian, Arabic, Hindi. [`ends_with_farewell`]
+// checks them next to the nine languages' own lists — for the caller's words and
+// for the AI's own (its goodbye in the caller's language starts the wait to hang up).
+
+/// Vietnamese, Indonesian, Russian, Arabic and Hindi goodbyes, whole words near
+/// the end. Vietnamese also without its tone marks: speech-to-text sometimes
+/// drops them. Arabic with and without its hamza and tanween, as speech-to-text
+/// writes it either way.
+const EXTRA_WORD_FAREWELLS: &[&str] = &[
+    "tạm biệt", "tam biet", "hẹn gặp lại", "hen gap lai", "chào nhé", "chao nhe",
+    // "That's it then": how many Vietnamese calls end.
+    "thế nhé", "vậy nhé", "thôi nhé", "thoi nhe", "bye nhé", "bye nhe",
+    // "(Have) a good day": "Chúc anh một ngày tốt lành".
+    "một ngày tốt lành", "ngày tốt lành",
+    "sampai jumpa", "sampai ketemu", "selamat tinggal", "dadah", "daah",
+    "sampai nanti", "sudah dulu ya", "udah dulu ya", "segitu dulu ya",
+    // Russian: "goodbye", "all the best", "have a good day", "see you", "bye-bye".
+    "до свидания", "до свиданья", "всего доброго", "всего хорошего", "хорошего дня",
+    "хорошего вечера", "до встречи", "до связи", "пока пока",
+    // Arabic: "with safety", "until we meet", "in God's safety", "farewell", "a happy day".
+    "مع السلامة", "مع السلامه", "إلى اللقاء", "الى اللقاء", "إلي اللقاء", "في أمان الله",
+    "في امان الله", "وداعا", "وداعاً", "يوما سعيدا", "يوماً سعيداً", "باي باي",
+    // Hindi: "farewell", "we'll meet again", "talk later", "have a good day", "bye-bye"
+    // (also in Latin letters, as speech-to-text writes it at times).
+    "अलविदा", "फिर मिलेंगे", "फिर मिलते हैं", "फिर बात करते हैं", "बाद में बात करते हैं",
+    "आपका दिन शुभ हो", "बाय बाय", "alvida", "phir milenge", "phir milte hain",
+    // Italian / Spanish / French / German / Korean / Cantonese additions
+    "arrivederci", "arrivederla", "buona giornata", "buongiornata", "buonanotte", "grazie a lei",
+    "stammi bene", "stia bene", "a domani", "ci vediamo",
+    "buona serata", "a presto", "ci sentiamo", "ci risentiamo", "a risentirci", "buon proseguimento",
+    "buona continuazione", "ciao ciao",
+    "que le vaya bien", "que te vaya bien", "que tenga buen día", "que tengas buen día",
+    "je raccroche", "bonne continuation", "gute nacht",
+    "잘 가", "잘 가요", "끊을게", "끊을게요", "得閒再傾", "得闲再倾", "收線啦", "收线啦",
+    // Dutch / Polish / Romanian / Ukrainian / Bengali / Marathi / Tamil / Telugu
+    "tot ziens", "tot spreeks", "doei", "fijne dag nog",
+    "do widzenia", "na razie", "do usłyszenia", "do uslyszenia", "miłego dnia", "milego dnia",
+    "la revedere", "o zi bună", "o zi buna", "toate cele bune", "pe curând", "pe curand",
+    "до побачення", "на все добре", "гарного дня", "бувайте", "до зустрічі",
+    "বিদায়", "আল্লাহ হাফেজ", "ভালো থাকবেন", "আবার কথা হবে", "শুভ দিন",
+    "नमस्कार पुन्हा बोलू", "काळजी घ्या", "शुभ दिवस", "आता ठेवतो", "बाय बाय",
+    // Tamil / Telugu "I am coming" (வருகிறேன், వస్తాను) is no goodbye: only "I'll go and come".
+    "போய் வருகிறேன்", "போயிட்டு வருகிறேன்", "போயிட்டு வரேன்", "பை பை", "பிறகு பேசலாம்", "நல்ல நாள்",
+    "వెళ్ళొస్తాను", "వెళ్లొస్తాను", "సరే ఉంటాను", "ఇక ఉంటాను", "బై బై", "మళ్ళీ మాట్లాడుదాం", "శుభ దినం",
+    // Turkish
+    "hoşça kal", "hoşça kalın", "hoşçakal", "hoşçakalın", "görüşürüz", "görüşmek üzere", "iyi geceler",
+    "kendine iyi bak", "kendinize iyi bakın", "güle güle", "allaha ısmarladık", "bay bay",
+];
+
+/// A goodbye that also opens calls: "chào anh", "selamat pagi", "sawasdee ka".
+/// It counts only as the very last words, and only right after a closing cue
+/// ("Cảm ơn anh, chào anh.", see [`cue_window`]) or with a word after it that only
+/// a goodbye has ("chào anh nhé") — so a caller's "Alo, chào anh." at the start of
+/// a call is no goodbye.
+struct GreetingBye {
+    heads: &'static [&'static str],
+    /// Words that may follow it (whom it is said to, polite particles), at most
+    /// [`GREETING_BYE_TAIL`] of them.
+    tail: &'static [&'static str],
+    /// Words after it that make it a goodbye by themselves.
+    closing_tail: &'static [&'static str],
+    /// Words just before it that mark the end of a call.
+    cues: &'static [&'static str],
+}
+
+const GREETING_BYE_TAIL: usize = 3;
+/// A closing cue counts within this many words before the goodbye: the caller's
+/// text is the whole window since the AI last spoke, and an "ok" from earlier on
+/// belongs to something else.
+const GREETING_BYE_CUE_WORDS: usize = 6;
+/// How a call is answered: a closing cue before one of these belongs to an
+/// earlier talk ("…nhé. Alo, em chào anh ạ." — the phone was handed over).
+const HELLOS: &[&str] = &["alo", "a lô", "a lo", "allo", "halo", "hallo", "hello", "helo", "喂"];
+
+const GREETING_BYES: &[GreetingBye] = &[
+    // Vietnamese: "Cảm ơn anh, chào anh." "Thôi chào em nhé." "Cảm ơn, chào."
+    GreetingBye {
+        heads: &["chào", "chao"],
+        tail: &[
+            "anh", "chị", "chi", "em", "bạn", "ban", "cô", "co", "chú", "chu", "ông", "ong", "bà",
+            "ba", "cháu", "chau", "con", "cả", "ca", "nhà", "mọi", "moi", "người", "nguoi", "ạ", "a",
+            "nhé", "nhe", "nhá", "nha",
+        ],
+        closing_tail: &["nhé", "nhe", "nhá", "nha"],
+        // Not "dạ" / "vâng": those open a call too ("Alo, dạ chào anh ạ").
+        cues: &[
+            "cảm ơn", "cám ơn", "cam on", "thôi", "thoi", "hiểu rồi", "được rồi", "ok", "oke", "okay", "thanks",
+            "thank you",
+        ],
+    },
+    // Indonesian: "Baik, terima kasih, selamat siang."
+    // Speech-to-text set to Chinese writes "terima kasih" as 「謝謝」.
+    GreetingBye {
+        heads: &["selamat pagi", "selamat siang", "selamat sore", "selamat malam"],
+        tail: &["ya", "pak", "bu", "bapak", "ibu", "mas", "mbak", "kak", "semua"],
+        closing_tail: &[],
+        cues: &[
+            "terima kasih", "trima kasih", "makasih", "trims", "itu saja", "sudah dulu", "ya sudah",
+            "segitu dulu", "ok", "oke", "okay", "thanks", "thank you", "謝謝", "谢谢",
+        ],
+    },
+    // Thai as speech-to-text sometimes writes it, in Latin letters.
+    GreetingBye {
+        heads: &["sawasdee", "sawatdee", "sawadee", "sawaddee"],
+        tail: &["ka", "kha", "krub", "krab", "khrap", "krap", "kub", "na"],
+        closing_tail: &[],
+        cues: &[
+            "khob khun", "khob kun", "kob kun", "khop khun", "kop khun", "ok", "okay", "thanks",
+            "thank you",
+        ],
+    },
+    // Russian "bye" (пока) is also "while / for now" (「Я пока не знаю」): only as
+    // the last words, right after a closing cue ("Ладно, спасибо, пока!").
+    GreetingBye {
+        heads: &["пока"],
+        tail: &["всем", "тебе", "вам"],
+        closing_tail: &[],
+        cues: &[
+            "спасибо", "всё", "все", "ладно", "хорошо", "давай", "давайте", "ну", "ок", "окей", "ok",
+            "okay", "thanks", "thank you",
+        ],
+    },
+    // Hindi "hello / goodbye" (नमस्ते, नमस्कार) and "bye" (बाय): a goodbye only
+    // right after thanks or "okay" ("धन्यवाद, नमस्ते").
+    GreetingBye {
+        heads: &["नमस्ते", "नमस्कार", "बाय"],
+        tail: &["जी"],
+        closing_tail: &[],
+        cues: &[
+            "धन्यवाद", "शुक्रिया", "ठीक है", "अच्छा", "ok", "okay", "thanks", "thank you", "dhanyavaad",
+            "shukriya",
+        ],
+    },
+    // Korean casual "안녕" / Spanish "buen día": only counts as farewell after a closing cue.
+    GreetingBye {
+        heads: &["안녕", "buen día", "buen dia"],
+        tail: &[],
+        closing_tail: &[],
+        cues: &["감사합니다", "고마워요", "알겠습니다", "gracias", "ok", "okay", "thanks", "thank you"],
+    },
+    // Tamil / Telugu polite greeting-farewells.
+    GreetingBye {
+        heads: &["வணக்கம்", "నమస్కారం"],
+        tail: &[],
+        closing_tail: &[],
+        cues: &["நன்றி", "సరే", "ధన్యవాదాలు", "ok", "okay", "thanks", "thank you"],
+    },
+    // Turkish: "Tamam, teşekkürler, iyi günler."
+    GreetingBye {
+        heads: &["iyi günler", "iyi akşamlar", "kolay gelsin"],
+        tail: &["efendim", "hanım", "bey"],
+        closing_tail: &[],
+        cues: &["teşekkürler", "teşekkür ederim", "sağ olun", "sağ ol", "tamam", "peki", "ok", "okay"],
+    },
+    // Italian: "Grazie, ciao." "Va bene, grazie, buonasera." These open calls too, so only after a closing cue.
+    GreetingBye {
+        heads: &["ciao", "buongiorno", "buonasera", "buon pomeriggio"],
+        tail: &["a", "tutti", "signora", "signore", "ciao"],
+        closing_tail: &[],
+        cues: &["grazie", "va bene", "perfetto", "benissimo", "ok", "okay", "thanks", "thank you"],
+    },
+];
+
+impl GreetingBye {
+    fn ends(&self, ws: &[String]) -> bool {
+        self.heads.iter().any(|head| {
+            let h = words(head);
+            if h.is_empty() || ws.len() < h.len() {
+                return false;
+            }
+            let last = ws.len() - h.len();
+            (last.saturating_sub(GREETING_BYE_TAIL)..=last).any(|i| {
+                let after = &ws[i + h.len()..];
+                ws[i..i + h.len()] == h[..]
+                    && !(i > 0 && NEGATIONS.contains(&ws[i - 1].as_str()))
+                    && after.iter().all(|w| self.tail.contains(&w.as_str()))
+                    && (after.iter().any(|w| self.closing_tail.contains(&w.as_str()))
+                        || self.cues.iter().any(|c| has_cue(cue_window(&ws[..i]), c)))
+            })
+        })
+    }
+}
+
+/// Where a closing cue for a goodbye after `before` may be: its last
+/// [`GREETING_BYE_CUE_WORDS`] words, and only after the last of [`HELLOS`].
+fn cue_window(before: &[String]) -> &[String] {
+    let mut start = before.len().saturating_sub(GREETING_BYE_CUE_WORDS);
+    for h in HELLOS {
+        let p = words(h);
+        if p.is_empty() || before.len() < p.len() {
+            continue;
+        }
+        if let Some(j) = (0..=before.len() - p.len())
+            .rev()
+            .find(|&j| before[j..j + p.len()] == p[..])
+        {
+            start = start.max(j + p.len());
+        }
+    }
+    &before[start..]
+}
+
+/// `phrase` (space-separated words) appears anywhere in `ws`.
+fn has_phrase(ws: &[String], phrase: &str) -> bool {
+    let p = words(phrase);
+    !p.is_empty() && ws.windows(p.len()).any(|w| w == &p[..])
+}
+
+/// A closing cue among `ws`: as whole words, or, for a cue in Chinese
+/// characters, inside a word (Chinese is written without spaces: 「那謝謝」).
+fn has_cue(ws: &[String], cue: &str) -> bool {
+    let han = !cue.is_empty() && cue.chars().all(|c| ('\u{4E00}'..='\u{9FFF}').contains(&c));
+    has_phrase(ws, cue) || (han && ws.iter().any(|w| w.contains(cue)))
+}
+
+/// Thai goodbyes (Thai is written without spaces: matched in the squeezed text).
+const TH_FAREWELLS: &[&str] = &[
+    "ลาก่อน", "บ๊ายบาย", "บายบาย", "บ๊ายบ๊าย",
+    // "Talk again later", "that's all for now".
+    "ไว้คุยกันใหม่", "ไว้ค่อยคุยกัน", "แค่นี้ก่อน", "แค่นี้นะ", "วางสายนะ", "แล้วคุยกันใหม่", "แล้วค่อยคุยกัน",
+    "แล้วพบกันใหม่", "พบกันใหม่",
+    // "See you (again)".
+    "ไว้เจอกัน", "ไว้เจอกันใหม่",
+    // "Good luck", "have a good day": how the AI's own Thai calls end.
+    "โชคดี", "ขอให้มีวันที่ดี",
+];
+/// Thai "hello / goodbye" (สวัสดีค่ะ), also as Chinese speech-to-text writes it:
+/// a goodbye only right after one of [`TH_CUES`] (see [`thai_cue_window`]).
+const TH_GREETING_BYES: &[&str] = &["สวัสดี", "沙瓦迪卡", "薩瓦迪卡", "萨瓦迪卡"];
+const TH_CUES: &[&str] = &["ขอบคุณ", "แค่นี้", "ไปก่อน", "วางสาย", "โอเค", "ok", "thank", "謝謝", "谢谢"];
+/// A Thai closing cue counts within this many letters before the goodbye (about
+/// [`GREETING_BYE_CUE_WORDS`] words).
+const TH_CUE_CHARS: usize = 18;
+const TH_HELLOS: &[&str] = &["ฮัลโหล", "ฮัลโล", "ฮาโหล", "hello", "halo", "喂"];
+/// Polite particles that end a Thai sentence; they do not count against the slack.
+const TH_PARTICLES: &[&str] = &["ครับ", "คับ", "ค่ะ", "คะ", "นะ", "จ้า", "จ้ะ", "ฮะ"];
+/// What may come right before a Thai goodbye inside one run of letters
+/// ("ขอบคุณค่ะลาก่อน"); anything else is part of another word ("ขอเวลาก่อน",
+/// "give me a moment first", holds "ลาก่อน").
+const TH_LEADS: &[&str] = &["ครับ", "คับ", "ค่ะ", "คะ", "นะ", "จ้า", "ขอ", "ขอตัว", "งั้น", "แล้ว", "โอเค"];
+const TH_NEGATIONS: &[&str] = &["อย่า", "อย่าเพิ่ง", "ไม่", "ไม่ต้อง", "ยังไม่"];
+
+/// Lowercase letters and digits only. Thai tone marks drop out, so spellings
+/// that differ only in them match.
+fn squeeze(text: &str) -> String {
+    lowercase(text).chars().filter(|c| c.is_alphanumeric()).collect()
+}
+
+/// [`squeeze`]d `text`, and where each of its runs between spaces or
+/// punctuation starts in it (byte offsets).
+fn squeeze_runs(text: &str) -> (String, Vec<usize>) {
+    let mut out = String::new();
+    let mut starts = Vec::new();
+    let mut new_run = true;
+    for c in lowercase(text).chars() {
+        if c.is_alphanumeric() {
+            if new_run {
+                starts.push(out.len());
+                new_run = false;
+            }
+            out.push(c);
+        } else if c.is_whitespace() || c.is_ascii_punctuation() || "，。！？、；：…「」『』（）".contains(c) {
+            new_run = true;
+        }
+    }
+    (out, starts)
+}
+
+fn ends_with_any(text: &str, list: &[&str]) -> bool {
+    list.iter().any(|w| {
+        let w = squeeze(w);
+        !w.is_empty() && text.ends_with(w.as_str())
+    })
+}
+
+/// [`cue_window`] for squeezed Thai: the last [`TH_CUE_CHARS`] letters of
+/// `before`, and only after the last of [`TH_HELLOS`].
+fn thai_cue_window(before: &str) -> &str {
+    let mut start = 0;
+    for h in TH_HELLOS {
+        let h = squeeze(h);
+        if h.is_empty() {
+            continue;
+        }
+        if let Some(j) = before.rfind(h.as_str()) {
+            start = start.max(j + h.len());
+        }
+    }
+    let seg = &before[start..];
+    let n = seg.chars().count();
+    match seg.char_indices().nth(n.saturating_sub(TH_CUE_CHARS)) {
+        Some((k, _)) => &seg[k..],
+        None => seg,
+    }
+}
+
+/// A Thai goodbye within `slack_chars` letters of the end (particles aside).
+fn thai_farewell(text: &str, slack_chars: usize) -> bool {
+    let (all, starts) = squeeze_runs(text);
+    let mut t = all.as_str();
+    'trim: loop {
+        for p in TH_PARTICLES {
+            let p = squeeze(p);
+            if p.is_empty() {
+                continue;
+            }
+            if let Some(rest) = t.strip_suffix(p.as_str()) {
+                t = rest;
+                continue 'trim;
+            }
+        }
+        break;
+    }
+    let near_end = |marker: &str| -> Option<usize> {
+        let m = squeeze(marker);
+        if m.is_empty() {
+            return None;
+        }
+        t.rfind(m.as_str())
+            .filter(|&i| t[i + m.len()..].chars().count() <= slack_chars)
+    };
+    TH_FAREWELLS.iter().any(|&m| {
+        near_end(m).is_some_and(|i| {
+            let before = &t[..i];
+            !ends_with_any(before, TH_NEGATIONS)
+                && (i == 0 || starts.contains(&i) || ends_with_any(before, TH_LEADS))
+        })
+    }) || TH_GREETING_BYES.iter().any(|&m| {
+        near_end(m).is_some_and(|i| {
+            let before = &t[..i];
+            !ends_with_any(before, TH_NEGATIONS)
+                && TH_CUES
+                    .iter()
+                    .any(|c| thai_cue_window(before).contains(squeeze(c).as_str()))
+        })
+    })
+}
+
+/// [`ends_with_farewell`] for Vietnamese, Thai and Indonesian.
+/// Italian goodbyes said as the very last words only: "La saluto mia madre"
+/// passes a greeting on, "Perfetto, la saluto" ends the call.
+const IT_LAST_FAREWELLS: &[&str] = &["la saluto", "ti saluto"];
+
+/// Italian goodbyes that are everyday words too ("cerco un buon lavoro", "alla
+/// prossima fermata scendo"): a goodbye only as the very last words, with thanks
+/// or an "okay" right before them ("Grazie, buon lavoro", "Va bene, alla prossima").
+const IT_CUED_FAREWELLS: &[&str] = &["buon lavoro", "alla prossima"];
+const IT_FAREWELL_CUES: &[&str] = &["grazie", "va bene", "perfetto", "ok", "okay", "d'accordo"];
+/// Words right before a cued goodbye that may hold its cue ("grazie mille, buon lavoro").
+const IT_FAREWELL_CUE_WORDS: usize = 2;
+
+fn it_cued_farewell(ws: &[String]) -> bool {
+    IT_CUED_FAREWELLS.iter().any(|f| {
+        let h = words(f);
+        if ws.len() <= h.len() || !ws.ends_with(&h) {
+            return false;
+        }
+        let at = ws.len() - h.len();
+        let before = &ws[at.saturating_sub(IT_FAREWELL_CUE_WORDS)..at];
+        IT_FAREWELL_CUES.iter().any(|c| has_phrase(before, c))
+    })
+}
+
+fn extra_farewell(text: &str, slack: usize) -> bool {
+    let (ws, after_mark) = words_after_marks(text);
+    EXTRA_WORD_FAREWELLS.iter().any(|m| phrase_near_end(&ws, &after_mark, m, slack))
+        || IT_LAST_FAREWELLS.iter().any(|m| phrase_near_end(&ws, &after_mark, m, 0))
+        || it_cued_farewell(&ws)
+        || GREETING_BYES.iter().any(|g| g.ends(&ws))
+        || falou_closing(&ws, &after_mark)
+        || thai_farewell(text, slack * 2)
+}
+
+/// Words right before a closing Portuguese "falou" ("Beleza, valeu falou!").
+/// "Então" only after another cue: "E então falou" is "and then he said".
+const FALOU_CUES: &[&str] = &[
+    "valeu", "obrigado", "obrigada", "beleza", "tá bom", "ta bom", "então tá", "combinado", "ok", "okay",
+    "tchau", "abraço", "até mais", "certo", "fechou", "fechado", "tá", "ta", "tranquilo",
+    "show", "joia", "jóia", "blz", "beleza então", "beleza entao", "combinado então", "combinado entao",
+    "certo então", "certo entao", "fechado então", "fechado entao", "ok então", "ok entao", "tá bom então",
+    "ta bom entao",
+];
+
+/// "Falou" is "bye" in Brazilian speech, and also just "said" ("Foi o que ele
+/// falou."). It is a goodbye only as the very last word: alone, set off by
+/// punctuation ("Certo, falou") or right after a closing cue.
+fn falou_closing(ws: &[String], after_mark: &[bool]) -> bool {
+    let Some((last, before)) = ws.split_last() else {
+        return false;
+    };
+    last == "falou"
+        && (before.is_empty()
+            || after_mark.last().copied().unwrap_or(false)
+            || FALOU_CUES.iter().any(|c| before.ends_with(&words(c))))
+}
+
+/// What was said ends on a goodbye, in any supported language other than
+/// Chinese (those rules live in `gemini_live`), or in Vietnamese, Thai or
+/// Indonesian. `slack` = words that may follow it ("bye now", "goodbye then").
+/// Thanks after it do not count ([`strip_trailing_thanks`]): "Bye, thank you so much".
+pub fn ends_with_farewell(text: &str, slack: usize) -> bool {
+    let farewell = |t: &str| ends_on(t, |p| p.farewells, slack, slack * 2) || extra_farewell(t, slack);
+    farewell(text) || farewell(strip_trailing_thanks(text))
+}
+
+/// The caller's words end the call: a goodbye or "that's all" at the end, and
+/// not a question. Thanks after it do not count: "Alright, that's all, thank you so much".
+pub fn caller_wraps_up(text: &str) -> bool {
+    let wrapup = |t: &str| ends_on(t, |p| p.wrapups, 2, 4);
+    !is_question(text)
+        && (ends_with_farewell(text, 2)
+            || wrapup(text)
+            || wrapup(strip_trailing_thanks(text))
+            || VI_THANKS_CLOSING.ends(&words(text))
+            || ja_thanks_closing(text))
+}
+
+/// Japanese business calls close with thanks in the past tense, as the very
+/// last words: 「（ご利用）ありがとうございました」 ends the call the way
+/// 「失礼します」 does (a courier's call never hung up after it). The present
+/// 「ありがとうございます」 is said mid-call and does not count. The caller's
+/// side only, like [`caller_wraps_up`] as a whole.
+fn ja_thanks_closing(text: &str) -> bool {
+    let t = text.trim_end_matches(|c: char| c.is_whitespace() || "。．.、,!！〜～ー".contains(c));
+    ["ありがとうございました", "有難うございました", "ありがとう御座いました"]
+        .iter()
+        .any(|s| t.ends_with(s))
+}
+
+/// Vietnamese callers often close with thanks alone, said politely to the end
+/// ("Em cảm ơn anh ạ", "Cảm ơn anh nhé"): a courier's call never hung up after
+/// it. Thanks then a particle (ạ / nhé / nha) as the very last words; the
+/// caller's side only — the AI's own 「cảm ơn anh ạ」 is no goodbye.
+const VI_THANKS_CLOSING: GreetingBye = GreetingBye {
+    heads: &["cảm ơn", "cám ơn", "cam on"],
+    tail: &[
+        "anh", "chị", "chi", "em", "bạn", "ban", "cô", "co", "chú", "chu", "ông", "ong", "bà", "ba", "cháu",
+        "chau", "nhiều", "nhieu", "lắm", "ạ", "nhé", "nhe", "nha", "nhá",
+    ],
+    closing_tail: &["ạ", "nhé", "nhe", "nha", "nhá"],
+    cues: &[],
+};
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn goodbyes_in_thai_russian_arabic_and_hindi_end_the_call() {
+        // The AI's own goodbye (no words may follow it) and the caller's.
+        for bye in [
+            "ขอบคุณมากค่ะ สวัสดีค่ะ",
+            "โชคดีนะคะ",
+            "แล้วคุยกันใหม่นะคะ",
+            "ลาก่อนครับ",
+            "Спасибо за звонок, до свидания!",
+            "Всего доброго.",
+            "Хорошо, пока!",
+            "До свидания, спасибо!",
+            "Хорошего дня!",
+            "شكراً لك، مع السلامة.",
+            "إلى اللقاء",
+            "مع السلامة، شكرا",
+            "धन्यवाद, नमस्ते।",
+            "ठीक है, फिर मिलेंगे।",
+            "अलविदा",
+            "फिर बात करते हैं, धन्यवाद",
+        ] {
+            assert!(ends_with_farewell(bye, 0), "{bye}");
+            assert!(caller_wraps_up(bye), "{bye}");
+        }
+        // Not goodbyes: "I don't know yet", "while you wait, I'll check", a Hindi
+        // and an Arabic hello, Thai "give me a moment first".
+        for not_yet in [
+            "Я пока не знаю.",
+            "Пока вы ждёте, я проверю.",
+            "Пока",
+            "नमस्ते, मैं राहुल बोल रहा हूँ",
+            "नमस्ते",
+            "السلام عليكم",
+            "ขอเวลาก่อน",
+            "ฉันโชคดีมาก",
+        ] {
+            assert!(!ends_with_farewell(not_yet, 0), "{not_yet}");
+        }
+        // Vietnamese and Indonesian as before.
+        assert!(ends_with_farewell("Cảm ơn anh, chào anh.", 0));
+        assert!(ends_with_farewell("Baik, terima kasih, sampai jumpa.", 0));
+        // Their thanks alone are no goodbye.
+        for thanks in ["Спасибо!", "شكرا", "धन्यवाद"] {
+            assert!(!caller_wraps_up(thanks), "{thanks}");
+        }
+    }
+
+    #[test]
+    fn a_negated_goodbye_phrase_does_not_end_the_call() {
+        assert!(!caller_wraps_up("¡Hola! ¿Qué tal? Hace tiempo que no nos vemos."));
+        assert!(caller_wraps_up("Vale, perfecto. Nos vemos."));
+        assert!(caller_wraps_up("Bueno, adiós."));
+        assert!(!caller_wraps_up("Ainda não, tchau não"));
+    }
+
+    #[test]
+    fn a_no_that_answers_anything_else_is_no_negation() {
+        for s in [
+            "No, that's all, thanks.",
+            "No that's everything, thank you so much",
+            "No, nothing else.",
+            "No, that's it.",
+            "No, nada más, gracias.",
+            "No, eso es todo.",
+            "Não, é só isso, obrigado.",
+            "Não, mais nada.",
+            "Não, é tudo.",
+            "Não, só isso.",
+        ] {
+            assert!(caller_wraps_up(s), "must wrap up: {s}");
+        }
+        // A real negation of the same words: there is more to come.
+        for s in ["Mas isso não é tudo.", "Não só isso.", "No, that's all right.", "That's not all."] {
+            assert!(!caller_wraps_up(s), "must not wrap up: {s}");
+        }
+    }
+
+    #[test]
+    fn words_after_marks_has_the_same_words() {
+        for s in [
+            "No, that's all — thanks!",
+            "Certo, falou",
+            "’Bye… l'adresse, d'accord ?",
+            "Teşekkürler, İyi günler.",
+            "好的，謝謝。Bye-bye",
+            "",
+            " ' ",
+        ] {
+            let (ws, after_mark) = words_after_marks(s);
+            assert_eq!(ws, words(s), "{s}");
+            assert_eq!(ws.len(), after_mark.len(), "{s}");
+        }
+        assert_eq!(words_after_marks("Certo, falou").1, [false, true]);
+        assert_eq!(words_after_marks("ele falou").1, [false, false]);
+    }
+
+    #[test]
+    fn name_corrections_rewrite_what_stt_mishears() {
+        let fixes = parse_name_fixes(&[
+            "黃先生=王先生".to_string(),
+            " Jon Smith → John Smith ".to_string(),
+            "no separator".to_string(),
+            "same=same".to_string(),
+            "=x".to_string(),
+        ]);
+        assert_eq!(fixes.len(), 2);
+        assert_eq!(fix_names_with("請轉告黃先生明天開會", &fixes), "請轉告王先生明天開會");
+        assert_eq!(fix_names_with("Is Jon Smith there?", &fixes), "Is John Smith there?");
+        assert_eq!(fix_names_with("從黃山寄來的包裹", &fixes), "從黃山寄來的包裹");
+        // A name in a spaced language is a whole word; Chinese, Japanese, Korean run on.
+        let jon = vec![("Jon".to_string(), "John".to_string())];
+        assert_eq!(fix_names_with("Mr. Jones asked for Jon, Jon's brother.", &jon), "Mr. Jones asked for John, John's brother.");
+        assert_eq!(fix_names_with("Jon", &jon), "John");
+        assert_eq!(fix_names_with("找Jon先生", &jon), "找John先生");
+        let kr = vec![("민수".to_string(), "민호".to_string())];
+        assert_eq!(fix_names_with("민수씨 계세요?", &kr), "민호씨 계세요?");
+        let ja = vec![("斉藤".to_string(), "斎藤".to_string())];
+        assert_eq!(fix_names_with("斉藤さんからです", &ja), "斎藤さんからです");
+        // Nothing set (the default): text is untouched.
+        assert_eq!(fix_names("請轉告黃先生"), "請轉告黃先生");
+    }
+
+    #[test]
+    fn codes_round_trip() {
+        for l in ALL {
+            assert_eq!(Lang::parse(l.code()), l);
+        }
+        assert_eq!(Lang::parse("zh_TW"), Lang::ZhTw);
+        assert_eq!(Lang::parse("pt-BR"), Lang::Pt);
+        assert_eq!(Lang::parse("xx"), Lang::En);
+        assert_eq!(Lang::parse(""), Lang::En);
+    }
+
+    #[test]
+    fn owner_text_follows_the_notification_language() {
+        // Unset (unit tests): the AI and the owner both on zh-TW.
+        let a = Active::default();
+        assert_eq!((a.lang, a.notify_lang), (Lang::ZhTw, Lang::ZhTw));
+        // Traditional Chinese only when the owner reads zh-TW, whatever the AI speaks.
+        assert_eq!(for_owner_in(Lang::ZhTw, "听录音"), "聽錄音");
+        assert_eq!(for_owner_in(Lang::ZhCn, "听录音"), "听录音");
+        assert_eq!(for_owner_in(Lang::Ja, "会議の件"), "会議の件");
+        assert_eq!(for_owner_in(Lang::En, "Call back"), "Call back");
+        assert_eq!(zh_or_in(Lang::ZhTw, "中間省略", "left out"), "中間省略");
+        assert_eq!(zh_or_in(Lang::ZhCn, "中間省略", "left out"), "中间省略");
+        assert_eq!(zh_or_in(Lang::De, "中間省略", "left out"), "left out");
+    }
+
+    #[test]
+    fn farewells_only_count_at_the_end() {
+        for t in [
+            "Okay, thanks a lot. Bye!",
+            "alright bye now",
+            "Great, talk to you later.",
+            "Vale, muchas gracias, hasta luego.",
+            "D'accord, merci, au revoir !",
+            "Gut, danke, auf Wiederhören.",
+            "Tá bom, obrigado, tchau.",
+            "はい、ありがとうございました。失礼します。",
+            "네 감사합니다. 안녕히 계세요.",
+            // Everyday closings in each language.
+            "Okay, have a good one.",
+            "Take care!",
+            "Cheers.",
+            "Talk soon.",
+            "Okay bye now.",
+            "それでは失礼いたします。",
+            "수고하세요.",
+            "네, 들어가세요.",
+            "네 감사합니다 안녕히 계세요",
+            "Órale, gracias.",
+            "Bueno, hasta luego.",
+            "Nos vemos.",
+            "Chao.",
+            "Valeu, tchau.",
+            "Até mais.",
+            "Bonne journée !",
+            "Merci, à bientôt.",
+            "Danke, schönen Tag.",
+            "Tschüss.",
+            "Auf Wiederhören.",
+            // Thanks after the goodbye.
+            "Okay, bye, thank you so much!",
+            "Adiós, muchas gracias.",
+        ] {
+            assert!(ends_with_farewell(t, 2), "{t}");
+            assert!(caller_wraps_up(t), "{t}");
+        }
+        for t in [
+            "Maybe.",
+            "I said goodbye to him yesterday and then he called again about the loan",
+            "The bylaws say so",
+            "Hello?",
+            "Is that all?",
+            "もしもし",
+            "Buenas noches",
+            // Thanks alone, or a goodbye said to someone else in the room.
+            "Thank you.",
+            "Thanks so much",
+            "Muchas gracias",
+            // Portuguese "valeu" is thanks.
+            "Valeu!",
+            "감사합니다",
+            "Say bye to grandma",
+            "Come on, say bye bye to Auntie",
+            // A caller introducing themselves on a business call.
+            "株式会社ABCの田中と申します。よろしくお願いいたします。",
+        ] {
+            assert!(!caller_wraps_up(t), "{t}");
+        }
+        assert!(caller_wraps_up("Okay, that's all, thank you."));
+        assert!(caller_wraps_up("Alright, that's all, thank you so much"));
+        assert!(caller_wraps_up("Okay, bye to you"));
+        assert!(caller_wraps_up("以上です。"));
+        assert!(caller_wraps_up("それでは失礼します。"));
+        assert!(caller_wraps_up("では、よろしくお願いいたします。"));
+        // The same words turned into a question: not leaving yet.
+        assert!(!caller_wraps_up("それではよろしいでしょうか？"));
+        assert!(!caller_wraps_up("Okay, that's all for today, right?"));
+        assert!(!caller_wraps_up("Bye?"));
+    }
+
+    #[test]
+    fn words_that_open_a_sentence_do_not_end_the_call() {
+        // 「それでは」「그만」「이만」 also start what comes next: up to four letters
+        // after them used to count as the end and hung up on the caller.
+        for t in ["はい、それでは伝言です。", "それでは質問です", "それでは", "그만 울어요", "이만 원이에요", "그만해요"] {
+            assert!(!caller_wraps_up(t), "{t}");
+        }
+        // Real closings still end it.
+        for t in ["それでは失礼します。", "はい、それではまた。", "それでは失礼いたします", "이만 끊을게요", "그럼 이만 들어가세요"] {
+            assert!(caller_wraps_up(t), "{t}");
+        }
+    }
+
+    #[test]
+    fn thanks_after_the_last_words_are_set_aside() {
+        assert_eq!(strip_trailing_thanks("好的，那就先這樣，謝謝您"), "好的，那就先這樣");
+        assert_eq!(strip_trailing_thanks("Alright, that's all, thank you so much!"), "Alright, that's all");
+        assert_eq!(strip_trailing_thanks("はい、以上です。ありがとうございました。"), "はい、以上です");
+        assert_eq!(strip_trailing_thanks("Merci beaucoup"), "");
+        assert_eq!(strip_trailing_thanks("謝謝"), "");
+        // Only whole Latin words.
+        assert_eq!(strip_trailing_thanks("bethanks"), "bethanks");
+        assert_eq!(strip_trailing_thanks("Hello?"), "Hello");
+    }
+
+    #[test]
+    fn asking_to_hold_in_every_language() {
+        for t in [
+            "等一下喔，我去拿",
+            "好，我幫你轉接",
+            "帮你转一下",
+            "稍等",
+            "Hold on a sec, let me get him",
+            "One moment please",
+            "少々お待ちください",
+            "잠시만요",
+            "잠시만 기다려 주세요",
+            "Un momento, por favor",
+            "Um momento",
+            "Ne quittez pas",
+            "Einen Moment bitte",
+            "Đợi chút nhé",
+            "Tunggu sebentar ya",
+            "รอสักครู่นะคะ",
+            "好，等一下。",
+            "你等一下，我叫他來聽",
+            "請稍等，我幫您轉接",
+        ] {
+            assert!(asks_to_hold(t), "{t}");
+        }
+        for t in [
+            "我今天有空",
+            "Hello, is this Alex?",
+            "That's all, thanks",
+            "Momentan nicht",
+            "もしもし",
+            "",
+            // 「等一下」 as "later", 「等等」 as "and so on".
+            "我等一下要出門，所以放管理室",
+            "那我等一下再打給你",
+            "等一下再說",
+            "保險、貸款等等都有",
+        ] {
+            assert!(!asks_to_hold(t), "{t}");
+        }
+    }
+
+    #[test]
+    fn japanese_past_thanks_at_the_end_closes_the_call() {
+        // A courier's call that never hung up.
+        assert!(caller_wraps_up("かしこまりました。それでは、管理室の方にお預けしておきますね。ご利用ありがとうございました。"));
+        assert!(caller_wraps_up("お忙しいところありがとうございました"));
+        // Present-tense thanks are said mid-call; thanks followed by more words are not the end.
+        assert!(!caller_wraps_up("ありがとうございます。"));
+        assert!(!caller_wraps_up("ありがとうございました。それで、明日の件ですが"));
+        assert!(!caller_wraps_up("ありがとうございましたか？"));
+    }
+
+    #[test]
+    fn vietnamese_goodbyes_count_only_at_the_end() {
+        for t in [
+            // A real call that never hung up.
+            "Dạ vậy em để ở quầy lễ tân nhé. Cảm ơn anh, chào anh.",
+            "Vâng, tạm biệt anh.",
+            "Thôi chào em nhé.",
+            "Ok cảm ơn, chào.",
+            "Dạ vâng, cảm ơn chị. Em chào chị ạ.",
+            "Hẹn gặp lại nhé.",
+            "Chào nhé.",
+            "Cam on anh, chao anh",
+            "Dạ vâng, thế nhé.",
+            "Ok vậy nhé.",
+        ] {
+            assert!(ends_with_farewell(t, 2), "{t}");
+            assert!(caller_wraps_up(t), "{t}");
+        }
+        for t in [
+            // Greetings at the start of a call.
+            "Alo, chào anh.",
+            "Dạ em chào anh ạ.",
+            "Chào anh, em gọi từ bên giao hàng về đơn hàng của anh.",
+            // Not at the end, negated, a question.
+            "Hôm qua em đã nói tạm biệt với anh ấy rồi mà anh ấy vẫn gọi lại hỏi về khoản vay.",
+            "Khoan đã, đừng tạm biệt vội.",
+            "Cảm ơn anh, chào anh?",
+            // An "ok" / "nhé" from earlier in the window, then the phone is handed
+            // over and the next person greets.
+            "Dạ ok anh, để em đưa máy cho chị em nhé. Alo, em chào anh ạ.",
+            "Dạ vâng, em để ở quầy lễ tân nhé. Em chào anh ạ.",
+        ] {
+            assert!(!caller_wraps_up(t), "{t}");
+        }
+        // Thanks alone, said to the end, closes a Vietnamese call — the caller's
+        // words only (the AI's own thanks are no goodbye).
+        for t in ["Dạ, em cảm ơn anh ạ.", "Em cảm ơn anh ạ", "Ok, cảm ơn anh nhé", "Em cảm ơn anh nhiều ạ", "Cảm ơn chị nha"] {
+            assert!(caller_wraps_up(t), "{t}");
+            assert!(!ends_with_farewell(t, 2), "{t}");
+        }
+        for t in ["Cảm ơn anh ạ, cho em hỏi thêm một chút về đơn hàng.", "Cảm ơn anh ạ?", "Em cảm ơn anh"] {
+            assert!(!caller_wraps_up(t), "{t}");
+        }
+    }
+
+    #[test]
+    fn thai_goodbyes_count_only_at_the_end() {
+        for t in [
+            // A real call that never hung up.
+            "งั้นฝากไว้ที่นิติบุคคลนะคะ ขอบคุณค่ะ สวัสดีค่ะ",
+            "โอเคครับ ลาก่อนครับ",
+            "ขอบคุณค่ะลาก่อนค่ะ",
+            "บ๊ายบาย",
+            "บายบายค่ะ",
+            "ขอบคุณครับ สวัสดีครับ",
+            "Khob khun ka, sawasdee ka.",
+            "ขอบคุณค่ะ ไว้คุยกันใหม่นะคะ",
+        ] {
+            assert!(ends_with_farewell(t, 2), "{t}");
+            assert!(caller_wraps_up(t), "{t}");
+        }
+        for t in [
+            // Greetings at the start of a call.
+            "ฮัลโหล สวัสดีค่ะ",
+            "สวัสดีค่ะ ดิฉันโทรมาจากธนาคารนะคะ",
+            "Sawasdee ka.",
+            // "Give me a moment first": ลาก่อน inside another word.
+            "ขอเวลาก่อนนะคะ",
+            // "Don't say goodbye yet."
+            "อย่าเพิ่งลาก่อนนะ",
+            "อย่าเพิ่ง ลาก่อนนะ",
+            // Thanks from earlier, then the phone is handed over and the next person greets.
+            "ขอบคุณค่ะ เดี๋ยวส่งให้แม่คุยนะคะ ฮัลโหล สวัสดีค่ะ",
+        ] {
+            assert!(!caller_wraps_up(t), "{t}");
+        }
+    }
+
+    #[test]
+    fn indonesian_goodbyes_count_only_at_the_end() {
+        for t in [
+            "Baik, terima kasih, selamat siang.",
+            "Makasih ya, selamat malam, Bu.",
+            "Oke, sampai jumpa.",
+            "Ya sudah, sampai ketemu lagi ya.",
+            "Dadah!",
+            "Daah.",
+            "Ya sudah, sampai nanti ya.",
+            "Oke, sudah dulu ya.",
+            // "Terima kasih" written in Chinese by speech-to-text, alone or run into
+            // other Chinese characters.
+            "謝謝，selamat siang.",
+            "那謝謝 selamat sore ya",
+            "谢谢。Selamat malam, Bu.",
+        ] {
+            assert!(ends_with_farewell(t, 2), "{t}");
+            assert!(caller_wraps_up(t), "{t}");
+        }
+        for t in [
+            // Greetings at the start of a call.
+            "Halo, selamat pagi.",
+            "Selamat siang, saya dari bank mau menawarkan pinjaman.",
+            // Not at the end, negated, a question.
+            "Kemarin saya sudah bilang sampai jumpa ke dia tapi dia telepon lagi soal pinjaman.",
+            "Jangan dadah dulu.",
+            "Terima kasih, selamat sore?",
+            // "Ok" from earlier, then the phone is handed over and the next person greets.
+            "Oke Pak, sebentar ya, saya kasih ke ibu saya. Halo, selamat siang.",
+            "謝謝。Halo, selamat siang.",
+            "謝謝，selamat siang?",
+        ] {
+            assert!(!caller_wraps_up(t), "{t}");
+        }
+    }
+
+    #[test]
+    fn countries_name_the_callers_language() {
+        assert_eq!(country_lang("us"), Some(Lang::En));
+        assert_eq!(country_lang(" CA "), Some(Lang::En));
+        assert_eq!(country_lang("jm"), Some(Lang::En));
+        assert_eq!(country_lang("sg"), Some(Lang::En));
+        assert_eq!(country_lang("pr"), Some(Lang::Es));
+        assert_eq!(country_lang("mx"), Some(Lang::Es));
+        assert_eq!(country_lang("jp"), Some(Lang::Ja));
+        assert_eq!(country_lang("kr"), Some(Lang::Ko));
+        assert_eq!(country_lang("br"), Some(Lang::Pt));
+        assert_eq!(country_lang("ch"), Some(Lang::De));
+        assert_eq!(country_lang("be"), Some(Lang::Fr));
+        assert_eq!(country_lang("cn"), Some(Lang::ZhCn));
+        assert_eq!(country_lang("hk"), Some(Lang::ZhTw));
+        assert_eq!(country_lang("tw"), Some(Lang::ZhTw));
+        // Not one of the languages (Vietnam, Thailand, Indonesia, Luxembourg), or no country.
+        for iso in ["vn", "th", "id", "lu", "", "zz"] {
+            assert_eq!(country_lang(iso), None, "{iso}");
+        }
+        // Every country listed is one the number reader knows.
+        for &(iso, _) in COUNTRY_LANGS {
+            assert!(crate::phone_region::calling_code(iso).is_some(), "{iso}");
+        }
+        // The calling-code table (phone app that does not report its SIM) agrees
+        // for each code's main country.
+        for &(code, lang) in CALLING_CODE_LANGS {
+            let iso = crate::phone_region::country_of_code(code).expect(code);
+            assert_eq!(country_lang(iso), Some(lang), "{code} {iso}");
+        }
+    }
+
+    #[test]
+    fn calling_codes_name_the_callers_language() {
+        assert_eq!(calling_code_lang("+1 202-555-0143"), Some(Lang::En));
+        assert_eq!(calling_code_lang("+447700900123"), Some(Lang::En));
+        assert_eq!(calling_code_lang("+353871234567"), Some(Lang::En));
+        assert_eq!(calling_code_lang("+65 9123 4567"), Some(Lang::En));
+        assert_eq!(calling_code_lang("+351912345678"), Some(Lang::Pt));
+        assert_eq!(calling_code_lang("+5511912345678"), Some(Lang::Pt));
+        assert_eq!(calling_code_lang("+5215512345678"), Some(Lang::Es));
+        assert_eq!(calling_code_lang("+3225123456"), Some(Lang::Fr));
+        assert_eq!(calling_code_lang("+41441234567"), Some(Lang::De));
+        assert_eq!(calling_code_lang("+81312345678"), Some(Lang::Ja));
+        assert_eq!(calling_code_lang("+821012345678"), Some(Lang::Ko));
+        assert_eq!(calling_code_lang("+8613800138000"), Some(Lang::ZhCn));
+        assert_eq!(calling_code_lang("+886912345678"), Some(Lang::ZhTw));
+        assert_eq!(calling_code_lang("+85291234567"), Some(Lang::ZhTw));
+        assert_eq!(calling_code_lang("+85361234567"), Some(Lang::ZhTw));
+        // Not one of the languages (Vietnam, Luxembourg), or no country code.
+        assert_eq!(calling_code_lang("+84912345678"), None);
+        assert_eq!(calling_code_lang("+352621123456"), None);
+        assert_eq!(calling_code_lang("0912345678"), None);
+        assert_eq!(calling_code_lang(""), None);
+        // The longest code that starts the number wins.
+        let table = [("1", Lang::En), ("1787", Lang::Es), ("35", Lang::De), ("351", Lang::Pt)];
+        assert_eq!(longest_code_match("17875551234", &table), Some(Lang::Es));
+        assert_eq!(longest_code_match("12025550143", &table), Some(Lang::En));
+        assert_eq!(longest_code_match("351912345678", &table), Some(Lang::Pt));
+        assert_eq!(longest_code_match("353871234567", &table), Some(Lang::De));
+        for (code, _) in CALLING_CODE_LANGS {
+            assert!(!code.is_empty() && code.chars().all(|c| c.is_ascii_digit()), "{code}");
+        }
+    }
+
+    #[test]
+    fn stall_keywords_match_whole_words() {
+        // The lists that lived here are in the scam database now, and match as they did.
+        let hits = crate::scam_db::keyword_hits("Hi, I'm calling about your car's extended warranty and a low interest loan");
+        let kws: Vec<&str> = hits.iter().map(|h| h.text).collect();
+        assert!(kws.contains(&"warranty") && kws.contains(&"loan"), "{kws:?}");
+        // Only the start of a word counts: "bank" does not hit "embankment".
+        assert!(crate::scam_db::keyword_hits("the embankment by the river").is_empty());
+        assert!(!crate::scam_db::keyword_hits("保険のご案内です").is_empty());
+        assert_eq!(crate::scam_db::keyword("warranty").map(|h| h.weight), Some(2));
+        assert_eq!(crate::scam_db::keyword("nonsense"), None);
+    }
+
+    #[test]
+    fn every_language_has_its_phrases() {
+        for l in ALL {
+            let p = phrases(l);
+            assert!(!p.hello.is_empty() && !p.bye.is_empty() && !p.unavailable.is_empty(), "{l:?}");
+            assert!(p.n_blocked_done.contains("{}"), "{l:?}");
+            assert!(!p.n_repeat_title.is_empty(), "{l:?}");
+            assert!(p.n_repeat_body.contains("{number}") && p.n_repeat_body.contains("{count}"), "{l:?}");
+            if !l.is_zh() {
+                assert!(!p.farewells.is_empty(), "{l:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn dates_and_lengths_follow_the_language() {
+        let t = chrono::NaiveDate::from_ymd_opt(2026, 11, 3)
+            .unwrap()
+            .and_hms_opt(8, 9, 0)
+            .unwrap();
+        assert_eq!(date_time(Lang::En, &t), "Nov 3, 08:09");
+        assert_eq!(date_time(Lang::ZhTw, &t), "11月3日 08:09");
+        assert_eq!(date_time(Lang::Ko, &t), "11월 3일 08:09");
+        assert_eq!(date_time(Lang::De, &t), "03.11. 08:09");
+        assert_eq!(date_time(Lang::Fr, &t), "03/11 08:09");
+        assert_eq!(date_only(Lang::Ja, &t.date()), "11月3日");
+        assert_eq!(date_only(Lang::En, &t.date()), "Nov 3");
+        for l in ALL {
+            let s = date_time(l, &t);
+            assert!(!s.contains('%') && s.contains("08:09") && s.contains('3'), "{l:?}: {s}");
+        }
+        assert_eq!(duration(Lang::ZhTw, 71.9), "72 秒");
+        assert_eq!(duration(Lang::ZhTw, 600.0), "10 分鐘");
+        assert_eq!(duration(Lang::En, 45.0), "45 s");
+        assert_eq!(duration(Lang::De, 300.0), "5 Min.");
+        assert_eq!(duration(Lang::Ja, 30.0), "30秒");
+        assert_eq!(duration(Lang::En, f64::NAN), "0 s");
+        assert_eq!(quoted(Lang::ZhTw, "你好"), "「你好」");
+    }
+
+    #[test]
+    fn every_template_has_exactly_one_slot() {
+        for l in ALL {
+            let p = phrases(l);
+            for t in [
+                p.u_sec, p.u_min, p.s_no_transcript, p.s_ai_fail_matter, p.s_stall_topic_kw,
+                p.s_stall_reply, p.vm_call_back_to, p.vm_email_to, p.vm_length, p.vm_no_transcript,
+                p.f_bad_time, p.f_openclaw_failed, p.e_appointment,
+            ] {
+                assert_eq!(t.matches("{}").count(), 1, "{l:?}: {t}");
+            }
+            for t in [
+                p.s_no_service, p.s_see_transcript, p.s_listen_recording, p.s_ai_fail_prefix,
+                p.s_stall_topic, p.vm_call_back_unknown, p.tc_confirm, p.tc_ignore, p.tc_confirm_ack,
+                p.f_callback_waiting, p.f_gmail_missing, p.g_short_password,
+                p.e_subject, p.e_empty,
+            ] {
+                assert!(!t.contains('{') && !t.trim().is_empty(), "{l:?}: {t}");
+            }
+            assert!(p.sep.contains(':') || p.sep.contains('：'), "{l:?}");
+            assert_eq!(fill(p.vm_call_back_to, "0912").matches("0912").count(), 1, "{l:?}");
+        }
+    }
+
+    #[test]
+    fn polite_service_farewells_close_without_matching_greetings() {
+        for s in [
+            "Thanks for your time and have a wonderful day.",
+            "Muchas gracias por su tiempo. Y que tenga un excelente día.",
+            "Merci beaucoup, excellente journée.",
+            "Vielen Dank und einen schönen Tag.",
+            "Obrigado, tenha um ótimo dia.",
+            "감사합니다, 좋은 하루 되세요.",
+        ] {
+            assert!(ends_with_farewell(s, 0), "expected farewell: {s}");
+        }
+        for open in ["Hola, buen día, hablo del banco.", "Olá, bom dia, tudo bem?", "안녕!"] {
+            assert!(!ends_with_farewell(open, 2), "greeting must not match farewell: {open}");
+        }
+        assert!(ends_with_farewell("Grazie mille, buongiornata!", 0));
+        assert!(ends_with_farewell("감사합니다, 안녕!", 0));
+        assert!(ends_with_farewell("ขอบคุณค่ะ แล้วพบกันใหม่นะคะ", 0));
+        assert!(ends_with_farewell("Bedankt, tot ziens!", 0));
+        assert!(ends_with_farewell("Dziękuję, do widzenia!", 0));
+        assert!(ends_with_farewell("Mulțumesc, la revedere!", 0));
+        assert!(ends_with_farewell("Дякую, до побачення!", 0));
+        assert!(ends_with_farewell("ধন্যবাদ, বিদায়!", 0));
+        assert!(ends_with_farewell("நன்றி, போய் வருகிறேன்!", 0));
+        assert!(ends_with_farewell("ధన్యవాదాలు, వెళ్ళొస్తాను!", 0));
+    }
+
+    #[test]
+    fn pt_valeu_is_thanks_and_falou_closes_only_after_a_cue() {
+        assert_eq!(strip_trailing_thanks("Ah, valeu."), "Ah");
+        for s in [
+            "Foi o que ele falou.",
+            "O gerente falou que sim.",
+            "Ela já falou com você.",
+            "Fica combinado como ele falou.",
+            "Ele chegou e falou.",
+            "Valeu a pena.",
+            "Ah, valeu.",
+        ] {
+            assert!(!caller_wraps_up(s), "must not wrap up: {s}");
+        }
+        for s in [
+            "Beleza, valeu, falou!",
+            "Então tá, falou.",
+            "Tchau, falou.",
+            "Falou!",
+            // Set off by punctuation, or right after a closing cue.
+            "Certo, falou",
+            "Tá combinado então, falou",
+            "Beleza então, falou",
+            "Fechou, falou",
+            "Obrigado, até mais, falou",
+            "Então tá bom, falou valeu",
+            "Tá bom, obrigada, falou",
+            "Beleza então falou",
+        ] {
+            assert!(caller_wraps_up(s), "must wrap up: {s}");
+        }
+    }
+
+    #[test]
+    fn a_word_after_a_goodbye_phrase_can_make_it_something_else() {
+        for s in [
+            "I'll take care of it.",
+            "My sister will take care of mom.",
+            "That's all right.",
+            "Je vous laisse mon numéro.",
+            "Je vous laisse un message.",
+            "Te dejo mi número.",
+            "Le dejo el paquete.",
+            "Nada más quería confirmar.",
+            "Das ist alles sehr teuer.",
+            "C'est tout à fait.",
+            "Isso é tudo verdade.",
+            "Na razie nie wiem.",
+            "Na razie nie mogę.",
+            // What is left with them, or what they are left to do.
+            "Je vous laisse l'adresse.",
+            "Je vous laisse réfléchir.",
+            "Te dejo un mensaje.",
+            "Le dejo mis datos.",
+            "Das ist alles nicht so einfach.",
+            "Das ist alles zu teuer.",
+            "Na razie nic nie wiem.",
+            "Na razie jestem w pracy.",
+            "Isso é tudo que eu sei.",
+        ] {
+            assert!(!caller_wraps_up(s), "must not wrap up: {s}");
+        }
+        for s in [
+            "Take care.",
+            "Okay, take care, bye.",
+            "Take care now.",
+            "Take care of yourself.",
+            "That's all.",
+            "That's all, thanks.",
+            "That's all for now.",
+            "That's all I need.",
+            "Je vous laisse.",
+            "Bon, je vous laisse, bonne journée.",
+            "Bueno, te dejo.",
+            "Le dejo, hasta luego.",
+            "Nada más, gracias.",
+            "Das ist alles.",
+            "Das ist alles, danke.",
+            "C'est tout.",
+            "C'est tout, merci.",
+            "É tudo.",
+            "É tudo, obrigado.",
+            "Na razie!",
+            "To na razie, pa.",
+            // A name, a title, a particle or another goodbye after it.
+            "Bon, je vous laisse madame",
+            "Je vous laisse monsieur",
+            "Bon allez je vous laisse hein",
+            "D'accord je vous laisse et merci",
+            "Je vous laisse à vos occupations",
+            "Le dejo señora",
+            "Bueno te dejo Marta",
+            "Das ist alles, Herr Müller",
+            "Das ist alles, Frau Schmidt",
+            "Das ist alles so weit",
+            "No to na razie, Ania",
+            "Dobrze, na razie, do jutra",
+        ] {
+            assert!(caller_wraps_up(s), "must wrap up: {s}");
+        }
+    }
+
+    #[test]
+    fn tamil_and_telugu_coming_is_no_goodbye_but_going_and_coming_is() {
+        for s in [
+            "பத்து நிமிடத்தில் வருகிறேன்.",
+            "நான் நாளைக்கு வருகிறேன்.",
+            "నేను రేపు వస్తాను.",
+            "పది నిమిషాల్లో వస్తాను.",
+        ] {
+            assert!(!caller_wraps_up(s), "must not wrap up: {s}");
+        }
+        for s in ["சரி, போய் வருகிறேன்.", "சரி, போயிட்டு வருகிறேன்.", "సరే, వెళ్ళొస్తాను.", "సరే, ఉంటాను.", "ఇక ఉంటాను."] {
+            assert!(caller_wraps_up(s), "must wrap up: {s}");
+        }
+    }
+
+    #[test]
+    fn byebye_written_as_one_word_is_a_goodbye() {
+        assert!(ends_with_farewell("Chào em nhé. Byebye.", 1));
+        assert!(ends_with_farewell("Okay, byebye.", 1));
+    }
+
+    #[test]
+    fn words_that_only_look_like_a_cue_or_an_object_are_told_apart() {
+        // "And then he said": no goodbye. With a comma it is one.
+        assert!(!caller_wraps_up("E então falou."));
+        assert!(caller_wraps_up("Beleza então, falou."));
+        // "That is not all" is no wrap-up; "No, that is all" is.
+        assert!(!caller_wraps_up("Não é só isso."));
+        assert!(!caller_wraps_up("Isso não é tudo."));
+        assert!(caller_wraps_up("Não, é só isso."));
+        // "d'accord" after the goodbye leaves nothing with anyone.
+        assert!(caller_wraps_up("Je vous laisse, d'accord."));
+        assert!(!caller_wraps_up("Je vous laisse d'autres documents."));
+        // What is left, counted; what "all that" is.
+        for s in [
+            "Je vous laisse deux colis.",
+            "Je vous laisse 20 euros.",
+            "Le dejo veinte euros.",
+            "Le dejo 3 paquetes.",
+            "Das ist alles bereits bezahlt.",
+            "Das ist alles schon erledigt.",
+            "É tudo bem barato.",
+            "Isso é tudo errado.",
+            "Na razie brak paczki.",
+        ] {
+            assert!(!caller_wraps_up(s), "must not wrap up: {s}");
+        }
+    }
+
+    #[test]
+    fn thai_see_you_and_vietnamese_good_day_are_goodbyes() {
+        assert!(ends_with_farewell("ขอบคุณครับ ไว้เจอกันครับ", 1));
+        assert!(ends_with_farewell("โอเคค่ะ ไว้เจอกันใหม่นะคะ", 1));
+        assert!(ends_with_farewell("Cảm ơn anh nhiều, chúc anh một ngày tốt lành", 1));
+        assert!(ends_with_farewell("Vâng em hiểu rồi, chào anh ạ", 1));
+        assert!(ends_with_farewell("Được rồi, chào chị.", 1));
+        // "Dạ" opens a call as well: no closing cue.
+        assert!(!ends_with_farewell("Alo, dạ chào anh ạ", 1));
+        assert!(!caller_wraps_up("Alo, dạ chào anh ạ"));
+    }
+
+    #[test]
+    fn turkish_goodbyes_thanks_and_the_dotted_capital() {
+        assert!(ends_with_farewell("Tamam, görüşürüz.", 1));
+        for s in ["Hoşça kalın.", "Görüşürüz.", "İyi geceler.", "Güle güle.", "Kendinize iyi bakın."] {
+            assert!(ends_with_farewell(s, 1), "must be a goodbye: {s}");
+        }
+        // A greeting that also says goodbye needs a closing cue before it.
+        assert!(!ends_with_farewell("Merhaba, iyi günler.", 1));
+        assert!(ends_with_farewell("Tamam, teşekkürler, iyi günler.", 1));
+        // Turkish capital İ lowercases to "i" plus a combining dot: it must still match.
+        assert!(ends_with_farewell("Teşekkürler, İyi günler.", 1));
+        assert!(ends_with_farewell("İYİ GECELER.", 1));
+        assert_eq!(strip_trailing_thanks("Tamam, teşekkürler."), "Tamam");
+        assert_eq!(strip_trailing_thanks("Anladım, Çok Teşekkür Ederim!"), "Anladım");
+        assert!(caller_wraps_up("Tamam, görüşürüz."));
+        assert!(!caller_wraps_up("Yarın evde misiniz?"));
+        assert!(!caller_wraps_up("Yarın görüşürüz mü?"));
+    }
+
+    #[test]
+    fn italian_goodbyes_thanks_and_the_greetings_that_say_goodbye() {
+        for s in [
+            "Va bene, a presto.",
+            "Buona serata.",
+            "Ci sentiamo.",
+            "Grazie mille, arrivederci.",
+            "Arrivederci, grazie mille.",
+            "Grazie, buon lavoro.",
+            "Va bene, alla prossima!",
+            "Grazie mille, alla prossima.",
+            "Perfetto, la saluto.",
+            "La saluto.",
+        ] {
+            assert!(ends_with_farewell(s, 1), "must be a goodbye: {s}");
+        }
+        // Everyday sentences with the same words, with the slack the caller's check allows.
+        for s in [
+            "Siamo un'azienda che cerca persone per un buon lavoro",
+            "Alla prossima fermata scendo",
+            "Buongiorno, buon lavoro, sono l'idraulico",
+            "La saluto mia madre",
+            "Buon lavoro.",
+            "Grazie, cerchiamo persone per un buon lavoro",
+        ] {
+            assert!(!ends_with_farewell(s, 2), "must not be a goodbye: {s}");
+            assert!(!caller_wraps_up(s), "must not wrap up: {s}");
+        }
+        // Greetings that also say goodbye need a closing cue before them.
+        assert!(ends_with_farewell("Va bene, grazie, buonasera.", 1));
+        assert!(ends_with_farewell("Perfetto, grazie, ciao!", 1));
+        assert!(ends_with_farewell("Grazie mille, buongiorno.", 1));
+        for s in [
+            "Buongiorno.",
+            "Pronto, buongiorno.",
+            "Ho un pacco per lei, buongiorno",
+        ] {
+            assert!(!ends_with_farewell(s, 1), "must not be a goodbye: {s}");
+        }
+        // A greeting with a name after it, with the slack the caller's check allows.
+        for s in ["Ciao, sono Marco.", "Ciao, mi chiamo Marco.", "Ciao, ho un pacco per lei.", "Ciao, c'è il signor Rossi?"] {
+            assert!(!ends_with_farewell(s, 2), "must not be a goodbye: {s}");
+            assert!(!caller_wraps_up(s), "must not wrap up: {s}");
+        }
+        // A name after a goodbye is still a goodbye.
+        assert!(ends_with_farewell("Va bene, ciao Marco.", 2));
+        assert!(ends_with_farewell("Grazie, ciao a tutti.", 2));
+        assert_eq!(strip_trailing_thanks("Va bene, grazie."), "Va bene");
+        assert_eq!(strip_trailing_thanks("Perfetto, Grazie Mille!"), "Perfetto");
+        assert_eq!(strip_trailing_thanks("Grazie"), "");
+        assert!(caller_wraps_up("Va bene, a presto."));
+        assert!(!caller_wraps_up("Ci sentiamo domani?"));
+        // Other languages as before.
+        assert!(ends_with_farewell("Okay, goodbye.", 1));
+        assert!(ends_with_farewell("Vale, hasta luego.", 1));
+        assert!(!ends_with_farewell("Gracias", 1));
+        assert_eq!(strip_trailing_thanks("Vale, gracias."), "Vale");
+    }
+}

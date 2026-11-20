@@ -1,0 +1,173 @@
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Bageo-Commercial
+# SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call>
+
+name: Release
+
+# Push a tag like v1.0.0 to build the downloads and attach them to a GitHub
+# Release:
+#   bageo-call-bluetooth-<version>-windows-x64-setup.exe  (installer)
+#   bageo-call-bluetooth-<version>-macos-arm64.dmg / -macos-x64.dmg
+#   bageo-call-bluetooth-<version>-linux-x64.tar.gz       (with bluetooth/)
+# The phone module for rooted Android phones comes from bageo-call's Releases.
+#
+# Each desktop download is the whole of Bageo. Windows: run the installer, then
+# click "Bageo" on the desktop. macOS: drag Bageo to Applications and open it.
+# Both start Bageo in the background with its status icon. Linux: unpack and
+# run start.sh; for Bluetooth answering also run sudo bluetooth/install.sh.
+
+on:
+  push:
+    tags: ["v*"]
+  # Run by hand (Actions → Release → Run workflow) to build the same full
+  # downloads without publishing anything: for trying a build before tagging.
+  # Download them from the run's artifacts.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  agent:
+    name: agent ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, name: windows-x64, exe: agent.exe }
+          - { os: macos-latest, name: macos-arm64, exe: agent }
+          - { os: macos-15-intel, name: macos-x64, exe: agent }
+          - { os: ubuntu-22.04, name: linux-x64, exe: agent }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # No build cache: a release is built from scratch. (A cache saved by CI
+      # on a newer Ubuntu image does not link on ubuntu-22.04.)
+      - name: Test
+        run: cargo test -p agent
+      - name: Build
+        run: cargo build --release -p agent
+      # The tray / menu bar status program (desktop/), for Windows and macOS.
+      - name: Build the status program
+        if: runner.os != 'Linux'
+        working-directory: desktop
+        run: cargo build --release
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A tag names the version; a build by hand is the version in
+          # Cargo.toml and the commit it was built from.
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)-${GITHUB_SHA::7}"
+          fi
+          dir="bageo-call-bluetooth-$version-${{ matrix.name }}"
+          echo "PKG=$dir" >> "$GITHUB_ENV"
+          echo "PKG_VERSION=$version" >> "$GITHUB_ENV"
+          echo "PKG_NUMBER=$(sed -n 's/^version = "\([0-9.]*\).*"/\1/p' Cargo.toml | head -n 1)" >> "$GITHUB_ENV"
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            # One app holds Bageo, its status icon and its sounds.
+            mkdir -p dist/dmg
+            sh desktop/scripts/package-macos.sh desktop/target/release/bageo-status dist/dmg target/release/agent .
+            ln -s /Applications dist/dmg/Applications
+            # hdiutil on build machines now and then reports "Resource busy": try again.
+            for i in 1 2 3; do
+              hdiutil create -volname Bageo -srcfolder dist/dmg -ov -format UDZO "dist/$dir.dmg" && break
+              sleep 10
+            done
+            test -f "dist/$dir.dmg"
+            rm -rf dist/dmg
+            exit 0
+          fi
+          mkdir -p "dist/$dir"
+          cp "target/release/${{ matrix.exe }}" "dist/$dir/"
+          cp -R assets docs LICENSES "dist/$dir/"
+          cp README*.md CHANGELOG.md LICENSE LICENSING.md COMMERCIAL_LICENSE.md CLA.md LEGAL.md AUDIT_REPORT.md NOTICE.md SECURITY.md .env.example "dist/$dir/"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cp start.ps1 start.cmd "dist/$dir/"
+            cp desktop/target/release/bageo-status.exe "dist/$dir/"
+          else
+            cp start.sh start.command "dist/$dir/"
+            if [ "${{ runner.os }}" = "Linux" ]; then
+              cp -R bluetooth "dist/$dir/"
+              chmod +x "dist/$dir/bluetooth/install.sh" "dist/$dir/bluetooth/uninstall.sh" "dist/$dir/bluetooth/bageo_bluetooth.py"
+            fi
+            chmod +x "dist/$dir/agent" "dist/$dir/start.sh" "dist/$dir/start.command"
+            tar -C dist -czf "dist/$dir.tar.gz" "$dir"
+          fi
+      # The installer: one setup.exe that puts Bageo in the user's programs
+      # with a "Bageo" shortcut on the desktop.
+      - name: Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          if (-not (Test-Path $iscc)) { throw 'Inno Setup is not installed' }
+          # Chinese installer texts are not part of Inno Setup itself.
+          $lang = Join-Path (Split-Path $iscc) 'Languages'
+          foreach ($n in 'ChineseTraditional', 'ChineseSimplified') {
+            if (-not (Test-Path "$lang\$n.isl")) {
+              try { Invoke-WebRequest "https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/Unofficial/$n.isl" -OutFile "$lang\$n.isl" }
+              catch { Write-Warning "$n.isl: $_" }
+            }
+          }
+          & $iscc /Qp "/DAppVersion=$env:PKG_VERSION" "/DNumVersion=$env:PKG_NUMBER" "/DSourceDir=$PWD\dist\$env:PKG" "/DOutputDir=$PWD\dist" "/DOutputName=$env:PKG-setup" desktop\installer\bageo.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed: $LASTEXITCODE" }
+          Remove-Item -Recurse -Force "dist\$env:PKG"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agent-${{ matrix.name }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.tar.gz
+
+  # Publishes whatever was built, as long as there is at least one desktop
+  # download. When a system did not get a build machine, re-run the failed
+  # jobs: this job then runs again and adds the missing files to the same
+  # Release.
+  publish:
+    needs: [agent]
+    if: ${{ !cancelled() && github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: src
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Check what was built
+        run: |
+          ls -l dist
+          ls dist/bageo-call-bluetooth-* > /dev/null
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS.txt
+      # The Release page shows only the short notes for this version from
+      # .github/RELEASE_NOTES.md (first line "# Bageo <tag>", dropped here
+      # because the Release already has that title). The full history stays
+      # in CHANGELOG.md. If the file is for another version, the page just
+      # links to CHANGELOG.md.
+      - name: Release notes
+        run: |
+          f=src/.github/RELEASE_NOTES.md
+          if [ -f "$f" ] && [ "$(head -n 1 "$f")" = "# Bageo ${GITHUB_REF_NAME}" ]; then
+            tail -n +2 "$f" > notes.md
+          else
+            echo "::warning::.github/RELEASE_NOTES.md is not for ${GITHUB_REF_NAME}; linking CHANGELOG.md instead"
+            echo "See [CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md)." > notes.md
+          fi
+          lines=$(wc -l < notes.md)
+          if [ "$lines" -gt 30 ]; then
+            echo "::warning::Release notes are ${lines} lines; keep them short"
+          fi
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Bageo ${{ github.ref_name }}
+          body_path: notes.md
+          files: dist/*
+          generate_release_notes: false
