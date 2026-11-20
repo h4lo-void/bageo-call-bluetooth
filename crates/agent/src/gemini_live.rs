@@ -2333,6 +2333,41 @@ pub fn is_urgent_whitelist_turn(text: &str) -> bool {
     crate::urgency::is_urgent(text)
 }
 
+/// Whether the AI's words carry the promise its urgent-matter instruction asks
+/// for ([`crate::contacts::urgent_block`]: "I'll call you right back", "I'm
+/// letting the owner know right now"), in the 9 languages. With
+/// `whitelist_mode` emergency this alerts the owner too, so a caller the AI
+/// promised a quick call-back is not left waiting when their own words were not
+/// in the urgency table. A plain "talk later" closing does not count: only a
+/// call-back or a notice right away.
+pub fn is_urgent_callback_promise(text: &str) -> bool {
+    const PROMISES: &[&str] = &[
+        // zh-TW / zh-CN
+        "馬上處理", "马上处理", "馬上通知", "马上通知", "立刻打給你", "立刻打给你", "馬上打給你", "马上打给你",
+        // en
+        "call you right back", "call you straight back", "call you back right away", "call you back straight away",
+        // ja
+        "すぐに折り返", "すぐ折り返", "すぐにお伝え", "すぐに連絡", "すぐ連絡",
+        // ko
+        "바로 전화", "바로 연락", "곧바로 전화", "즉시 전화", "즉시 연락",
+        // es
+        "te llamo enseguida", "le llamo enseguida", "te llama enseguida", "le llama enseguida",
+        "te llamará enseguida", "le llamará enseguida", "le aviso ahora mismo", "ahora mismo le aviso", "le aviso enseguida",
+        // fr
+        "je te rappelle tout de suite", "je vous rappelle tout de suite", "te rappeler tout de suite",
+        "vous rappeler tout de suite", "te rappellera tout de suite", "vous rappellera tout de suite",
+        "je le préviens tout de suite", "je la préviens tout de suite",
+        // de
+        "rufe dich gleich zurück", "rufe sie gleich zurück", "ruft dich gleich zurück", "ruft sie gleich zurück",
+        "sofort zurück", "sofort bescheid",
+        // pt
+        "te ligo já", "já te ligo", "te ligo de volta agora", "ligar de volta agora", "te ligar agora mesmo",
+        "aviso agora mesmo", "avisar agora mesmo",
+    ];
+    let t = text.to_lowercase().replace('\u{2019}', "'");
+    PROMISES.iter().any(|p| t.contains(p)) || (t.contains("letting ") && t.contains(" know right now"))
+}
+
 /// Per-call sales / scam config (None = not persona mode, or an AI call-back).
 #[derive(Debug, Clone)]
 pub struct StallCfg {
@@ -7231,6 +7266,14 @@ pub async fn run_session(
                                                     in_tx_window.chars().count()
                                                 );
                                                 (ut.0)(&in_tx_window);
+                                            } else if !in_tx_window.trim().is_empty() && is_urgent_callback_promise(&turn_out_text) {
+                                                // The AI judged it urgent and promised a quick call-back.
+                                                urgent_transfer_fired = true;
+                                                info!(
+                                                    "Whitelist caller: the AI promised an urgent call-back serial={serial} chars={} — alerting the owner",
+                                                    in_tx_window.chars().count()
+                                                );
+                                                (ut.0)(&in_tx_window);
                                             }
                                         }
                                     }
@@ -9025,12 +9068,13 @@ pub async fn run_session(
     let _ = sink.close().await;
     if !urgent_transfer_fired {
         if let Some(ut) = stall.as_ref().and_then(|c| c.urgent_transfer.as_ref()) {
-            if is_urgent_whitelist_turn(&in_tx_window) {
+            if is_urgent_whitelist_turn(&in_tx_window) || is_urgent_callback_promise(&out_tx_window) {
+                let said = if in_tx_window.trim().is_empty() { caller_text_all.as_str() } else { in_tx_window.as_str() };
                 info!(
-                    "Whitelist caller reported an urgent matter before hangup serial={serial} text={in_tx_window} — triggering urgent transfer/alert",
-                    in_tx_window = Said(&in_tx_window)
+                    "Whitelist caller reported an urgent matter before hangup serial={serial} text={said} — triggering urgent transfer/alert",
+                    said = Said(said)
                 );
-                (ut.0)(&in_tx_window);
+                (ut.0)(said);
             }
         }
     }

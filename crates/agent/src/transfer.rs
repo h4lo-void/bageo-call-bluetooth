@@ -182,4 +182,39 @@ mod tests {
             assert!(!crate::gemini_live::is_urgent_whitelist_turn(s), "{lang}: {s}");
         }
     }
+
+    #[test]
+    fn the_ais_urgent_promise_counts_in_every_language_but_a_plain_goodbye_does_not() {
+        let promises = [
+            ("zh-TW", "好，我知道了，我馬上處理，等一下打給你。"),
+            ("zh-TW", "好，這很急，我現在馬上通知王先生，請他立刻打給你。"),
+            ("zh-CN", "好，我知道了，我马上处理，等一下打给你。"),
+            ("en", "Okay, got it. I'm on it, I'll call you right back."),
+            ("en", "Okay, this is urgent. I'm letting Alex know right now and asking them to call you straight back."),
+            ("ja", "わかりました、すぐに折り返しお電話します。"),
+            ("ko", "알겠어요, 바로 전화 드릴게요."),
+            ("es", "Entendido, te llamo enseguida."),
+            ("fr", "D\u{2019}accord, je te rappelle tout de suite."),
+            ("de", "Okay, ich rufe dich gleich zurück."),
+            ("pt", "Entendi, já te ligo."),
+        ];
+        for (lang, s) in promises {
+            assert!(crate::gemini_live::is_urgent_callback_promise(s), "{lang}: {s}");
+        }
+        let plain = [
+            ("zh-TW", "好啊，那我晚點再打給你，掰掰。"),
+            ("zh-CN", "好的，那我晚点再打给你。"),
+            ("en", "Sure, talk to you later. Bye!"),
+            ("en", "I don't know right now, sorry."),
+            ("ja", "じゃあ、また後で電話するね。"),
+            ("ko", "나중에 다시 얘기해요."),
+            ("es", "Vale, hablamos luego."),
+            ("fr", "D'accord, à plus tard."),
+            ("de", "Alles klar, bis später."),
+            ("pt", "Beleza, falamos depois."),
+        ];
+        for (lang, s) in plain {
+            assert!(!crate::gemini_live::is_urgent_callback_promise(s), "{lang}: {s}");
+        }
+    }
 }
