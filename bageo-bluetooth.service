@@ -1,0 +1,17 @@
+[Unit]
+Description=Bageo Bluetooth hands-free (phone calls to Bageo over Bluetooth)
+Documentation=https://github.com/h4lo-void/bageo-call-bluetooth
+After=bluetooth.service network-online.target
+Requires=bluetooth.service
+Wants=network-online.target
+
+[Service]
+EnvironmentFile=-/etc/default/bageo-bluetooth
+ExecStart=/usr/bin/python3 /opt/bageo-bluetooth/bageo_bluetooth.py run
+StateDirectory=bageo-bluetooth
+StateDirectoryMode=0700
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
