@@ -13,6 +13,12 @@ the hands-free unit itself. It speaks HFP on the RFCOMM channel (caller ID from
 over SCO (CVSD, 8 kHz) to and from Bageo's phone connection, with the messages
 Bageo's Android app sends.
 
+What Bageo can ask of the phone, as with its Android app: answer calls, refuse
+Blacklist numbers, switch between AI answering and normal phone, place calls
+(AI errands, call-backs; ATD), and turn away a second call during an AI call
+(AT+CHLD=0). Not over Bluetooth hands-free: texts, and the whitelist urgent
+three-way call (answered "failed" so Bageo falls back).
+
   bageo_bluetooth.py run                 the service (systemd starts it)
   bageo_bluetooth.py pair [ADDRESS]      list phones nearby, or pair one (iPhone)
   bageo_bluetooth.py link ADDRESS CODE   use a Bageo on another computer (pairing code)
@@ -48,11 +54,14 @@ PROPS = "org.freedesktop.DBus.Properties"
 HFP_HF = "0000111e-0000-1000-8000-00805f9b34fb"
 HFP_AG = "0000111f-0000-1000-8000-00805f9b34fb"
 SR = 16000                     # Bageo's phone audio
+SIM_SUB_ID = 1                 # the phone's line as one SIM: Bluetooth cannot tell dual SIMs apart
 SCO_SR = 8000                  # CVSD over SCO
 SCO_FRAME = SCO_SR * 60 // 1000
-HF_BRSF = 4 | 16 | 32          # AT+BRSF: caller ID, remote volume, enhanced call status
+HF_BRSF = 2 | 4 | 16 | 32      # AT+BRSF: call waiting, caller ID, remote volume, enhanced call status
 HF_SDP = 4 | 16                # SDP SupportedFeatures: caller ID, remote volume
 STATE_FILE = "bageo.json"      # in the state folder: the Bageo address and key from "link"
+MODE_FILE = "mode.json"        # in the state folder: AI answering or normal phone
+VERSION = "0.2.0"
 
 # The SIM's country tells Bageo whether the carrier plays its international-call
 # warning (only Taiwan's do) and how to read national numbers. HFP only says which
@@ -66,7 +75,9 @@ MCC.update({str(m): "us" for m in range(310, 317)})
 OPERATOR_NAMES = [("chunghwa", "tw"), ("中華電信", "tw"), ("far eastone", "tw"), ("fareastone", "tw"),
                   ("遠傳", "tw"), ("taiwan mobile", "tw"), ("tw mobile", "tw"), ("台灣大哥大", "tw"),
                   ("台灣之星", "tw"), ("t star", "tw"), ("t-star", "tw"), ("tstar", "tw"), ("taiwan star", "tw"),
-                  ("亞太", "tw"), ("aptg", "tw"), ("t-mobile", "us"), ("at&t", "us"), ("verizon", "us")]
+                  ("亞太", "tw"), ("aptg", "tw"), ("t-mobile", "us"), ("at&t", "us"), ("verizon", "us"),
+                  ("tello", "us"), ("google fi", "us"), ("cricket", "us"), ("visible", "us"), ("xfinity", "us"),
+                  ("spectrum", "us")]
 
 _log_lock = threading.Lock()
 _debug = False
@@ -106,6 +117,24 @@ def short_error(e):
     if status == 401:
         return "the pairing key is not accepted (make a new pairing code in Bageo and run link again)"
     return "%s%s" % (e.__class__.__name__, " %s" % status if status else "")
+
+
+def load_mode():
+    try:
+        with open(os.path.join(state_dir(), MODE_FILE), encoding="utf-8") as f:
+            mode = json.load(f).get("mode")
+        return mode if mode in ("ai", "normal") else "ai"
+    except (OSError, ValueError, AttributeError):
+        return "ai"
+
+
+def save_mode(mode):
+    try:
+        os.makedirs(state_dir(), exist_ok=True)
+        with open(os.path.join(state_dir(), MODE_FILE), "w", encoding="utf-8") as f:
+            json.dump({"mode": mode}, f)
+    except OSError as e:
+        log("Could not save the mode (%s); it lasts until a restart" % e)
 
 
 # ---------- BlueZ: pairing agent and the hands-free profile ----------
@@ -296,6 +325,9 @@ class Hfp:
             m = re.search(r'"([^"]*)"', line)
             self.number = m.group(1) if m else ""
             self.app.on_ring(self)
+        elif line.startswith("+CCWA:"):
+            m = re.search(r'"([^"]*)"', line)
+            self.app.on_call_waiting(self, m.group(1) if m else "")
         elif line.startswith("+CLCC:"):
             m = re.search(r'"([^"]*)"', line)
             parts = line.split(":", 1)[1].split(",")
@@ -327,8 +359,11 @@ class Hfp:
 
     def _setup(self):
         steps = [("AT+BRSF=%d" % HF_BRSF, True), ("AT+CIND=?", True), ("AT+CIND?", True),
-                 ("AT+CMER=3,0,0,1", True), ("AT+CLIP=1", False), ("AT+CMEE=1", False)]
+                 ("AT+CMER=3,0,0,1", True), ("AT+CHLD=?", False), ("AT+CLIP=1", False), ("AT+CCWA=1", False),
+                 ("AT+CMEE=1", False)]
         for c, must in steps:
+            if c == "AT+CHLD=?" and not self.ag_features & 1:
+                continue                # asked only when the phone does three-way calling too (HFP)
             r = self.cmd(c)
             if must and r != "OK":
                 log("Hands-free setup failed: %s -> %s" % (c, r))
@@ -338,7 +373,7 @@ class Hfp:
         country = self.sim_country()
         log("Phone connected: %s (number's country: %s, network: %s)" % (
             self.app.bt.name_of(self.dev), country or "unknown", self.oper or "none"))
-        self.app.link_ready(self)
+        self.app.link_ready(self, country)
 
     def call(self):
         return self.val.get("call", 0)
@@ -520,23 +555,25 @@ class Sco:
 # ---------- Bageo's always-on phone connection ----------
 
 class Control:
-    """Shows the phone in Bageo's console and carries "incoming"."""
+    """Bageo's always-on phone connection: shows the phone in Bageo's console,
+    carries "incoming", and takes Bageo's requests (switch mode, place a call)."""
 
-    def __init__(self, url, serial, model):
-        self.url, self.serial, self.model = url, serial, model
+    def __init__(self, app):
+        self.app = app
+        self.url, self.serial = app.url, app.serial
         self.ws = None
         self.plan = None
         self.plan_ev = threading.Event()
         self.send_lock = threading.Lock()
         threading.Thread(target=self._loop, daemon=True).start()
+        threading.Thread(target=self._keepalive, daemon=True).start()
 
     def _loop(self):
         said = None
         while True:
             try:
                 ws = websocket.create_connection(self.url, timeout=10)
-                ws.send(json.dumps({"type": "hello", "serial": self.serial, "mode": "CONTROL_IDLE",
-                                    "play_tts_locally": False, "model": self.model, "supports_reject": True}))
+                ws.send(json.dumps(self.app.control_hello()))
                 ws.settimeout(None)
                 self.ws = ws
                 log("Connected to Bageo")
@@ -549,9 +586,14 @@ class Control:
                         m = json.loads(raw)
                     except ValueError:
                         continue
-                    if m.get("type") == "answer_plan":
+                    kind = m.get("type")
+                    if kind == "answer_plan":
                         self.plan = m
                         self.plan_ev.set()
+                    elif kind == "set_mode":
+                        threading.Thread(target=self.app.on_set_mode, args=(m,), daemon=True).start()
+                    elif kind == "place_call":
+                        threading.Thread(target=self.app.on_place_call, args=(m,), daemon=True).start()
             except Exception as e:  # noqa: BLE001
                 self.ws = None
                 why = short_error(e)
@@ -559,6 +601,11 @@ class Control:
                     said = why
                     log("Cannot reach Bageo (%s); trying again every 5 seconds" % why)
                 time.sleep(5)
+
+    def _keepalive(self):
+        while True:
+            time.sleep(30)
+            self.send({"type": "ping"})
 
     def send(self, obj):
         ws = self.ws
@@ -577,6 +624,7 @@ class Control:
         msg = {"type": "incoming", "serial": self.serial, "caller_id": caller, "sample_rate": SR}
         if country:
             msg["sim_country"] = country
+            msg["sim_sub_id"] = SIM_SUB_ID
         if not self.send(msg):
             return None
         self.plan_ev.wait(1.5)
@@ -669,17 +717,74 @@ class Flow:
             app.sco.close()
             app.audio.stop()
             app.flow = None
+            app.send_status()
 
 
-def session(app, flow, caller):
-    """Bageo talks on the picked-up call until someone hangs up."""
+class OutFlow:
+    """A call Bageo asked the phone to place (AI errand, call-back), from dialing to hang-up."""
+
+    def __init__(self, app, hfp, number, call_id, task_id):
+        self.app, self.hfp, self.number = app, hfp, number
+        self.ids = {"call_id": call_id, "task_id": task_id}
+        self.country = None
+        self.ended = threading.Event()
+        threading.Thread(target=self._run, daemon=True).start()
+
+    def _run(self):
+        app, hfp, number, ids = self.app, self.hfp, self.number, self.ids
+        try:
+            self.country = hfp.sim_country() or app.country
+            app.dialing_ours = True
+            app.taking = True
+            log(">>> Bageo places a call to %s" % mask(number))
+            r = hfp.cmd("ATD%s;" % number, timeout=10)
+            if r != "OK":
+                log("The phone refused to dial (%s)" % r)
+                app.ctl.send(dict(ids, type="place_call_failed", reason="dial_failed"))
+                return
+            app.ctl.send(dict(ids, type="place_call_ack"))
+            t = time.time()
+            while hfp.alive and hfp.callsetup() not in (2, 3) and hfp.call() != 1 and time.time() - t < 10:
+                time.sleep(0.05)
+            if hfp.callsetup() not in (2, 3) and hfp.call() != 1:
+                log("The call did not start")
+                app.ctl.send(dict(ids, type="call_end", reason="dial_failed"))
+                return
+            t = time.time()
+            while not app.sco.up() and time.time() - t < 3 and (hfp.callsetup() or hfp.call()):
+                time.sleep(0.05)
+            if not app.sco.up() and (hfp.callsetup() or hfp.call()):
+                try:
+                    app.sco.connect(app.bt.addr_of(hfp.dev))
+                except Exception as e:  # noqa: BLE001
+                    log("The phone sent no call audio and opening it failed (%s)" % short_error(e))
+            app.ctl.send(dict(ids, type="outbound_ready", number=number))
+            answered = session(app, self, number, ids)
+            app.ctl.send(dict(ids, type="call_end", reason="normal" if answered else "no_answer"))
+        except Exception as e:  # noqa: BLE001
+            log("Bageo's call failed (%s)" % short_error(e))
+            if hfp.alive and (hfp.call() or hfp.callsetup()):
+                hfp.cmd("AT+CHUP")
+            app.ctl.send(dict(ids, type="call_end", reason="error"))
+        finally:
+            app.dialing_ours = False
+            app.taking = False
+            app.sco.close()
+            app.audio.stop()
+            app.flow = None
+            app.send_status()
+
+
+def session(app, flow, caller, extra=None):
+    """Bageo talks on the call until someone hangs up. extra: an outgoing call's
+    call_id and task_id. Returns whether the call was answered."""
     args, hfp, audio = app.args, flow.hfp, app.audio
     try:
         ws = websocket.create_connection(app.url, timeout=10)
     except Exception as e:  # noqa: BLE001
         log("Could not open the call to Bageo (%s): hanging up" % short_error(e))
         hfp.cmd("AT+CHUP")
-        return
+        return False
     ws.settimeout(None)            # Bageo stays quiet while it listens: no read timeout
     st = {"hangup": None, "closed": False, "first_ai": None, "ai_bytes": 0}
     t0 = time.time()
@@ -714,6 +819,14 @@ def session(app, flow, caller):
                     log("Bageo hangs up")
                 elif m.get("type") == "tts_start" and not str(m.get("source", "")).startswith("gemini"):
                     audio.clear()
+                elif m.get("type") == "add_call":
+                    # whitelist urgent call (hold, dial the owner, merge): not done over Bluetooth yet
+                    log("Bageo asked for a three-way call: not supported over Bluetooth yet")
+                    try:
+                        ws.send(json.dumps({"type": "add_call_result", "id": m.get("id", ""),
+                                            "status": "failed", "reason": "dial_failed"}))
+                    except Exception:  # noqa: BLE001
+                        pass
 
     def sender():
         while True:
@@ -728,15 +841,29 @@ def session(app, flow, caller):
     hello = {"type": "hello", "serial": app.serial, "caller_id": caller, "sample_rate": SR,
              "model": app.bt.name_of(hfp.dev) + " (Bluetooth)", "mode": "SILENT_LOCAL",
              "play_tts_locally": False, "local_menu": False}
-    if flow.country:
-        hello["sim_country"] = flow.country
-    ws.send(json.dumps(hello))
-    ws.send(json.dumps({"type": "ringing", "serial": app.serial, "caller_id": caller}))
+    if flow.country or extra:
+        if flow.country:
+            hello["sim_country"] = flow.country
+        hello["sim_sub_id"] = SIM_SUB_ID   # a call Bageo placed went out on the line it picked
+    if extra:
+        hello.update(extra)
+    try:
+        ws.send(json.dumps(hello))
+        ws.send(json.dumps({"type": "ringing", "serial": app.serial, "caller_id": caller}))
+    except Exception as e:  # noqa: BLE001
+        log("The call to Bageo dropped at once (%s): hanging up" % short_error(e))
+        audio.stop()
+        hfp.cmd("AT+CHUP")
+        return False
     threading.Thread(target=reader, daemon=True).start()
     threading.Thread(target=sender, daemon=True).start()
     log("Call handed to Bageo")
+    app.send_status()
 
     reason, hang_up = "?", False
+    answered = extra is None
+    answered_at = None
+    idle_since = None
     while True:
         time.sleep(0.1)
         now = time.time()
@@ -749,10 +876,28 @@ def session(app, flow, caller):
         if not hfp.alive:
             reason = "the phone's hands-free link dropped"
             break
-        if hfp.call() == 0 or flow.ended.is_set():
-            reason = "the caller hung up"
-            break
-        if now - t0 > 4 and now - audio.last_rx > 4:
+        if extra is None:
+            if hfp.call() == 0 or flow.ended.is_set():
+                reason = "the caller hung up"
+                break
+        else:
+            if hfp.call() == 1 and not answered:
+                answered, answered_at = True, now
+                if not app.sco.up():
+                    try:
+                        app.sco.connect(app.bt.addr_of(hfp.dev))
+                    except Exception as e:  # noqa: BLE001
+                        log("Picked up, but opening the call audio failed (%s)" % short_error(e))
+            # "no call" must last a second: some phones end the ringing a moment before
+            # they report the answered call
+            idle = hfp.call() == 0 and hfp.callsetup() == 0
+            idle_since = (idle_since or now) if idle else None
+            if (flow.ended.is_set() and not hfp.call()) or (idle_since and now - idle_since > 1.0):
+                reason = "the other side hung up" if answered else "nobody answered"
+                break
+        # no call audio for 4 s: you moved the call to the phone (a call Bageo placed: only once answered)
+        heard_from = t0 if extra is None else answered_at
+        if heard_from and now - heard_from > 4 and now - max(audio.last_rx, heard_from) > 4:
             reason = "the call audio went back to the phone (you took over?)"
             break
         if now - t0 > args.max_min * 60:
@@ -760,10 +905,10 @@ def session(app, flow, caller):
             break
     audio.stop()
     q.put(None)
-    if hang_up and hfp.alive and hfp.call() == 1:
+    if hang_up and hfp.alive and (hfp.call() == 1 or (extra and hfp.callsetup() in (2, 3))):
         log("Hang up: %s" % hfp.cmd("AT+CHUP"))
     try:
-        ws.send(json.dumps({"type": "call_end", "serial": app.serial, "caller_id": caller}))
+        ws.send(json.dumps(dict(extra or {}, type="call_end", serial=app.serial, caller_id=caller)))
     except Exception:  # noqa: BLE001
         pass
     time.sleep(0.5)
@@ -772,6 +917,7 @@ def session(app, flow, caller):
     except Exception:  # noqa: BLE001
         pass
     log("Call ended: %s, %.0f s, Bageo talked %.1f s" % (reason, time.time() - t0, st["ai_bytes"] / 2.0 / SR))
+    return answered
 
 
 # ---------- the service ----------
@@ -782,13 +928,19 @@ class App:
         self.bt = Bluez(args.adapter)
         self.bt.aprops.Set(ADAPTER, "Alias", dbus.String(args.name))
         self.serial = "bt-" + self.bt.addr.replace(":", "").lower()[-6:]
+        self.mode = load_mode()
+        self.country = None            # of the connected phone's number (its network)
+        self.oper = None
         self.hfp = None
         self.flow = None
         self.ring_seen = False         # this ringing call already has a Flow
         self.own_call = False          # a call you made or picked up yourself
+        self.dialing_ours = False      # Bageo asked for the call being dialed
+        self.last_busy = False
+        self.cw_busy = False
         self.taking = False
         self.audio = Audio()
-        self.ctl = Control(url, self.serial, "Bluetooth hands-free")
+        self.ctl = Control(self)
         self.agent = Agent(self.bt.bus, "/bageo/agent", self.bt)
         am = dbus.Interface(self.bt.bus.get_object(BUS, "/org/bluez"), "org.bluez.AgentManager1")
         am.RegisterAgent("/bageo/agent", "NoInputNoOutput")
@@ -801,6 +953,7 @@ class App:
             "RequireAuthorization": dbus.Boolean(False), "AutoConnect": dbus.Boolean(True)})
         self.sco = Sco(self, self.bt.addr)
         log("Bluetooth hands-free ready: \"%s\"" % args.name)
+        log("Mode: %s" % ("AI answering" if self.mode == "ai" else "normal phone (calls stay on the phone)"))
         if args.pair_minutes > 0:
             self.open_pairing(int(args.pair_minutes * 60))
         GLib.timeout_add_seconds(2, self.reconnect)
@@ -863,18 +1016,118 @@ class App:
         if self.hfp is not None and self.hfp.dev == dev:
             self.hfp.close()
 
-    def link_ready(self, hfp):
+    # ----- what Bageo sees of this phone -----
+
+    def sims(self):
+        """The phone's line as Bageo's SIM list (AI errands pick a phone by it)."""
+        if not self.country:
+            return []
+        return [{"sub_id": SIM_SUB_ID, "country": self.country, "carrier": self.oper or ""}]
+
+    def in_call(self):
+        hfp = self.hfp
+        return self.flow is not None or bool(hfp is not None and hfp.alive and (hfp.call() or hfp.callsetup()))
+
+    def control_hello(self):
+        h = {"type": "hello", "serial": self.serial, "mode": "CONTROL_IDLE", "play_tts_locally": False,
+             "model": "Bluetooth hands-free", "app_version": "bluetooth-" + VERSION, "supports_reject": True,
+             "phone_mode": self.mode, "in_call": self.in_call()}
+        if self.sims():
+            h["sims"] = self.sims()
+        return h
+
+    def send_status(self):
+        ctl = getattr(self, "ctl", None)
+        if ctl is None:
+            return
+        msg = {"type": "status", "serial": self.serial, "mode": self.mode, "in_call": self.in_call()}
+        if self.sims():
+            msg["sims"] = self.sims()
+        ctl.send(msg)
+
+    # ----- Bageo's requests -----
+
+    def on_set_mode(self, m):
+        mode, rid = str(m.get("mode", "")).strip(), m.get("id", "")
+        if mode not in ("ai", "normal"):
+            ok, err = False, "invalid_mode"
+        elif self.in_call():
+            ok, err = False, "in_call"
+        else:
+            ok, err = True, ""
+            if mode != self.mode:
+                self.mode = mode
+                save_mode(mode)
+                log("Switched to %s" % ("AI answering" if mode == "ai" else "normal phone (calls stay on the phone)"))
+        self.ctl.send({"type": "set_mode_result", "id": rid, "ok": ok, "mode": self.mode, "error": err})
+        self.send_status()
+
+    def on_place_call(self, m):
+        number = str(m.get("number", "")).strip()
+        ids = {"call_id": m.get("call_id", ""), "task_id": m.get("task_id", "")}
+        hfp = self.hfp
+        reason = None
+        if not re.fullmatch(r"\+?[0-9*#]{3,}", number):
+            reason = "bad_number"
+        elif hfp is None or not hfp.alive or not hfp.names:
+            reason = "no_phone"
+        elif self.flow is not None or hfp.call() or hfp.callsetup():
+            reason = "busy"
+        if reason:
+            log("Could not place Bageo's call (%s)" % reason)
+            self.ctl.send(dict(ids, type="place_call_failed", reason=reason))
+            return
+        self.flow = OutFlow(self, hfp, number, ids["call_id"], ids["task_id"])
+
+    def on_call_waiting(self, hfp, number):
+        """A second call during a call: turned away when Bageo is on the call."""
+        if self.cw_busy:
+            return
+        self.cw_busy = True
+        threading.Thread(target=self._call_waiting, args=(hfp, number), daemon=True).start()
+
+    def _call_waiting(self, hfp, number):
+        try:
+            flow = self.flow
+            if flow is None:
+                log("A second call came in while you are on the phone: left to you")
+                time.sleep(5)
+                return
+            r = hfp.cmd("AT+CHLD=0")
+            if r != "OK":
+                log("A second call came in during Bageo's call: the phone did not refuse it (%s) %s" % (r, mask(number)))
+                return
+            log("A second call came in during Bageo's call: refused as busy (%s) %s" % (r, mask(number)))
+            msg = {"type": "call_waiting_rejected", "serial": self.serial, "caller_id": number}
+            if flow.country:
+                msg["sim_country"] = flow.country
+                msg["sim_sub_id"] = SIM_SUB_ID
+            self.ctl.send(msg)
+            time.sleep(3)
+        finally:
+            self.cw_busy = False
+
+    # ----- the phone -----
+
+    def link_ready(self, hfp, country=None):
+        self.country, self.oper = country, hfp.oper
+        self.send_status()
         if hfp.callsetup() == 1 and hfp.call() == 0:
             self.on_ring(hfp)
 
     def link_closed(self, hfp):
         log("The phone disconnected")
+        self.ring_seen = self.own_call = self.last_busy = False
         if self.flow is not None:
             self.flow.ended.set()
+        self.send_status()
 
     def on_ring(self, hfp):
         if self.flow is None and not self.ring_seen and hfp.call() == 0 and hfp.names:
             self.ring_seen = True
+            if self.mode == "normal":
+                log("Incoming call; normal phone mode: it stays on the phone")
+                return
             self.flow = Flow(self, hfp)
 
     def take_audio(self, c):
@@ -882,7 +1135,7 @@ class App:
         it unless you dialed it yourself or already moved it back to the phone.
         Returns True when the audio link was taken."""
         hfp = self.hfp
-        if hfp is None or not hfp.alive or self.own_call:
+        if hfp is None or not hfp.alive or self.own_call or self.mode == "normal":
             return False
         if hfp.call() != 1 and self.flow is not None:
             # the audio of a call picked up on the phone can arrive a moment before
@@ -914,8 +1167,9 @@ class App:
             if v == 1:
                 self.on_ring(hfp)
             elif v in (2, 3):
-                self.own_call = True
-                log("A call you made: it stays on the phone")
+                if not self.dialing_ours and not self.own_call:
+                    self.own_call = True
+                    log("A call you made: it stays on the phone")
             elif v == 0 and hfp.call() == 0:
                 hfp.number = ""
             if v == 0:
@@ -926,6 +1180,10 @@ class App:
             self.own_call = False
             if self.flow is not None:
                 self.flow.ended.set()
+        busy = bool(hfp.call() or hfp.callsetup())
+        if busy != self.last_busy:
+            self.last_busy = busy
+            self.send_status()
         if _debug:
             log("state: call=%s callsetup=%s callheld=%s" % (
                 hfp.val.get("call"), hfp.val.get("callsetup"), hfp.val.get("callheld")))
@@ -1104,6 +1362,7 @@ def main():
     global _debug
     env = os.environ.get
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--version", action="version", version="bageo-call-bluetooth " + VERSION)
     p.add_argument("--adapter", default=env("BT_ADAPTER", "hci0"), help="Bluetooth adapter (hci0)")
     sub = p.add_subparsers(dest="command", required=True)
     r = sub.add_parser("run", help="the service")
