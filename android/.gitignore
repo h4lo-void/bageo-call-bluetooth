@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Bageo-Commercial
+# SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call>
+
+# Build outputs
+build/
+.gradle/
+.kotlin/
+
+# Machine-specific SDK location
+local.properties
+
+# Packaged module zips and the APK copied into the module tree
+magisk/dist/
+magisk/pixelcallai_uplink/system/priv-app/com.pixelcallai.streamer/base.apk
+
+# IDE
+*.iml
+.idea/

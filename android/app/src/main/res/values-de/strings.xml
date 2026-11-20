@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Bageo-Commercial -->
+<!-- SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call> -->
+<resources>
+    <string name="app_name">Bageo</string>
+
+    <!-- Notifications -->
+    <string name="notification_title">Bageo</string>
+    <string name="notification_text_armed">Bereit. Wartet auf Anrufe; das Telefon bleibt stumm.</string>
+    <string name="notification_text_in_call">Die KI bearbeitet gerade einen Anruf.</string>
+    <string name="notification_text_normal">Normales Telefon: Anrufe klingeln und du nimmst sie selbst an.</string>
+    <string name="channel_service">Bageo-Dienst</string>
+    <string name="channel_info">Bageo-Hinweise</string>
+    <string name="uplink_missing_title">Der Anrufer kann die KI nicht hören</string>
+    <string name="uplink_missing_text">Der Audiopfad des Anrufs ist nicht verfügbar. Prüfe, ob das Bageo-Modul installiert und aktiviert ist, und starte das Telefon neu.</string>
+
+    <!-- Header -->
+    <string name="header_version">Version %1$s (%2$d)</string>
+    <string name="header_device">%1$s · Android %2$s (API %3$d)</string>
+    <string name="header_compat">Getestet auf Pixel 7, 7a, 8 und 9. Andere gerootete Telefone funktionieren möglicherweise auch – Nutzung auf eigene Gefahr.</string>
+
+    <!-- Status card and the switch between AI mode and normal phone -->
+    <string name="st_ai_on">Die KI nimmt deine Anrufe an</string>
+    <string name="st_ai_on_d">Eingehende Anrufe nimmt die KI an. Das Telefon bleibt stumm.</string>
+    <string name="st_normal">Normales Telefon: Anrufe klingeln wie gewohnt</string>
+    <string name="st_normal_d">Die KI nimmt nicht ab. Du nimmst Anrufe selbst an, wie bei jedem Telefon. Schalte den Schalter unten ein, damit die KI wieder annimmt.</string>
+    <string name="st_offline">Noch nicht mit dem Computer verbunden</string>
+    <string name="st_offline_d">Prüfe, ob Bageo auf dem Computer läuft und das Telefon per USB angeschlossen oder im selben WLAN ist (zum ersten Koppeln einmal per USB anschließen).</string>
+    <string name="st_steps">Offene Einrichtungsschritte: %1$d</string>
+    <string name="st_steps_d">Erledige die Schritte unten, damit die KI Anrufe annehmen kann.</string>
+    <string name="st_service_off">Der Annahmedienst läuft nicht</string>
+    <string name="st_service_off_d">Tippe auf „Starten“, um ihn wieder zu starten.</string>
+    <string name="btn_start">Starten</string>
+    <string name="st_switching">Wird umgestellt…</string>
+    <string name="st_switching_d">Das dauert meist nur ein paar Sekunden.</string>
+    <string name="mode_switch_label">KI nimmt meine Anrufe an</string>
+    <string name="mode_switch_hint">Ausschalten, um es als normales Telefon zu nutzen: Anrufe klingeln und du nimmst selbst ab.</string>
+    <string name="confirm_ai_title">Soll die KI Anrufe annehmen?</string>
+    <string name="confirm_ai_body">Dieses Telefon wird zum KI-Telefon: Anrufe klingeln nicht mehr und die KI nimmt ab. Google Telefon wird deaktiviert und „Bitte nicht stören“ eingeschaltet.</string>
+    <string name="confirm_normal_title">Als normales Telefon nutzen?</string>
+    <string name="confirm_normal_body">Anrufe klingeln und du nimmst sie selbst an. Die KI nimmt auf diesem Telefon keine Anrufe mehr an.</string>
+    <string name="btn_switch">Umstellen</string>
+    <string name="mode_failed">Die Umstellung wurde nicht abgeschlossen. %1$s Du kannst es noch einmal versuchen.</string>
+    <string name="mode_err_in_call">Es läuft ein Anruf; leg zuerst auf.</string>
+    <string name="mode_err_busy">Die vorige Umstellung läuft noch.</string>
+    <string name="mode_err_no_root">Das Bageo-Modul läuft nicht. Prüfe in Magisk oder KernelSU, ob das Modul Bageo Uplink aktiviert ist, und starte das Telefon neu.</string>
+    <string name="mode_err_save">Der Modus konnte nicht gespeichert werden.</string>
+    <string name="mode_err_dialer">Die Standard-Telefon-App konnte nicht geändert werden.</string>
+    <string name="mode_err_screening">Die Anruffilterung konnte nicht geändert werden.</string>
+    <string name="mode_err_dnd">„Bitte nicht stören“ konnte nicht geändert werden.</string>
+    <string name="mode_err_dnd_mode">„Bitte nicht stören“ ist noch an. Öffne auf dem Telefon Einstellungen → Modi und schalte „%1$s“ aus.</string>
+    <string name="mode_err_volume">Die Klingellautstärke konnte nicht eingestellt werden.</string>
+    <string name="mode_err_other">Ein unerwarteter Fehler ist aufgetreten.</string>
+    <string name="btn_console">Webkonsole öffnen</string>
+    <string name="msg_no_browser">Keine App auf diesem Telefon kann Webseiten öffnen.</string>
+    <string name="st_legacy_off">Auf diesem Telefon war der alte Schalter „KI-Annahme“ aus. Seit diesem Update entscheidet der Schalter oben: Jetzt nimmt die KI Anrufe an. Schalte ihn aus, um es als normales Telefon zu nutzen.</string>
+
+    <!-- Setup steps (AI mode) -->
+    <string name="steps_header">Einrichtungsschritte (%1$d von %2$d erledigt)</string>
+    <string name="status_ok">OK</string>
+    <string name="status_missing">Fehlt</string>
+    <string name="status_check">Prüfen</string>
+    <string name="step_module_title">Bageo-Modul installieren</string>
+    <string name="step_module_ok">Das Modul ist aktiv.</string>
+    <string name="step_module_missing">Installiere das Bageo-Modul in Magisk oder KernelSU und starte das Telefon neu.</string>
+    <string name="step_perms_title">Bageo Telefon und Mikrofon erlauben</string>
+    <string name="step_perms_desc">Damit Bageo Anrufe bemerkt, annimmt und den Ton an den Computer schickt.</string>
+    <string name="step_dialer_title">Bageo als Standard-Telefon-App festlegen</string>
+    <string name="step_dialer_desc">Damit kein Anrufbildschirm erscheint, während die KI spricht.</string>
+    <string name="step_screening_title">Bageo als Anruffilter-App festlegen</string>
+    <string name="step_screening_desc">Damit eingehende Anrufe nicht klingeln.</string>
+    <string name="step_dnd_title">Bageo „Bitte nicht stören“ steuern lassen</string>
+    <string name="step_dnd_desc">Hält das Telefon still, während die KI annimmt.</string>
+    <string name="step_battery_title">Bageo nicht schlafen legen lassen</string>
+    <string name="step_battery_desc">Verhindert, dass Android Bageo zum Akkusparen beendet und Anrufe verloren gehen.</string>
+    <string name="step_pair_title">Zum ersten Koppeln per USB an den Computer anschließen</string>
+    <string name="step_pair_ok">Mit dem Computer gekoppelt. Ohne USB-Kabel läuft die Verbindung über WLAN weiter.</string>
+    <string name="step_pair_missing">Schalte beim ersten Mal das USB-Debugging ein und schließe das Telefon per USB an den Computer an. Danach verbindet es sich auch über WLAN.</string>
+    <string name="step_pair_ip">Kein USB möglich (zum Beispiel, weil Bageo in Docker läuft): Hol dir in der Webkonsole einen Kopplungscode und tippe dann auf „Per IP-Adresse verbinden“.</string>
+    <string name="ip_connect_btn">Per IP-Adresse verbinden</string>
+    <string name="ip_addr_label">IP-Adresse von Bageo</string>
+    <string name="ip_addr_hint">Zum Beispiel 192.168.1.20</string>
+    <string name="ip_code_label">Kopplungscode</string>
+    <string name="ip_code_hint">Auf der Seite „System“ der Webkonsole holen</string>
+    <string name="ip_connect">Verbinden</string>
+    <string name="ip_connecting">Wird verbunden …</string>
+    <string name="ip_connected">Mit Bageo verbunden</string>
+    <string name="ip_err_address">Gib die IP-Adresse von Bageo ein, zum Beispiel 192.168.1.20.</string>
+    <string name="ip_err_code_format">Der Kopplungscode hat 6 Ziffern.</string>
+    <string name="ip_err_unreachable">Diese Adresse ist nicht erreichbar. Prüfe, ob Telefon und Bageo im selben Netzwerk sind.</string>
+    <string name="ip_err_code">Der Kopplungscode ist falsch oder abgelaufen. Hol dir in der Webkonsole einen neuen.</string>
+    <string name="ip_err_busy">Zu viele falsche Codes. Warte eine Minute und versuch es noch einmal.</string>
+    <string name="ip_err_wifi_off">Schalte zuerst in der Webkonsole „Telefone auch per WLAN verbinden“ ein.</string>
+    <string name="btn_allow">Zulassen</string>
+    <string name="btn_set">Festlegen</string>
+    <string name="btn_open_settings">Einstellungen öffnen</string>
+    <string name="grant_perms">Erteile die angeforderten Berechtigungen und tippe dann noch einmal auf „Dienst starten“.</string>
+    <string name="msg_perm_settings">Einige Berechtigungen können hier nicht mehr angefragt werden. Erteile sie in den Systemeinstellungen der App.</string>
+
+    <!-- Advanced: service -->
+    <string name="advanced">Erweitert</string>
+    <string name="section_service">Dienst</string>
+    <string name="service_running">Dienst: läuft</string>
+    <string name="service_stopped">Dienst: gestoppt</string>
+    <string name="btn_start_service">Dienst starten</string>
+    <string name="btn_stop_service">Dienst stoppen</string>
+    <string name="msg_service_started">Dienst gestartet.</string>
+    <string name="msg_service_stopped">Dienst gestoppt.</string>
+
+    <!-- Advanced: detailed checks -->
+    <string name="section_details">Ausführliche Prüfung</string>
+    <string name="check_priv_title">Als privilegierte System-App installiert</string>
+    <string name="check_priv_ok">Installiert unter %1$s</string>
+    <string name="check_priv_missing">Als normale App installiert (%1$s). Installiere das Bageo-Modul in Magisk oder KernelSU und starte neu. Falls du die APK zusätzlich von Hand installiert hast, deinstalliere diese Kopie.</string>
+    <string name="check_privperm_title">Privilegierte Berechtigungen</string>
+    <string name="check_privperm_desc">Werden beim Start vom Modul erteilt. Auf diesem Bildschirm lassen sie sich nicht erteilen.</string>
+    <string name="perm_capture_audio_output">Audio des Anrufs erfassen</string>
+    <string name="perm_modify_phone_state">KI-Stimme in den Anruf einspeisen</string>
+    <string name="perm_control_incall">Anrufbildschirm ersetzen</string>
+    <string name="section_runtime_perms">App-Berechtigungen</string>
+    <string name="perm_record_audio">Mikrofon: Audio des Anrufs aufnehmen</string>
+    <string name="perm_read_phone_state">Telefon: erkennen, wann ein Anruf beginnt und endet</string>
+    <string name="perm_read_call_log">Anrufliste: Nummer des Anrufers lesen</string>
+    <string name="perm_answer_calls">Anrufe annehmen: automatisch abheben und auflegen</string>
+    <string name="perm_call_phone">Anrufe tätigen: Rückruffunktion</string>
+    <string name="perm_post_notifications">Benachrichtigungen: Dienstbenachrichtigung anzeigen</string>
+    <string name="check_uplink_title">Einspeisung der KI-Stimme in den Anruf</string>
+    <string name="check_uplink_ok">Telefonie-Audioausgang gefunden.</string>
+    <string name="check_uplink_idle">Im Moment nicht sichtbar. Bei manchen Telefonen erscheint er nur während eines Anrufs; die App meldet sich, wenn die Einspeisung fehlschlägt.</string>
+    <string name="check_uplink_missing">Benötigt das Modul: Die Berechtigung MODIFY_PHONE_STATE fehlt.</string>
+
+    <!-- Advanced: connection -->
+    <string name="section_connection">Verbindung</string>
+    <string name="agent_url_label">Agent-Adresse</string>
+    <string name="connection_hint_usb">USB (Standard, empfohlen): Lass ws://127.0.0.1:8765 stehen. Das PC-Programm leitet diesen Port automatisch per adb reverse über das USB-Kabel weiter.</string>
+    <string name="connection_hint_wifi">WLAN: Gib die Adresse ein, die das PC-Programm anzeigt, zum Beispiel ws://192.0.2.10:8787/ws?token=… Telefon und PC müssen im selben Netzwerk sein.</string>
+    <string name="btn_save">Speichern</string>
+    <string name="btn_reset_usb">Auf USB-Standard zurücksetzen</string>
+    <string name="btn_test">Verbindung testen</string>
+    <string name="msg_url_invalid">Die Adresse muss mit ws:// oder wss:// beginnen und einen Host enthalten.</string>
+    <string name="msg_url_saved">Gespeichert.</string>
+    <string name="msg_url_saved_restarted">Gespeichert. Der Dienst wurde neu gestartet und nutzt jetzt die neue Adresse.</string>
+    <string name="msg_url_saved_pending">Gespeichert. Um die neue Adresse zu nutzen, tippe auf „Dienst stoppen“ und danach auf „Dienst starten“, wenn gerade kein Anruf läuft.</string>
+    <string name="test_running">Verbindung wird hergestellt …</string>
+    <string name="test_ok">Verbunden</string>
+    <string name="test_failed">Fehlgeschlagen: %1$s</string>
+    <string name="test_fail_timeout">keine Antwort innerhalb von 5 Sekunden</string>
+    <string name="test_fail_refused">Der Computer hat die Verbindung abgelehnt. Läuft Bageo dort und ist die USB-Verbindung eingerichtet?</string>
+    <string name="test_fail_host">Diese Adresse wurde nicht gefunden</string>
+    <string name="test_fail_network">Diese Adresse ist nicht erreichbar. Sind Telefon und Computer im selben Netzwerk?</string>
+    <string name="test_fail_auth">Abgelehnt: Das Token in der Adresse fehlt oder ist falsch</string>
+    <string name="test_fail_tls">Die sichere Verbindung (wss) ist fehlgeschlagen</string>
+    <string name="test_fail_rejected">Etwas hat geantwortet, aber es ist nicht Bageo oder hat die Verbindung abgelehnt</string>
+    <string name="test_fail_other">Keine Verbindung möglich</string>
+    <string name="test_details">Details</string>
+
+    <!-- About and safety -->
+    <string name="section_about">Info und Sicherheit</string>
+    <string name="about_dedicated">Im KI-Modus übernimmt das Modul die Telefon-App, schaltet den Klingelton stumm und aktiviert „Bitte nicht stören“. Am besten nimmst du ein Zweittelefon. Um es eine Zeit lang normal zu nutzen, schalte den Schalter oben aus.</string>
+    <string name="about_rollback">Um Bageo ganz zu entfernen, schalte zuerst den Schalter oben aus (zurück zum normalen Telefon), deaktiviere oder entferne dann das Modul in Magisk oder KernelSU und starte neu.</string>
+    <string name="about_legal">Die Gesetze zum Aufzeichnen von Anrufen und zur Pflicht, Anrufer auf eine KI hinzuweisen, unterscheiden sich je nach Land. Für die Einhaltung bist du selbst verantwortlich.</string>
+    <!-- Connection route and Wi-Fi backup -->
+    <string name="route_usb">Über USB verbunden.</string>
+    <string name="route_wifi">Über WLAN verbunden.</string>
+    <string name="route_custom">Mit der Adresse verbunden, die du eingegeben hast.</string>
+    <string name="wifi_ready">Die WLAN-Reserve ist bereit. Anrufe laufen weiter, wenn du das USB-Kabel abziehst.</string>
+    <string name="wifi_not_ready">Die WLAN-Reserve ist noch nicht eingerichtet. Verbinde das USB-Kabel einmal, dann ist sie eingerichtet.</string>
+    <string name="btn_forget_wifi">WLAN-Verbindung vergessen</string>
+    <string name="msg_wifi_forgotten">WLAN-Verbindung vergessen. Zum erneuten Einrichten das USB-Kabel einmal anschließen.</string>
+</resources>

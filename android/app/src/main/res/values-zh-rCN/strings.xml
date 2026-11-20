@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Bageo-Commercial -->
+<!-- SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call> -->
+<resources>
+    <string name="app_name">Bageo</string>
+
+    <!-- Notifications -->
+    <string name="notification_title">Bageo</string>
+    <string name="notification_text_armed">待命中，等待来电；手机保持静音。</string>
+    <string name="notification_text_in_call">AI 正在接听电话。</string>
+    <string name="notification_text_normal">普通手机：来电会正常响铃，由你自己接。</string>
+    <string name="channel_service">Bageo 后台服务</string>
+    <string name="channel_info">Bageo 提醒</string>
+    <string name="uplink_missing_title">对方听不到 AI 的声音</string>
+    <string name="uplink_missing_text">通话音频通道不可用。请确认 Bageo 模块已安装并启用，然后重启手机。</string>
+
+    <!-- Header -->
+    <string name="header_version">版本 %1$s（%2$d）</string>
+    <string name="header_device">%1$s · Android %2$s（API %3$d）</string>
+    <string name="header_compat">已在 Pixel 7、7a、8、9 上实测。其他已 root 的手机也许可用，风险自负。</string>
+
+    <!-- Status card and the switch between AI mode and normal phone -->
+    <string name="st_ai_on">AI 正在帮你接电话</string>
+    <string name="st_ai_on_d">来电会由 AI 接听，手机不会响。</string>
+    <string name="st_normal">普通手机：来电会正常响铃</string>
+    <string name="st_normal_d">AI 不会接电话，你可以像普通手机一样自己接。打开下面的开关，就换回 AI 接听。</string>
+    <string name="st_offline">还没连上电脑</string>
+    <string name="st_offline_d">请确认电脑上的 Bageo 开着，并且手机用 USB 线连着电脑，或与电脑在同一个 Wi-Fi（第一次要先用 USB 线连电脑配对）。</string>
+    <string name="st_steps">还有 %1$d 个设置步骤没完成</string>
+    <string name="st_steps_d">完成下面的设置步骤，AI 才能接电话。</string>
+    <string name="st_service_off">接听服务没有在运行</string>
+    <string name="st_service_off_d">点“启动”让它重新开始。</string>
+    <string name="btn_start">启动</string>
+    <string name="st_switching">正在切换…</string>
+    <string name="st_switching_d">通常几秒钟就好。</string>
+    <string name="mode_switch_label">AI 帮我接电话</string>
+    <string name="mode_switch_hint">关掉就变回普通手机：电话会响，你可以自己接。</string>
+    <string name="confirm_ai_title">改成 AI 接电话？</string>
+    <string name="confirm_ai_body">这部手机会变成 AI 专用：来电不会响，由 AI 接起来。Google 电话会停用，勿扰模式会打开。</string>
+    <string name="confirm_normal_title">改成普通手机？</string>
+    <string name="confirm_normal_body">来电会正常响铃，由你自己接。AI 不会再接这部手机的电话。</string>
+    <string name="btn_switch">切换</string>
+    <string name="mode_failed">切换没有完成。%1$s可以再试一次。</string>
+    <string name="mode_err_in_call">通话中不能切换，请先挂断。</string>
+    <string name="mode_err_busy">上一次切换还没做完。</string>
+    <string name="mode_err_no_root">Bageo 模块没有在运行。请在 Magisk 或 KernelSU 中确认 Bageo Uplink 模块已启用，然后重启手机。</string>
+    <string name="mode_err_save">无法保存模式设置。</string>
+    <string name="mode_err_dialer">无法更换默认电话应用。</string>
+    <string name="mode_err_screening">无法更改来电过滤设置。</string>
+    <string name="mode_err_dnd">无法更改勿扰模式。</string>
+    <string name="mode_err_dnd_mode">勿扰还开着。请到手机的“设置 → 模式”，把“%1$s”关掉。</string>
+    <string name="mode_err_volume">无法调整铃声音量。</string>
+    <string name="mode_err_other">发生了意外错误。</string>
+    <string name="btn_console">打开网页控制台</string>
+    <string name="msg_no_browser">这部手机没有能打开网页的应用。</string>
+    <string name="st_legacy_off">这部手机旧版的“AI 接听”开关原本是关着的。这次更新后改由上面的开关决定，现在由 AI 接这部手机的电话。要当普通手机用，请把上面的开关关掉。</string>
+
+    <!-- Setup steps (AI mode) -->
+    <string name="steps_header">设置步骤（%1$d/%2$d 完成）</string>
+    <string name="status_ok">正常</string>
+    <string name="status_missing">未完成</string>
+    <string name="status_check">请确认</string>
+    <string name="step_module_title">安装 Bageo 模块</string>
+    <string name="step_module_ok">模块已启用。</string>
+    <string name="step_module_missing">请在 Magisk 或 KernelSU 中刷入 Bageo 模块，然后重启手机。</string>
+    <string name="step_perms_title">允许 Bageo 使用电话和麦克风</string>
+    <string name="step_perms_desc">用来知道有来电、接起电话，并把通话声音送到电脑。</string>
+    <string name="step_dialer_title">把 Bageo 设为默认电话应用</string>
+    <string name="step_dialer_desc">这样 AI 接电话时，手机不会弹出通话界面。</string>
+    <string name="step_screening_title">把 Bageo 设为来电过滤应用</string>
+    <string name="step_screening_desc">这样来电时手机不会响。</string>
+    <string name="step_dnd_title">允许 Bageo 控制勿扰模式</string>
+    <string name="step_dnd_desc">让手机在 AI 接电话时保持安静。</string>
+    <string name="step_battery_title">不要让 Bageo 进入休眠</string>
+    <string name="step_battery_desc">避免 Android 为了省电把 Bageo 停掉而漏接电话。</string>
+    <string name="step_pair_title">插入电脑完成首次配对</string>
+    <string name="step_pair_ok">已与电脑配对。拔掉 USB 线后也能用 Wi-Fi 连接。</string>
+    <string name="step_pair_missing">第一次请开启 USB 调试，用 USB 线连到电脑配对；之后拔掉线也能用 Wi-Fi 连接。</string>
+    <string name="step_pair_ip">没法插 USB（比如 Bageo 装在 Docker 里）：在控制台生成配对码，再点“用 IP 地址连接”。</string>
+    <string name="ip_connect_btn">用 IP 地址连接</string>
+    <string name="ip_addr_label">Bageo 的 IP 地址</string>
+    <string name="ip_addr_hint">例如 192.168.1.20</string>
+    <string name="ip_code_label">配对码</string>
+    <string name="ip_code_hint">在控制台的“系统”页生成</string>
+    <string name="ip_connect">连接</string>
+    <string name="ip_connecting">正在连接…</string>
+    <string name="ip_connected">已连上 Bageo</string>
+    <string name="ip_err_address">请输入 Bageo 的 IP 地址，例如 192.168.1.20。</string>
+    <string name="ip_err_code_format">配对码是 6 位数字。</string>
+    <string name="ip_err_unreachable">连不上这个地址，请确认手机和 Bageo 在同一个网络。</string>
+    <string name="ip_err_code">配对码不对或已过期，请在控制台重新生成。</string>
+    <string name="ip_err_busy">错误次数太多，请等一分钟再试。</string>
+    <string name="ip_err_wifi_off">请先在控制台打开“手机也能用 Wi-Fi 连接”。</string>
+    <string name="btn_allow">允许</string>
+    <string name="btn_set">设置</string>
+    <string name="btn_open_settings">打开设置</string>
+    <string name="grant_perms">请允许所请求的权限，然后再点一次“启动服务”。</string>
+    <string name="msg_perm_settings">部分权限已无法在此请求，请到本应用的系统设置页面中允许。</string>
+
+    <!-- Advanced: service -->
+    <string name="advanced">高级</string>
+    <string name="section_service">服务</string>
+    <string name="service_running">服务：运行中</string>
+    <string name="service_stopped">服务：已停止</string>
+    <string name="btn_start_service">启动服务</string>
+    <string name="btn_stop_service">停止服务</string>
+    <string name="msg_service_started">服务已启动。</string>
+    <string name="msg_service_stopped">服务已停止。</string>
+
+    <!-- Advanced: detailed checks -->
+    <string name="section_details">详细检查</string>
+    <string name="check_priv_title">已安装为特权系统应用</string>
+    <string name="check_priv_ok">安装位置：%1$s</string>
+    <string name="check_priv_missing">当前是普通应用（%1$s）。请在 Magisk 或 KernelSU 中刷入 Bageo 模块并重启。如果还手动安装过 APK，请卸载那一份。</string>
+    <string name="check_privperm_title">特权权限</string>
+    <string name="check_privperm_desc">由模块在开机时授予，无法在此页面授权。</string>
+    <string name="perm_capture_audio_output">采集通话音频</string>
+    <string name="perm_modify_phone_state">把 AI 的声音送入通话</string>
+    <string name="perm_control_incall">接管通话界面</string>
+    <string name="section_runtime_perms">应用权限</string>
+    <string name="perm_record_audio">麦克风：录制通话音频</string>
+    <string name="perm_read_phone_state">电话：获知通话何时开始和结束</string>
+    <string name="perm_read_call_log">通话记录：读取来电号码</string>
+    <string name="perm_answer_calls">接听电话：自动接听和挂断</string>
+    <string name="perm_call_phone">拨打电话：回拨功能</string>
+    <string name="perm_post_notifications">通知：显示服务通知</string>
+    <string name="check_uplink_title">把 AI 语音送入通话</string>
+    <string name="check_uplink_ok">已找到电话音频输出设备。</string>
+    <string name="check_uplink_idle">当前不可见。部分手机只在通话中才会出现；如果注入失败，应用会通知你。</string>
+    <string name="check_uplink_missing">需要模块：缺少 MODIFY_PHONE_STATE 权限。</string>
+
+    <!-- Advanced: connection -->
+    <string name="section_connection">连接</string>
+    <string name="agent_url_label">电脑端程序地址</string>
+    <string name="connection_hint_usb">USB（默认，推荐）：保持 ws://127.0.0.1:8765 即可。电脑端程序会自动通过 adb reverse 经 USB 线转发此端口。</string>
+    <string name="connection_hint_wifi">Wi-Fi：输入电脑端程序显示的地址，例如 ws://192.0.2.10:8787/ws?token=… 手机和电脑必须在同一网络。</string>
+    <string name="btn_save">保存</string>
+    <string name="btn_reset_usb">恢复 USB 默认值</string>
+    <string name="btn_test">测试连接</string>
+    <string name="msg_url_invalid">地址必须以 ws:// 或 wss:// 开头，并包含主机名。</string>
+    <string name="msg_url_saved">已保存。</string>
+    <string name="msg_url_saved_restarted">已保存。服务已重启并改用新地址。</string>
+    <string name="msg_url_saved_pending">已保存。要使用新地址，请在没有通话时先点“停止服务”，再点“启动服务”。</string>
+    <string name="test_running">正在连接…</string>
+    <string name="test_ok">已连接</string>
+    <string name="test_failed">失败：%1$s</string>
+    <string name="test_fail_timeout">5 秒内没有响应</string>
+    <string name="test_fail_refused">电脑拒绝连接。电脑上的 Bageo 开着吗？USB 转接设置好了吗？</string>
+    <string name="test_fail_host">找不到这个地址</string>
+    <string name="test_fail_network">连不到这个地址。手机和电脑在同一个网络吗？</string>
+    <string name="test_fail_auth">被拒绝：地址里的 token 没填或不对</string>
+    <string name="test_fail_tls">安全连接（wss）失败</string>
+    <string name="test_fail_rejected">有响应，但不是 Bageo，或拒绝了连接</string>
+    <string name="test_fail_other">连接不上</string>
+    <string name="test_details">详细信息</string>
+
+    <!-- About and safety -->
+    <string name="section_about">关于与安全须知</string>
+    <string name="about_dedicated">AI 模式下，模块会接管电话应用、关掉铃声并开启勿扰，所以最好用一部备用手机。要暂时当普通手机用，关掉最上面的开关就行。</string>
+    <string name="about_rollback">要彻底移除 Bageo：先关掉最上面的开关（变回普通手机），再到 Magisk 或 KernelSU 停用或移除模块，然后重启手机。</string>
+    <string name="about_legal">各地关于通话录音以及是否须告知对方正在与 AI 通话的法律规定不同，遵守当地法规是你的责任。</string>
+    <!-- Connection route and Wi-Fi backup -->
+    <string name="route_usb">已通过 USB 连接。</string>
+    <string name="route_wifi">已通过 Wi-Fi 连接。</string>
+    <string name="route_custom">已连接到你填写的地址。</string>
+    <string name="wifi_ready">Wi-Fi 备用连接已就绪，拔掉 USB 线后通话仍可继续。</string>
+    <string name="wifi_not_ready">还没设置 Wi-Fi 备用连接。用 USB 线连接一次就会设置好。</string>
+    <string name="btn_forget_wifi">忘记 Wi-Fi 连接</string>
+    <string name="msg_wifi_forgotten">已忘记 Wi-Fi 连接。要再使用时，请用 USB 线连接一次。</string>
+</resources>
