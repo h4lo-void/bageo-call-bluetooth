@@ -8,22 +8,19 @@
 #
 # On macOS in a downloaded release (agent and "Bageo Status.app" next to this
 # script) it opens Bageo Status and ends. Bageo then runs in the background,
-# with an icon in the menu bar. Bageo Status reads .env, offers the adb download
-# and opens the web console the first time. Use --console to run Bageo in this
-# terminal instead.
+# with an icon in the menu bar. Bageo Status reads .env and opens the web console
+# the first time. Use --console to run Bageo in this terminal instead.
 #
 # With --console or --build, on Linux, or when Bageo Status is not there, in order:
 #   1. reads settings from .env next to this script (optional, see .env.example)
 #   2. finds the agent program (a downloaded release, or builds it with Rust)
-#   3. makes sure adb (Android platform-tools) is there, offering to download it
-#   4. starts the agent and opens the web console
-#   5. the first time the agent answers, puts a "Bageo Console" shortcut to the
+#   3. starts the agent and opens the web console
+#   4. the first time the agent answers, puts a "Bageo Console" shortcut to the
 #      web console on the desktop (macOS: .webloc; Linux: an app menu entry,
 #      copied to the desktop folder when there is one)
 #
 # Options: --console      run Bageo in this terminal, not in the background
 #          --no-browser   do not open the web console
-#          --yes          answer "yes" to the platform-tools download
 #          --build        build from source even when a program is already there
 #          --no-shortcut  no desktop shortcut (or BAGEO_NO_SHORTCUT=1)
 set -eu
@@ -31,12 +28,12 @@ set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cd "$root"
 
-console=0; no_browser=0; yes=0; build=0; no_shortcut=0
+console=0; no_browser=0; build=0; no_shortcut=0
 for arg in "$@"; do
   case "$arg" in
     --console) console=1 ;;
     --no-browser) no_browser=1 ;;
-    --yes) yes=1 ;;
+    --yes) ;; # no longer needed; accepted so existing commands keep working
     --build) build=1 ;;
     --no-shortcut) no_shortcut=1 ;;
     *) echo "unknown option: $arg" >&2; exit 2 ;;
@@ -90,48 +87,7 @@ if [ -z "$agent" ]; then
   fi
 fi
 
-# 3. adb (only needed for phones on USB)
-usb=$(printf '%s' "${USB_BRIDGE:-on}" | tr '[:upper:]' '[:lower:]')
-case "$usb" in 0|false|off|no) usb_off=1 ;; *) usb_off=0 ;; esac
-if [ "$usb_off" -eq 0 ] && [ -z "${ADB_BIN:-}" ]; then
-  if [ ! -x "$root/platform-tools/adb" ] && ! command -v adb >/dev/null 2>&1; then
-    say "adb (Android platform-tools) was not found. It is needed to reach a phone over USB."
-    case "$(uname -s)" in
-      Darwin) pt=darwin ;;
-      Linux) pt=linux ;;
-      *) pt="" ;;
-    esac
-    answer=y
-    if [ "$yes" -eq 0 ] && [ -t 0 ]; then
-      printf 'Download it from Google (about 7 MB) into ./platform-tools? [Y/n] '
-      read -r answer || answer=n
-    fi
-    case "$answer" in
-      ''|y|Y|yes|Yes)
-        if [ -z "$pt" ]; then
-          say "no platform-tools download for this system; install adb with your package manager."
-        elif ! command -v unzip >/dev/null 2>&1; then
-          say "unzip is not installed; install adb with your package manager instead (brew install android-platform-tools / apt install adb)."
-        else
-          tmp=$(mktemp -d)
-          say "downloading platform-tools..."
-          if command -v curl >/dev/null 2>&1; then
-            curl -fsSL -o "$tmp/pt.zip" "https://dl.google.com/android/repository/platform-tools-latest-$pt.zip"
-          else
-            wget -q -O "$tmp/pt.zip" "https://dl.google.com/android/repository/platform-tools-latest-$pt.zip"
-          fi
-          unzip -q -o "$tmp/pt.zip" -d "$root"
-          rm -rf "$tmp"
-          [ -x "$root/platform-tools/adb" ] || { say "the download did not contain adb"; exit 1; }
-          say "adb installed at $root/platform-tools/adb"
-        fi
-        ;;
-      *) say "continuing without adb: phones on USB will not connect until it is installed." ;;
-    esac
-  fi
-fi
-
-# 4. run
+# 3. run
 port=${AGENT_PORT:-8787}
 url="http://localhost:$port/"
 say "starting $agent"
@@ -145,7 +101,7 @@ if [ "$no_browser" -eq 0 ]; then
   ) &
 fi
 
-# 5. desktop shortcut to the web console, once the agent answers; kept when it exists
+# 4. desktop shortcut to the web console, once the agent answers; kept when it exists
 shortcut_label() {
   loc=""
   if [ "$(uname -s)" = Darwin ]; then loc=$(defaults read -g AppleLocale 2>/dev/null || true); fi

@@ -2,11 +2,11 @@
 // SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call>
 
 //! Running Bageo itself when it sits next to this program: finding it, reading
-//! its .env, starting it without a window, keeping it running, and fetching adb.
+//! its .env, starting it without a window, and keeping it running.
 
 use std::collections::VecDeque;
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, Read, Seek};
+use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
@@ -35,9 +35,6 @@ const STOP_WAIT: Duration = Duration::from_secs(3);
 const LOG_NAME: &str = "bageo.log";
 const LOG_OLD_NAME: &str = "bageo.log.1";
 const LOG_MAX_BYTES: u64 = 5 * 1024 * 1024;
-const DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(120);
-/// platform-tools is about 7 MB; anything far larger is not it.
-const DOWNLOAD_MAX_BYTES: u64 = 100 * 1024 * 1024;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Platform {
@@ -51,21 +48,6 @@ impl Platform {
             Platform::Windows
         } else {
             Platform::Mac
-        }
-    }
-
-    fn adb_name(self) -> &'static str {
-        match self {
-            Platform::Windows => "adb.exe",
-            Platform::Mac => "adb",
-        }
-    }
-
-    /// Google's download for the Android platform-tools.
-    pub fn adb_url(self) -> &'static str {
-        match self {
-            Platform::Windows => "https://dl.google.com/android/repository/platform-tools-latest-windows.zip",
-            Platform::Mac => "https://dl.google.com/android/repository/platform-tools-latest-darwin.zip",
         }
     }
 }
@@ -235,68 +217,6 @@ pub fn launch_reason(managed: bool, gave_up: bool, connected: bool, since_launch
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-pub enum AdbJob {
-    #[default]
-    Idle,
-    Downloading,
-    Failed,
-}
-
-/// The `adb` field of the Snapshot: "", "missing", "downloading" or "failed".
-pub fn adb_state(local_mode: bool, usb_enabled: bool, adb_found: bool, job: AdbJob) -> &'static str {
-    if !local_mode {
-        ""
-    } else if job == AdbJob::Downloading {
-        "downloading"
-    } else if !usb_enabled || adb_found {
-        ""
-    } else if job == AdbJob::Failed {
-        "failed"
-    } else {
-        "missing"
-    }
-}
-
-/// Unpacks a zip into `dest`. Every entry must be inside the `platform-tools`
-/// folder of the archive: nothing is written when one would land outside `dest`
-/// or next to that folder (where the Bageo program and its settings are).
-pub fn extract_zip<R: Read + Seek>(reader: R, dest: &Path) -> Result<(), String> {
-    let mut archive = zip::ZipArchive::new(reader).map_err(|e| e.to_string())?;
-    let mut targets: Vec<PathBuf> = Vec::with_capacity(archive.len());
-    for i in 0..archive.len() {
-        let entry = archive.by_index(i).map_err(|e| e.to_string())?;
-        match entry.enclosed_name() {
-            Some(rel) if rel.starts_with("platform-tools") => targets.push(rel),
-            _ => return Err(format!("unexpected path in archive: {}", entry.name())),
-        }
-    }
-    for (i, rel) in targets.iter().enumerate() {
-        let mut entry = archive.by_index(i).map_err(|e| e.to_string())?;
-        let out = dest.join(rel);
-        if entry.is_dir() {
-            fs::create_dir_all(&out).map_err(|e| e.to_string())?;
-            continue;
-        }
-        let mode = entry.unix_mode();
-        // Links could point anywhere: leave them out.
-        if mode.is_some_and(|m| m & 0o170000 == 0o120000) {
-            continue;
-        }
-        if let Some(parent) = out.parent() {
-            fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-        }
-        let mut file = File::create(&out).map_err(|e| e.to_string())?;
-        io::copy(&mut entry, &mut file).map_err(|e| e.to_string())?;
-        #[cfg(unix)]
-        if let Some(m) = mode {
-            use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(&out, fs::Permissions::from_mode(m & 0o777)).map_err(|e| e.to_string())?;
-        }
-    }
-    Ok(())
-}
-
 // ---------------------------------------------------------------------------
 // The Bageo program on this computer
 // ---------------------------------------------------------------------------
@@ -304,7 +224,7 @@ pub fn extract_zip<R: Read + Seek>(reader: R, dest: &Path) -> Result<(), String>
 /// Bageo found next to this program.
 pub struct Local {
     agent: PathBuf,
-    /// Bageo's working directory, .env, log and platform-tools: the program
+    /// Bageo's working directory, .env and log: the program
     /// folder, or ~/Library/Application Support/Bageo for the Mac app.
     dir: PathBuf,
     /// Where Bageo answers on this computer, with a trailing slash.
@@ -419,7 +339,6 @@ fn open_log(dir: &Path) -> io::Result<File> {
 fn spawn_child(local: &Local) -> io::Result<Child> {
     let mut cmd = Command::new(&local.agent);
     cmd.current_dir(&local.dir).envs(local.env.iter().map(|(k, v)| (k, v))).stdin(Stdio::null());
-    // Bageo finds platform-tools in its working directory by itself, so ADB_BIN is not set here.
     match open_log(&local.dir).and_then(|out| Ok((out.try_clone()?, out))) {
         Ok((out, err)) => {
             cmd.stdout(out).stderr(err);
@@ -553,25 +472,6 @@ pub async fn start(app: &AppHandle) {
     });
 }
 
-/// Stops Bageo and starts it again (after adb was installed). May block for a few seconds.
-fn restart(app: &AppHandle) {
-    let shared = app.state::<Shared>();
-    let Some(local) = shared.local.as_ref() else { return };
-    {
-        let mut sup = lock(&shared.sup);
-        if !sup.managed || sup.quitting {
-            return;
-        }
-        if let Some(mut child) = sup.child.take() {
-            terminate(&mut child);
-        }
-        sup.gave_up = false;
-        sup.restarts.clear();
-        launch(&mut sup, local);
-    }
-    shared.notify.notify_one();
-}
-
 /// Stops the Bageo this program started, waiting up to 3 seconds. Safe to call twice.
 pub fn stop(app: &AppHandle) {
     let Some(shared) = app.try_state::<Shared>() else { return };
@@ -582,83 +482,10 @@ pub fn stop(app: &AppHandle) {
     }
 }
 
-async fn download_adb(dir: PathBuf) -> Result<(), String> {
-    let platform = Platform::current();
-    // Google may hand the download to another of its hosts: follow, but never to plain http.
-    let https_only = reqwest::redirect::Policy::custom(|attempt| {
-        if attempt.url().scheme() != "https" || attempt.previous().len() > 5 {
-            attempt.stop()
-        } else {
-            attempt.follow()
-        }
-    });
-    let client = reqwest::Client::builder()
-        .timeout(DOWNLOAD_TIMEOUT)
-        .redirect(https_only)
-        .build()
-        .map_err(|e| e.to_string())?;
-    let resp = client.get(platform.adb_url()).send().await.map_err(|e| e.to_string())?;
-    if !resp.status().is_success() {
-        return Err(format!("download answered {}", resp.status().as_u16()));
-    }
-    if resp.url().scheme() != "https" {
-        return Err("the download left https".to_string());
-    }
-    if resp.content_length().is_some_and(|n| n > DOWNLOAD_MAX_BYTES) {
-        return Err("the download is larger than expected".to_string());
-    }
-    let bytes = resp.bytes().await.map_err(|e| e.to_string())?;
-    if bytes.len() as u64 > DOWNLOAD_MAX_BYTES {
-        return Err("the download is larger than expected".to_string());
-    }
-    let tmp = std::env::temp_dir().join(format!("bageo-platform-tools-{}.zip", std::process::id()));
-    tauri::async_runtime::spawn_blocking(move || {
-        let unpack = || -> Result<(), String> {
-            fs::write(&tmp, &bytes).map_err(|e| e.to_string())?;
-            let file = File::open(&tmp).map_err(|e| e.to_string())?;
-            extract_zip(file, &dir)?;
-            if dir.join("platform-tools").join(platform.adb_name()).is_file() {
-                Ok(())
-            } else {
-                Err("the download did not contain adb".to_string())
-            }
-        };
-        let result = unpack();
-        let _ = fs::remove_file(&tmp);
-        result
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-/// Downloads Google's platform-tools into the program folder. One download at a time.
-pub async fn install_adb(app: AppHandle) {
-    let shared = app.state::<Shared>();
-    let Some(local) = shared.local.as_ref() else { return };
-    {
-        let mut job = lock(&shared.adb_job);
-        if *job == AdbJob::Downloading {
-            return;
-        }
-        *job = AdbJob::Downloading;
-    }
-    poll::patch(&app, |s| s.adb = "downloading".to_string());
-
-    let ok = download_adb(local.dir.clone()).await.is_ok();
-    let managed = lock(&shared.sup).managed;
-    if ok && managed {
-        let handle = app.clone();
-        let _ = tauri::async_runtime::spawn_blocking(move || restart(&handle)).await;
-    }
-    *lock(&shared.adb_job) = if ok { AdbJob::Idle } else { AdbJob::Failed };
-    poll::patch(&app, |s| s.adb = if ok { String::new() } else { "failed".to_string() });
-    shared.notify.notify_one();
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::{Cursor, Write};
+    use std::io::Write;
 
     fn pairs(list: &[(&str, &str)]) -> Vec<(String, String)> {
         list.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
@@ -687,13 +514,13 @@ mod tests {
 
     #[test]
     fn real_environment_wins_over_env_file() {
-        let parsed = pairs(&[("AGENT_PORT", "9000"), ("USB_BRIDGE", "off")]);
+        let parsed = pairs(&[("AGENT_PORT", "9000"), ("RUST_LOG", "info")]);
         let env = child_env(&parsed, |k| k == "AGENT_PORT");
-        assert_eq!(env, pairs(&[("USB_BRIDGE", "off")]));
+        assert_eq!(env, pairs(&[("RUST_LOG", "info")]));
 
         let real = |k: &str| (k == "AGENT_PORT").then(|| "7000".to_string());
         assert_eq!(setting("AGENT_PORT", real, &parsed).as_deref(), Some("7000"));
-        assert_eq!(setting("USB_BRIDGE", real, &parsed).as_deref(), Some("off"));
+        assert_eq!(setting("RUST_LOG", real, &parsed).as_deref(), Some("info"));
         assert_eq!(setting("AGENT_HOST", real, &parsed), None);
     }
 
@@ -812,100 +639,11 @@ mod tests {
         assert_eq!(launch_reason(true, true, true, s(1)), Some((Level::Bad, Reason::LaunchFailed)));
     }
 
-    #[test]
-    fn adb_field_values() {
-        assert_eq!(adb_state(true, true, false, AdbJob::Idle), "missing");
-        assert_eq!(adb_state(true, true, false, AdbJob::Failed), "failed");
-        assert_eq!(adb_state(true, true, false, AdbJob::Downloading), "downloading");
-        assert_eq!(adb_state(true, true, true, AdbJob::Downloading), "downloading");
-        assert_eq!(adb_state(true, true, true, AdbJob::Idle), "");
-        assert_eq!(adb_state(true, true, true, AdbJob::Failed), "");
-        // USB link turned off: adb is not needed.
-        assert_eq!(adb_state(true, false, false, AdbJob::Idle), "");
-        // Only watching another Bageo: never.
-        for job in [AdbJob::Idle, AdbJob::Downloading, AdbJob::Failed] {
-            assert_eq!(adb_state(false, true, false, job), "");
-        }
-    }
-
-    #[test]
-    fn download_addresses_per_system() {
-        assert!(Platform::Windows.adb_url().ends_with("platform-tools-latest-windows.zip"));
-        assert!(Platform::Mac.adb_url().ends_with("platform-tools-latest-darwin.zip"));
-        assert_eq!(Platform::Windows.adb_name(), "adb.exe");
-        assert_eq!(Platform::Mac.adb_name(), "adb");
-    }
-
-    fn zip_with(entries: &[(&str, &[u8], u32)]) -> Cursor<Vec<u8>> {
-        let mut w = zip::ZipWriter::new(Cursor::new(Vec::new()));
-        for (name, data, mode) in entries {
-            let opts = zip::write::SimpleFileOptions::default()
-                .compression_method(zip::CompressionMethod::Deflated)
-                .unix_permissions(*mode);
-            w.start_file(*name, opts).unwrap();
-            w.write_all(data).unwrap();
-        }
-        let mut cursor = w.finish().unwrap();
-        cursor.set_position(0);
-        cursor
-    }
-
     fn scratch(name: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("bageo-status-test-{}-{name}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).unwrap();
         dir
-    }
-
-    #[test]
-    fn zip_is_unpacked_into_the_folder() {
-        let root = scratch("unpack");
-        let dest = root.join("dest");
-        fs::create_dir_all(&dest).unwrap();
-        let zip = zip_with(&[("platform-tools/adb", b"#!/bin/sh\n", 0o755), ("platform-tools/lib/notes.txt", b"hello", 0o644)]);
-        extract_zip(zip, &dest).unwrap();
-        assert_eq!(fs::read(dest.join("platform-tools/adb")).unwrap(), b"#!/bin/sh\n");
-        assert_eq!(fs::read(dest.join("platform-tools/lib/notes.txt")).unwrap(), b"hello");
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let mode = fs::metadata(dest.join("platform-tools/adb")).unwrap().permissions().mode();
-            assert_eq!(mode & 0o111, 0o111);
-        }
-        let _ = fs::remove_dir_all(&root);
-    }
-
-    #[test]
-    fn zip_entry_that_leaves_the_folder_is_refused_and_nothing_is_written() {
-        let root = scratch("escape");
-        let dest = root.join("dest");
-        fs::create_dir_all(&dest).unwrap();
-        let zip = zip_with(&[("platform-tools/adb", b"ok", 0o755), ("../outside.txt", b"no", 0o644)]);
-        assert!(extract_zip(zip, &dest).is_err());
-        assert!(!root.join("outside.txt").exists());
-        assert!(!dest.join("platform-tools").exists());
-        let _ = fs::remove_dir_all(&root);
-    }
-
-    #[test]
-    fn zip_entry_next_to_platform_tools_is_refused_and_nothing_is_written() {
-        let root = scratch("beside");
-        let dest = root.join("dest");
-        fs::create_dir_all(&dest).unwrap();
-        for name in ["agent.exe", ".env", "platform-tools-old/adb"] {
-            let zip = zip_with(&[("platform-tools/adb", b"ok", 0o755), (name, b"no", 0o644)]);
-            assert!(extract_zip(zip, &dest).is_err(), "{name}");
-            assert!(!dest.join(name).exists(), "{name}");
-            assert!(!dest.join("platform-tools").exists(), "{name}");
-        }
-        let _ = fs::remove_dir_all(&root);
-    }
-
-    #[test]
-    fn broken_zip_is_an_error() {
-        let root = scratch("broken");
-        assert!(extract_zip(Cursor::new(b"not a zip".to_vec()), &root).is_err());
-        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]

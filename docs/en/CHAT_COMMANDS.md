@@ -93,7 +93,7 @@ Numbers like `1` or `#2` refer to the list the chat was shown last
 | `/status` | Bageo version, each phone (AI answers / normal phone / offline / in a call), calls in progress |
 | `/calls [n] [today\|yesterday\|YYYY-MM-DD] [missed\|scam] [word or number]` | Recent calls, one line each: time, caller, first line of the summary. 5 by default, up to 20 |
 | `/call <#>` | One call: summary, the start of the transcript (600 characters at most), link to the console |
-| `/tasks` | Pending items waiting for you (appointments, messages) |
+| `/tasks` | Pending items waiting for you (appointments) |
 | `/confirm <#>` · `/ignore <#>` | Decide a pending item, as on the console |
 | `/errand <number or contact> <what to get done>` | The AI calls for you, e.g. `/errand 0912345678 book a table for two at 7 tonight`. A name with spaces goes in quotes |
 | `/errands` | AI calls and their results |
@@ -104,7 +104,7 @@ Numbers like `1` or `#2` refer to the list the chat was shown last
 | `/contacts <name>` | Find a contact |
 | `/block <number> [name/reason]` | Add a number to the **Blacklist** (its calls are always rejected) |
 | `/stall <number> [name/note]` | Add a number to the **Stall list** (the AI keeps them talking from the first second) |
-| `/white <number> [name/note]` | Add a number to the **Whitelist** (family and friends; calls can go straight to your phone, or the AI answers and puts you through only if urgent) |
+| `/white <number> [name/note]` | Add a number to the **Whitelist** (family and friends; calls can go straight to your phone, or the AI answers and alerts you only if urgent) |
 | `/unblock <number>` | Remove a number from the Blacklist or Stall list; the AI answers it normally again |
 
 You can also just write what you want, in any language, for example:

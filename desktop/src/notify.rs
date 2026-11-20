@@ -15,7 +15,6 @@ use crate::status::Phone;
 #[serde(rename_all = "lowercase")]
 pub enum Kind {
     Call,
-    Sms,
     Summary,
 }
 
@@ -31,8 +30,6 @@ pub struct Notice {
 
 /// Caller ids that mean "no number".
 const HIDDEN_IDS: [&str; 7] = ["unknown", "private", "anonymous", "restricted", "unavailable", "withheld", "blocked"];
-/// Retry the SMS endpoint this often (in rounds) after it answered 404.
-const SMS_RETRY_ROUNDS: u32 = 12;
 /// Remember at most this many call ids.
 const MAX_SEEN: usize = 500;
 /// The call list is read every this many polling rounds. A summary shows up 5 to 60 seconds after
@@ -71,35 +68,6 @@ pub fn call_url(address: &str, id: &str) -> String {
     // Bageo may report its console address as ".../calls/" already.
     let base = base.strip_suffix("/calls").unwrap_or(base);
     format!("{base}/calls/#call={id}")
-}
-
-/// Link that opens the console on the conversation with sender (the list of
-/// conversations when the sender is not known).
-pub fn sms_url(address: &str, sender: &str) -> String {
-    if address.is_empty() {
-        return String::new();
-    }
-    let base = address.trim_end_matches('/');
-    let base = base.strip_suffix("/calls").unwrap_or(base);
-    let sender = sender.trim();
-    if sender.is_empty() {
-        return format!("{base}/calls/#sms");
-    }
-    format!("{base}/calls/#sms/{}", url_component(sender))
-}
-
-/// Percent-encoding of everything but letters, digits and "-._~", like the
-/// browser's encodeURIComponent.
-fn url_component(s: &str) -> String {
-    let mut out = String::new();
-    for b in s.bytes() {
-        if b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~') {
-            out.push(b as char);
-        } else {
-            out.push_str(&format!("%{b:02X}"));
-        }
-    }
-    out
 }
 
 /// Phone name for a call, only worth showing when more than one phone is known.
@@ -172,71 +140,6 @@ impl CallWatch {
         } else {
             Vec::new()
         }
-    }
-}
-
-/// Watches the recent-events endpoint for new text messages.
-#[derive(Default)]
-pub struct SmsWatch {
-    last_id: Option<u64>,
-    /// None: not known; Some(false): this Bageo has no such endpoint.
-    pub supported: Option<bool>,
-    skipped: u32,
-}
-
-impl SmsWatch {
-    pub fn reset(&mut self) {
-        *self = SmsWatch::default();
-    }
-
-    /// Whether to ask this round. After a 404 only every 12th round asks again.
-    pub fn due(&mut self) -> bool {
-        if self.supported == Some(false) {
-            self.skipped += 1;
-            if self.skipped < SMS_RETRY_ROUNDS {
-                return false;
-            }
-            self.skipped = 0;
-        }
-        true
-    }
-
-    /// Value for the `after` query parameter, if any.
-    pub fn after(&self) -> Option<u64> {
-        self.last_id
-    }
-
-    pub fn on_not_found(&mut self) {
-        self.supported = Some(false);
-        self.skipped = 0;
-    }
-
-    pub fn on_error(&mut self) {
-        self.supported = None;
-    }
-
-    /// Handles a successful answer. The first answer only records where the list ends.
-    pub fn on_response(&mut self, body: &Value, address: &str) -> Vec<Notice> {
-        self.supported = Some(true);
-        let events = body.get("events").and_then(Value::as_array).map(|a| a.as_slice()).unwrap_or(&[]);
-        let newest = events.iter().filter_map(|e| e.get("id").and_then(Value::as_u64)).max();
-        let last = body.get("last_id").and_then(Value::as_u64).or(newest).or(self.last_id).unwrap_or(0);
-        let first = self.last_id.is_none();
-        self.last_id = Some(last);
-        if first {
-            return Vec::new();
-        }
-        events
-            .iter()
-            .filter(|e| e.get("kind").and_then(Value::as_str) == Some("sms"))
-            .map(|e| Notice {
-                kind: Kind::Sms,
-                who: text_of(e.get("from")).to_string(),
-                text: e.get("text").and_then(Value::as_str).unwrap_or("").to_string(),
-                phone: String::new(),
-                url: sms_url(address, text_of(e.get("from"))),
-            })
-            .collect()
     }
 }
 
@@ -366,7 +269,7 @@ impl ToastState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::status::{Level, PhoneState, Reason, Snapshot};
+    use crate::status::PhoneState;
     use serde_json::json;
 
     const ADDR: &str = "http://192.168.1.20:8787/";
@@ -500,66 +403,8 @@ mod tests {
     }
 
     #[test]
-    fn sms_first_answer_records_last_id_only() {
-        let mut s = SmsWatch::default();
-        assert_eq!(s.after(), None);
-        let body = json!({"ok": true, "last_id": 123, "events": [{"id": 123, "kind": "sms", "from": "+15550100", "text": "old"}]});
-        assert!(s.on_response(&body, ADDR).is_empty());
-        assert_eq!(s.after(), Some(123));
-        assert_eq!(s.supported, Some(true));
-    }
-
-    #[test]
-    fn sms_takes_only_sms_events_and_advances_last_id() {
-        let mut s = SmsWatch::default();
-        s.on_response(&json!({"ok": true, "last_id": 10, "events": []}), ADDR);
-        let body = json!({"ok": true, "last_id": 13, "events": [
-            {"id": 11, "at_ms": 0, "kind": "sms", "title": "t", "from": " +15550100 ", "text": "hello"},
-            {"id": 12, "at_ms": 0, "kind": "message", "title": "t", "from": "x", "text": "chat"},
-            {"id": 13, "at_ms": 0, "kind": "sms", "title": "t", "from": "+15550101", "text": "again"}
-        ]});
-        let n = s.on_response(&body, ADDR);
-        assert_eq!(n.len(), 2);
-        assert_eq!((n[0].kind, n[0].who.as_str(), n[0].text.as_str()), (Kind::Sms, "+15550100", "hello"));
-        assert_eq!(n[0].url, "http://192.168.1.20:8787/calls/#sms/%2B15550100");
-        assert_eq!(n[1].url, "http://192.168.1.20:8787/calls/#sms/%2B15550101");
-        assert_eq!(n[1].text, "again");
-        assert_eq!(s.after(), Some(13));
-        assert!(s.on_response(&json!({"ok": true, "last_id": 13, "events": []}), ADDR).is_empty());
-    }
-
-    #[test]
-    fn sms_link_opens_the_text_messages() {
-        assert_eq!(sms_url(ADDR, ""), "http://192.168.1.20:8787/calls/#sms");
-        assert_eq!(sms_url("http://192.168.1.20:8787", " "), "http://192.168.1.20:8787/calls/#sms");
-        assert_eq!(sms_url("http://192.168.1.20:8787/calls/", "0912345678"), "http://192.168.1.20:8787/calls/#sms/0912345678");
-        assert_eq!(sms_url(ADDR, "+1 (650) 555-0142"), "http://192.168.1.20:8787/calls/#sms/%2B1%20%28650%29%20555-0142");
-        assert_eq!(sms_url(ADDR, "王小明"), "http://192.168.1.20:8787/calls/#sms/%E7%8E%8B%E5%B0%8F%E6%98%8E");
-        assert_eq!(sms_url(ADDR, "Bank/Info#1"), "http://192.168.1.20:8787/calls/#sms/Bank%2FInfo%231");
-        assert_eq!(sms_url("", "0912345678"), "");
-    }
-
-    #[test]
-    fn sms_404_marks_unsupported_and_retries_every_12_rounds() {
-        let mut s = SmsWatch::default();
-        assert!(s.due());
-        s.on_not_found();
-        assert_eq!(s.supported, Some(false));
-        for round in 1..12 {
-            assert!(!s.due(), "round {round}");
-        }
-        assert!(s.due());
-        assert_eq!(s.supported, Some(false));
-        s.on_response(&json!({"ok": true, "last_id": 1, "events": []}), ADDR);
-        assert_eq!(s.supported, Some(true));
-        assert!(s.due());
-        s.on_error();
-        assert_eq!(s.supported, None);
-    }
-
-    #[test]
     fn more_counts_replaced_notices_and_resets_on_close() {
-        let n = |who: &str| Notice { kind: Kind::Sms, who: who.into(), text: "hi".into(), phone: String::new(), url: ADDR.into() };
+        let n = |who: &str| Notice { kind: Kind::Call, who: who.into(), text: String::new(), phone: String::new(), url: ADDR.into() };
         let mut t = ToastState::default();
         assert!(t.data().is_none());
         t.push(n("a"), "en");
@@ -583,16 +428,6 @@ mod tests {
         t.push(Notice { kind: Kind::Call, who: "Alex".into(), text: String::new(), phone: "Pixel A".into(), url: ADDR.into() }, "zh-TW");
         let v = serde_json::to_value(t.data().unwrap()).unwrap();
         assert_eq!(v, json!({"kind": "call", "who": "Alex", "text": "", "phone": "Pixel A", "more": 0, "lang": "zh-TW"}));
-    }
-
-    #[test]
-    fn snapshot_reports_sms_support_as_null_true_false() {
-        let mut s = Snapshot::blank(Level::Ok, Reason::Ready, "en", false, "");
-        assert!(serde_json::to_value(&s).unwrap()["sms_supported"].is_null());
-        s.sms_supported = Some(false);
-        assert_eq!(serde_json::to_value(&s).unwrap()["sms_supported"], false);
-        s.sms_supported = Some(true);
-        assert_eq!(serde_json::to_value(&s).unwrap()["sms_supported"], true);
     }
 
     const FOUR: &str = "Contact: Alex (friend)\nWhat: Asks you to call back\nAI reply: Said you would call\nTo do: Call Alex";

@@ -528,27 +528,6 @@ pub fn check_number(number: &str, sim: &str) -> Result<String, &'static str> {
     validate_normalized_number(&n, &region, code)
 }
 
-/// Validate and normalize a destination number for an outbound SMS on a SIM of
-/// country `sim` (empty if unknown). Blocks short codes / emergency / premium
-/// numbers and local international dialing prefixes while permitting valid
-/// cross-country `+...` E.164 numbers.
-pub fn check_sms_number(number: &str, sim: &str) -> Result<String, &'static str> {
-    let n = clean_number(number).ok_or("bad_number")?;
-    if short_code(&n) {
-        return Err("not_allowed");
-    }
-    if n.starts_with('+') {
-        let parsed = crate::phone_region::normalize(&n, None).ok_or("bad_number")?;
-        let code = crate::phone_region::calling_code(parsed.country).ok_or("bad_number")?;
-        return validate_normalized_number(&n, parsed.country, code);
-    }
-    let region = sim.trim().to_ascii_lowercase();
-    if region.is_empty() {
-        return Err("bad_number");
-    }
-    check_number(&n, &region)
-}
-
 fn validate_normalized_number(n: &str, region: &str, code: &str) -> Result<String, &'static str> {
     let parsed = crate::phone_region::normalize(n, Some(region)).ok_or("bad_number")?;
     if parsed.country != region {
@@ -5548,8 +5527,6 @@ mod tests {
         ] {
             assert_eq!(check_number(n, sim), Ok(want.to_string()), "{n} on a {sim} SIM");
         }
-        // The owner's number for an urgent call reads the same way.
-        assert_eq!(crate::urgent_call::check_owner_number("612345678", Some("es"), ""), Ok("+34612345678".to_string()));
         // Countries with a trunk 0 keep their rule: bare digits are cut off.
         assert_eq!(check_number("912345678", "tw"), Err("bad_number"));
         assert_eq!(check_number("9012345678", "jp"), Err("bad_number"));
@@ -5915,7 +5892,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn p0_4_and_p2_1_helpers_outbound_and_sms_number() {
+    async fn p0_4_helpers_outbound_call_on_a_phone() {
         let rig = Rig::new();
         let (sink, mut ph) = phone_socket().await;
         rig.control.register_client("pixel-helper-1".into(), sink).await;
@@ -5927,13 +5904,6 @@ mod tests {
         assert!(is_active_outbound_call(&rig.control, "pixel-helper-1", "0223459104").await);
         assert!(is_active_outbound_call(&rig.control, "pixel-helper-1", "+886 2 2345 9104").await);
         assert!(!is_active_outbound_call(&rig.control, "pixel-helper-1", "0223459199").await);
-
-        assert_eq!(check_sms_number("0912-345-678", "tw"), Ok("+886912345678".into()));
-        assert_eq!(check_sms_number("+81 3 1234 5678", "tw"), Ok("+81312345678".into()));
-        assert_eq!(check_sms_number("110", "tw"), Err("not_allowed"));
-        assert_eq!(check_sms_number("02-0412-3456", "tw"), Err("not_allowed"));
-        assert_eq!(check_sms_number("+1 900 555 0100", "tw"), Err("not_allowed"));
-        assert_eq!(check_sms_number("00216505550123", "tw"), Err("not_allowed"));
     }
 
     #[tokio::test]

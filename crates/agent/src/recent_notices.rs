@@ -21,10 +21,11 @@ pub const MAX_LABEL_CHARS: usize = 60;
 pub struct RecentNotice {
     pub id: u64,
     pub at_ms: u64,
-    /// `"sms"` or `"message"`.
+    /// Always `"message"`.
     pub kind: String,
     pub title: String,
     pub from: String,
+    /// The first line of the message.
     pub text: String,
 }
 
@@ -43,22 +44,17 @@ impl RecentNotices {
     /// Add an event and return its id. The id is the larger of "previous id
     /// + 1" and the clock in Unix milliseconds, so it never goes backwards
     /// (not even across a restart, as long as the clock moves forward).
-    pub fn push(&mut self, now_ms: u64, kind: &str, title: &str, from: &str, text: &str, body: &str) -> u64 {
+    pub fn push(&mut self, now_ms: u64, title: &str, from: &str, body: &str) -> u64 {
         let id = self.last_id.saturating_add(1).max(now_ms);
         self.last_id = id;
-        let kind = if kind.trim().eq_ignore_ascii_case("sms") { "sms" } else { "message" };
-        let text_source = if kind == "sms" && !text.trim().is_empty() {
-            text
-        } else {
-            body.lines().find(|l| !l.trim().is_empty()).unwrap_or("")
-        };
+        let first_line = body.lines().find(|l| !l.trim().is_empty()).unwrap_or("");
         self.events.push_back(RecentNotice {
             id,
             at_ms: now_ms,
-            kind: kind.to_string(),
+            kind: "message".to_string(),
             title: squash(title, MAX_LABEL_CHARS),
             from: squash(from, MAX_LABEL_CHARS),
-            text: squash(text_source, MAX_TEXT_CHARS),
+            text: squash(first_line, MAX_TEXT_CHARS),
         });
         while self.events.len() > MAX_EVENTS {
             self.events.pop_front();
@@ -100,9 +96,9 @@ fn now_ms() -> u64 {
 }
 
 /// Record one event in the process-wide list.
-pub fn record(kind: &str, title: &str, from: &str, text: &str, body: &str) -> u64 {
+pub fn record(title: &str, from: &str, body: &str) -> u64 {
     let mut list = RECENT.lock().unwrap_or_else(|e| e.into_inner());
-    list.push(now_ms(), kind, title, from, text, body)
+    list.push(now_ms(), title, from, body)
 }
 
 /// `(last_id, events after the given id)` from the process-wide list.
@@ -116,7 +112,7 @@ mod tests {
     use super::*;
 
     fn push_plain(list: &mut RecentNotices, now_ms: u64) -> u64 {
-        list.push(now_ms, "message", "Bageo", "", "", "hello")
+        list.push(now_ms, "Bageo", "", "hello")
     }
 
     #[test]
@@ -135,7 +131,7 @@ mod tests {
     fn recent_keeps_only_the_last_fifty() {
         let mut list = RecentNotices::new();
         for i in 0..80u64 {
-            list.push(1000 + i, "message", "t", "", "", &format!("m{i}"));
+            list.push(1000 + i, "t", "", &format!("m{i}"));
         }
         let all = list.after(0);
         assert_eq!(all.len(), MAX_EVENTS);
@@ -145,31 +141,21 @@ mod tests {
     }
 
     #[test]
-    fn recent_kind_is_sms_or_message() {
+    fn recent_text_is_the_first_line_of_the_body() {
         let mut list = RecentNotices::new();
-        for (asked, want) in [("sms", "sms"), ("  SMS ", "sms"), ("Sms", "sms"), ("", "message"), ("sms2", "message"), ("call", "message")] {
-            list.push(1, asked, "t", "", "", "b");
-            assert_eq!(list.after(0).last().unwrap().kind, want, "asked {asked:?}");
-        }
-    }
-
-    #[test]
-    fn recent_text_uses_request_text_only_for_sms() {
-        let mut list = RecentNotices::new();
-        list.push(1, "sms", "Texts", "+15555550123", "Your code is 123456", "Texts\nbody line");
-        list.push(2, "message", "Texts", "+15555550123", "ignored", "first line\nsecond line");
-        list.push(3, "sms", "Texts", "+15555550123", "   ", "\n\n  body first line \nnext");
+        list.push(2, "Note", "+15555550123", "first line\nsecond line");
+        list.push(3, "Note", "+15555550123", "\n\n  body first line \nnext");
         let events = list.after(0);
-        assert_eq!(events[0].text, "Your code is 123456");
+        assert_eq!(events[0].text, "first line");
         assert_eq!(events[0].from, "+15555550123");
-        assert_eq!(events[1].text, "first line");
-        assert_eq!(events[2].text, "body first line");
+        assert_eq!(events[0].kind, "message");
+        assert_eq!(events[1].text, "body first line");
     }
 
     #[test]
     fn recent_text_squashes_whitespace() {
         let mut list = RecentNotices::new();
-        list.push(1, "sms", "  A \t B\n", " x\n y ", " one\n\n  two \t three ", "");
+        list.push(1, "  A \t B\n", " x\n y ", " one   two \t three ");
         let e = &list.after(0)[0];
         assert_eq!(e.title, "A B");
         assert_eq!(e.from, "x y");
@@ -187,7 +173,7 @@ mod tests {
         ];
         for s in samples {
             let mut list = RecentNotices::new();
-            list.push(1, "sms", &s, &s, &s, "");
+            list.push(1, &s, &s, &s);
             let e = &list.after(0)[0];
             assert_eq!(e.text.chars().count(), MAX_TEXT_CHARS + 1, "{}", e.text);
             assert!(e.text.ends_with('…'));
@@ -199,7 +185,7 @@ mod tests {
         // Exactly at the limit is left alone.
         let exact = "字".repeat(MAX_TEXT_CHARS);
         let mut list = RecentNotices::new();
-        list.push(1, "sms", "t", "", &exact, "");
+        list.push(1, "t", "", &exact);
         assert_eq!(list.after(0)[0].text, exact);
     }
 
@@ -218,7 +204,7 @@ mod tests {
     #[test]
     fn recent_global_list_records_and_reads_back() {
         let marker = format!("recent-global-{}", now_ms());
-        let id = record("sms", "Texts", "+15555550123", &marker, "");
+        let id = record("Note", "+15555550123", &marker);
         let (last, events) = snapshot(id - 1);
         assert!(last >= id);
         assert!(events.iter().any(|e| e.id == id && e.text == marker));

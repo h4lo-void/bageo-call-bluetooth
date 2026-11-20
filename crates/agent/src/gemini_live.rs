@@ -2362,10 +2362,6 @@ pub struct StallCfg {
     pub judgement: Arc<std::sync::Mutex<Option<crate::calls::ScamJudgement>>>,
     /// Fired once if a Whitelist caller (`whitelist_mode == "emergency"`) states an emergency.
     pub urgent_transfer: Option<UrgentTransferFn>,
-    /// Whitelist urgent call (`whitelist_mode` emergency with the owner's number set): the agent pauses the
-    /// AI while the phone dials the owner, ends the session once merged, or has the
-    /// AI say the owner did not answer.
-    pub urgent_call: Option<Arc<crate::urgent_call::CallCtl>>,
 }
 
 /// Same setup, another system prompt (the rotated stall session).
@@ -5554,7 +5550,6 @@ pub async fn run_session(
     let mut chunks_at_last_caller_eou: u64 = 0;
     let mut downlink_pcm_bytes: u64 = prebuf_flushed_bytes;
     let mut bytes_at_last_caller_eou: u64 = 0;
-    let mut turn_base_bytes: u64 = prebuf_flushed_bytes;
     let mut out_tx_window = String::with_capacity(512);
     let mut in_tx_window = String::with_capacity(512);
     // Whether the last output / input snippet ended with a space ([`tx_carry`]).
@@ -5770,9 +5765,6 @@ pub async fn run_session(
         });
     let mut stall_release_now = false;
     let mut urgent_transfer_fired = false;
-    // Whitelist urgent call: what the AI said since the caller's urgent words (a line
-    // said twice there is its hold-on line even when the wording is not known).
-    let mut ai_after_urgent = String::new();
     // Judged sales / scam with stalling off: marked, and not looked at again.
     let mut stall_detected = false;
     // The live socket runs the stall prompt (a rotation went through while stalling).
@@ -5781,15 +5773,8 @@ pub async fn run_session(
     let mut ivr_enter: Option<&'static str> = None;
     let mut ivr_since: Option<tokio::time::Instant> = None;
 
-    // Whitelist urgent call: while the phone dials the owner, or once the owner is
-    // on, the session must not hang up the call.
-    let urgent_ctl = stall.as_ref().and_then(|c| c.urgent_call.clone());
     let signal_force_hangup = |hangup_signaled: &mut bool| {
         if *hangup_signaled {
-            return;
-        }
-        if urgent_ctl.as_ref().is_some_and(|c| c.blocks_hangup()) {
-            info!("Whitelist urgent call in progress serial={serial} — hangup not signaled");
             return;
         }
         if let Some(ref flag) = force_hangup {
@@ -5822,42 +5807,6 @@ pub async fn run_session(
                 );
             }
             break;
-        }
-
-        // Whitelist urgent call: the owner is on the call now (the AI leaves), the
-        // phone dials them (nothing from the AI meanwhile), or they did not answer
-        // and the AI tells the caller.
-        if let Some(ctl) = urgent_ctl.as_ref() {
-            if ctl.is_handed() {
-                end_reason = SessionEndReason::Handed;
-                info!("Whitelist urgent call merged serial={serial} — the AI leaves the call, no hangup");
-                break;
-            }
-            if let Some(turn) = ctl.take_say() {
-                model_turn_pending = true;
-                // In the language the call is held in (lang_lock), not the setting's.
-                let spoken = call_language.lang();
-                info!(
-                    "Whitelist urgent call: line for the AI serial={serial} caller_language={}",
-                    spoken.map_or("unknown", |l| l.code())
-                );
-                let turn = crate::urgent_call::with_caller_language(&turn, spoken);
-                match send_text_before_deadline(
-                    &mut sink,
-                    turn,
-                    tokio::time::Instant::now() + KICK_SEND_TIMEOUT,
-                    "gemini urgent call line send",
-                )
-                .await
-                {
-                    Ok(()) => info!("Whitelist urgent call not merged serial={serial} — the AI tells the caller"),
-                    Err(e) => warn!("Whitelist urgent call line failed serial={serial}: {e:#}"),
-                }
-                last_activity_at = tokio::time::Instant::now();
-            }
-            if ctl.is_paused() {
-                last_activity_at = tokio::time::Instant::now();
-            }
         }
 
         // An errand: the owner cancelled it, the carrier's recording answered,
@@ -6190,7 +6139,6 @@ pub async fn run_session(
                         post_rotate_chunks = Some(audio_chunks_out);
                         post_rotate_rekicked = false;
                         turn_out_text.clear();
-                        turn_base_bytes = delivered_bytes.load(Ordering::Relaxed);
                         // Calls asked on the old socket cannot be answered on this one.
                         live_gen += 1;
                         repeat_guard.interrupted();
@@ -6314,7 +6262,6 @@ pub async fn run_session(
                         .unwrap_or_default();
                     out_tx_window.clear();
                     turn_out_text.clear();
-                    turn_base_bytes = delivered_bytes.load(Ordering::Relaxed);
                     first_delivery_deadline = first_delivery_deadline.max(now + FIRST_DELIVERY_TIMEOUT);
                     info!(
                         "Gemini Live intl caller serial={serial} — line talking before our opening (carrier prompt): dropped it ({dropped_ms}ms {dropped:?}); the model answers after the prompt",
@@ -6412,7 +6359,6 @@ pub async fn run_session(
                     };
                     out_tx_window.clear();
                     turn_out_text.clear();
-                    turn_base_bytes = delivered_bytes.load(Ordering::Relaxed);
                     cb_held_text.clear();
                     // The model is told nobody heard it, so it does not count it as said.
                     let told = send_text_before_deadline(
@@ -6686,10 +6632,7 @@ pub async fn run_session(
         }
 
         // Wall-clock max talk time → agent will play goodbye WAV (persona: plain hangup).
-        // Not while the phone dials the owner for a whitelist urgent call.
-        if session_start.elapsed() >= Duration::from_secs(max_secs)
-            && !urgent_ctl.as_ref().is_some_and(|c| c.ai_quiet())
-        {
+        if session_start.elapsed() >= Duration::from_secs(max_secs) {
             end_reason = SessionEndReason::MaxDuration;
             let waited = let_the_phone_finish(&play_head, phone_sr, &cancel).await;
             signal_force_hangup(&mut hangup_signaled);
@@ -6861,7 +6804,6 @@ pub async fn run_session(
             && tool_open.is_empty()
             && !errand_asking
             && ivr_since.is_none()
-            && !urgent_ctl.as_ref().is_some_and(|c| c.ai_quiet())
             && (stall_quiet || plain_quiet)
         {
             idle_nudges += 1;
@@ -7277,47 +7219,10 @@ pub async fn run_session(
                                     let s_raw = s_raw.as_str();
                                     push_tx_window(&mut out_tx_window, s_raw, 800);
                                     push_tx_window(&mut turn_out_text, s_raw, 400);
-                                    // Whitelist urgent call: dialing is decided by the AI saying its hold-on
-                                    // line; the keyword table only lets weak hold-on phrases ("hold on",
-                                    // "ちょっと待って") and a repeated line count too.
-                                    if let Some(ctl) = urgent_ctl.as_ref() {
-                                        let caller_urgent = is_urgent_whitelist_turn(&in_tx_window);
-                                        let hold = if caller_urgent {
-                                            crate::urgent_call::is_hold_line(&turn_out_text)
-                                        } else {
-                                            crate::urgent_call::is_strong_hold_line(&turn_out_text)
-                                        };
-                                        if ctl.hold_said_at().is_none() && hold {
-                                            info!("Whitelist urgent call: the AI said its hold-on line serial={serial}");
-                                            ctl.note_hold_line_from(turn_base_bytes);
-                                        }
-                                        if caller_urgent {
-                                            push_tx_window(&mut ai_after_urgent, s_raw, 800);
-                                            if ctl.hold_said_at().is_none() && crate::urgent_call::repeats_a_line(&ai_after_urgent) {
-                                                info!(
-                                                    "Whitelist urgent call: the AI said the same line twice after the urgent words serial={serial} — taken as its hold-on line"
-                                                );
-                                                ctl.note_hold_line_from(turn_base_bytes);
-                                            }
-                                        }
-                                        if ctl.hold_said_at().is_some() && !urgent_transfer_fired {
-                                            urgent_transfer_fired = true;
-                                            if let Some(ut) = stall.as_ref().and_then(|c| c.urgent_transfer.as_ref()) {
-                                                let said = if !in_tx_window.trim().is_empty() {
-                                                    in_tx_window.as_str()
-                                                } else {
-                                                    caller_text_all.as_str()
-                                                };
-                                                info!(
-                                                    "Whitelist urgent call: AI hold-on line triggered urgent transfer/alert serial={serial} chars={}",
-                                                    said.chars().count()
-                                                );
-                                                (ut.0)(said);
-                                            }
-                                        }
-                                    } else if !urgent_transfer_fired {
-                                        // Alert-only (no urgent call to the owner): checked once the AI
-                                        // starts replying so the caller's full sentence is in `in_tx_window`.
+                                    if !urgent_transfer_fired {
+                                        // An urgent matter (whitelist_mode emergency) only alerts the
+                                        // owner: checked once the AI starts replying so the caller's
+                                        // full sentence is in `in_tx_window`.
                                         if let Some(ut) = stall.as_ref().and_then(|c| c.urgent_transfer.as_ref()) {
                                             if is_urgent_whitelist_turn(&in_tx_window) {
                                                 urgent_transfer_fired = true;
@@ -7517,21 +7422,6 @@ pub async fn run_session(
                                                 "Caller speaks {code} serial={serial} — the AI's speech-to-text gets it at the next pause (now {})",
                                                 ai_stt_codes.join(",")
                                             );
-                                        }
-                                    }
-                                    if let Some(ctl) = urgent_ctl.as_ref() {
-                                        if ctl.hold_said_at().is_none()
-                                            && is_urgent_whitelist_turn(&in_tx_window)
-                                            && crate::urgent_call::is_hold_line(&turn_out_text)
-                                        {
-                                            info!("Whitelist urgent call: the AI said its hold-on line serial={serial}");
-                                            ctl.note_hold_line_from(turn_base_bytes);
-                                            if !urgent_transfer_fired {
-                                                urgent_transfer_fired = true;
-                                                if let Some(ut) = stall.as_ref().and_then(|c| c.urgent_transfer.as_ref()) {
-                                                    (ut.0)(&in_tx_window);
-                                                }
-                                            }
                                         }
                                     }
                                     // An errand: a voice menu waits for a person (MENU_WAIT);
@@ -7996,7 +7886,6 @@ pub async fn run_session(
                                     repeat_guard.turn_complete();
                                     model_turn_pending = owed;
                                     turn_out_text.clear();
-                                    turn_base_bytes = delivered_bytes.load(Ordering::Relaxed);
                                     out_leak_turn = false;
                                     if owed {
                                         // The caller spoke during it: it may have been their
@@ -8024,7 +7913,6 @@ pub async fn run_session(
                                 } else if gated_turn {
                                     intl_gated_turn = false;
                                     turn_out_text.clear();
-                                    turn_base_bytes = delivered_bytes.load(Ordering::Relaxed);
                                     out_leak_turn = false;
                                     info!(
                                         "Gemini Live turnComplete of a turn kept off the line serial={serial} gate={intl_gate:?} voice_menu={} — turn checks skipped",
@@ -8311,7 +8199,6 @@ pub async fn run_session(
                                         }
                                     }
                                     turn_out_text.clear();
-                                    turn_base_bytes = delivered_bytes.load(Ordering::Relaxed);
                                     out_leak_turn = false;
                                 }
                                 if is_transcript_only_turn(
@@ -8723,10 +8610,6 @@ pub async fn run_session(
                     break;
                 }
                 match up {
-                    Some(_) if urgent_ctl.as_ref().is_some_and(|c| c.ai_quiet()) => {
-                        // Whitelist urgent call: the phone is dialing the owner (or the
-                        // owner is on): what the line carries is not for the model.
-                    }
                     Some(_) if !opening_turn_complete => {
                         // Drop caller barge-in until the desk-status opening has been spoken.
                     }
@@ -8843,7 +8726,6 @@ pub async fn run_session(
                                                 model_turn_pending = true;
                                                 chunks_at_last_caller_eou = audio_chunks_out;
                                                 bytes_at_last_caller_eou = downlink_pcm_bytes;
-                                                turn_base_bytes = delivered_bytes.load(Ordering::Relaxed);
                                                 last_caller_eou_at = Some(now);
                                             }
                                             info!(
@@ -9113,7 +8995,6 @@ pub async fn run_session(
                                 model_turn_pending = true;
                                 chunks_at_last_caller_eou = audio_chunks_out;
                                 bytes_at_last_caller_eou = downlink_pcm_bytes;
-                                turn_base_bytes = delivered_bytes.load(Ordering::Relaxed);
                                 last_caller_eou_at = Some(tokio::time::Instant::now());
                                 info!(
                                     "Gemini Live {} serial={serial} silence_ms={silence_ms} voiced_ms={voiced_ms} activity_ms={activity_ms} forced={force_end} short={} raw_max={turn_raw_max:.0} floor={:.0} n={local_eou_sent} chunks_out={audio_chunks_out}",
@@ -9142,7 +9023,7 @@ pub async fn run_session(
     // Immediate close on hangup — stops Gemini Live token burn.
     let _ = sink.send(WsMessage::Close(None)).await;
     let _ = sink.close().await;
-    if urgent_ctl.is_none() && !urgent_transfer_fired {
+    if !urgent_transfer_fired {
         if let Some(ut) = stall.as_ref().and_then(|c| c.urgent_transfer.as_ref()) {
             if is_urgent_whitelist_turn(&in_tx_window) {
                 info!(

@@ -4,14 +4,17 @@ Bageo lives on real phones, real SIMs and real carriers, and every phone and
 country behaves a little differently. That makes the most useful contribution
 a short report: **which phone, which language, what happened.**
 
+This is the Bluetooth edition: a Linux computer with Bluetooth answers the
+phone's calls over hands-free, so the phone needs no app and no root.
+
 ## Ways to help
 
 | You have | What helps most |
 |---|---|
-| A rooted Android phone other than a Pixel 7, 7a, 8 or 9 | A report: did calls connect, could the AI hear the caller and be heard? |
+| A phone model or Bluetooth adapter we have not tried (iPhone or Android) | A report: did calls connect, could the AI hear the caller and be heard? |
 | A language other than Traditional Chinese | A report on greetings, goodbyes and sales detection in your language, or better phrases in `locale.rs` |
 | An account with a notification service | Try that channel against the real service and tell us |
-| Rust or Kotlin experience | A bug fix with a unit test |
+| Rust or Python experience | A bug fix with a unit test |
 | A good eye for text | Documentation fixes, in all three languages |
 
 ## Reporting what works and what does not
@@ -20,13 +23,15 @@ Open an issue with:
 
 - computer system (Windows / macOS / Linux) and how you installed (release or
   source);
-- phone model, Android version, root method (Magisk / KernelSU);
+- phone model and its system version (iOS or Android), the Bluetooth
+  computer (model, Linux version, Bluetooth adapter);
 - agent version (bottom of the *System* page) and the language and answer style
   you use;
 - what you did, what you expected, what happened;
 - the relevant lines of the agent's terminal output (`RUST_LOG=agent=debug` for
-  more) and, for phone problems, `adb logcat` filtered as shown in
-  [`android/README.md`](android/README.md#troubleshooting).
+  more) and, for phone problems, the Bluetooth service's log
+  (`journalctl -u bageo-bluetooth`, see
+  [`bluetooth/README.md`](bluetooth/README.md#check-its-working)).
 
 Remove phone numbers, names and keys first. Never attach `settings.json` or
 recordings of other people.
@@ -38,8 +43,9 @@ cargo test -p agent          # the agent's tests
 cargo build --release -p agent
 ```
 
-The phone app: see [`android/README.md`](android/README.md#build).
-The SMS forwarder: `python -m unittest` in `tools/sms_forward`.
+The Bluetooth program (`bluetooth/`) is Python and installs with
+`sudo ./bluetooth/install.sh` on Debian, Ubuntu or Raspberry Pi OS; see
+[`bluetooth/README.md`](bluetooth/README.md).
 
 To work on the web console without rebuilding, start the agent with
 `CALLS_UI_FILE=crates/agent/static/calls.html` and reload the browser.
@@ -51,7 +57,7 @@ request:
 cargo test -p agent errands        # AI errands: numbers, phone and SIM choice, the API
 cargo test -p agent contacts       # contacts: matching, import formats, the API
 cargo test -p agent stall_review   # the second look before stalling a sales / scam call
-cargo test -p agent appointments   # appointments, texts, AI call-backs
+cargo test -p agent appointments   # appointments, AI call-backs
 cargo test -p agent settings_store # settings: defaults, migration of older keys
 ```
 
@@ -66,8 +72,8 @@ Everything lives in `crates/agent/src`. The files you are most likely to touch:
 | `errands.rs` | AI errands: number and phone / SIM checks (`pick_phone`), the SIMs each phone has (`SimBook`, `phone_sims.json`), the errand's script and the `ask_owner` function, live captions, reading the result, the `/calls/api/errands` routes. |
 | `contacts.rs` | Contacts: number matching however it is written, vCard / CSV / text / `.xlsx` / `.docx` import, PDF and pictures through Gemini, vCard export, the `/calls/api/contacts` routes. |
 | `stall_review.rs` | A second look before the AI starts keeping a caller busy: a cheap model reads the call so far, together with whether the caller is a contact, within a short timeout; no answer counts as sales / scam. |
-| `appointments.rs` | Appointments: the Live tools, *To do* tasks, decisions from the console, the API and Telegram, texts to callers, the AI call-back (`call_lang`), and the outbound queue it shares with errands (one call to a number at a time). |
-| `callback.rs` | The phones' control connections as seen by the outbound side: `place_call` and `send_sms` to one phone, and its answers. |
+| `appointments.rs` | Appointments: the Live tools, *To do* tasks, decisions from the console, the API and Telegram, the AI call-back (`call_lang`), and the outbound queue it shares with errands (one call to a number at a time). |
+| `callback.rs` | The phones' control connections as seen by the outbound side: `place_call` to one phone, and its answers. |
 | `summary.rs` | The post-call summary and transcript translation over an OpenAI-compatible API (Gemini by default). |
 | `notify.rs` | Notification channels and every message (summary, blocked, call waiting, AI call-back, AI errand). |
 | `settings_store.rs` | `RuntimeSettings`: every console setting, its default, its environment variable, and the migration of keys from older versions. |
@@ -76,8 +82,8 @@ Everything lives in `crates/agent/src`. The files you are most likely to touch:
 | `calendar.rs`, `phone_region.rs`, `voice_preview.rs` | Calendar links and `.ics`; phone numbers and countries; the recorded voice previews. |
 
 The web console is the single file `crates/agent/static/calls.html`, with all
-nine languages inside. The phone side is described in
-[`android/ARCHITECTURE.md`](android/ARCHITECTURE.md).
+nine languages inside. The phone side is the Bluetooth program in
+[`bluetooth/`](bluetooth/README.md).
 
 ## Changing the call logic
 
@@ -91,7 +97,7 @@ calls; much of it looks odd until you know the failure it prevents. Please:
 - say in the pull request whether you tried it on a real call, on which phone
   and in which language. "Not tried on a call" is a fine and useful answer.
 
-Anything that dials or texts (errands, call-backs, appointment texts) needs
+Anything that dials (errands, call-backs) needs
 extra care: keep the number checks (`not_allowed` for emergency, short and
 premium-rate numbers), one call to a number at a time, and the SIM check before
 the AI speaks. A state-changing route must keep requiring
@@ -104,8 +110,7 @@ the AI speaks. A state-changing route must keep requiring
    says goodbye, the notification labels, the goodbye and wrap-up phrases the
    hang-up logic should recognise, and sales / scam keywords with weights.
 2. Languages written with spaces go into `WORD_LANGS`, others into `RUN_LANGS`.
-3. The web console (`crates/agent/static/calls.html`) and the phone app
-   (`android/app/src/main/res/values-<lang>/strings.xml`): add the dictionary.
+3. The web console (`crates/agent/static/calls.html`): add the dictionary.
 4. `cargo test -p agent` — several tests run over every language.
 
 ## Adding a notification service

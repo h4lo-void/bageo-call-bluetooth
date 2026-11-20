@@ -21,15 +21,6 @@ The parts listed below come under other terms or from other projects.
   2010–2026 Carbo Kuo (`BYVoid`) and OpenCC contributors, licensed under the
   **Apache License, Version 2.0** (full text in
   [`LICENSES/Apache-2.0.txt`](LICENSES/Apache-2.0.txt)).
-- `android/gradlew`, `android/gradlew.bat`, and
-  `android/gradle/wrapper/gradle-wrapper.jar` — **Gradle Wrapper**, Copyright
-  Gradle Inc., licensed under the **Apache License, Version 2.0** (full text in
-  [`LICENSES/Apache-2.0.txt`](LICENSES/Apache-2.0.txt)).
-- `android/magisk/pixelcallai_uplink/META-INF/com/google/android/update-binary`
-  — module installer script, `GPL-3.0-only` (Copyright 2022–2024 Andrew
-  Gunnerson; see the header of the file). It is a standalone installer script
-  run by the root manager when the module zip is flashed; it is not linked into
-  the Android app or the Bageo program.
 - `assets/ambience_*.wav` — built from CC0 (public-domain) recordings from
   Freesound plus sounds synthesised for this project. Sources are listed in
   [`assets/README.md`](assets/README.md).
@@ -42,11 +33,9 @@ The parts listed below come under other terms or from other projects.
 The Bageo program is built from Rust crates listed in `Cargo.lock`, and the
 **Bageo Status** desktop tray app (`desktop/`) is built with Tauri 2 and Rust
 crates listed in `desktop/Cargo.lock`, each distributed under its own
-open-source license. The Android app uses AndroidX Core (`Apache-2.0`),
-Java-WebSocket (`MIT`), kotlinx.coroutines (`Apache-2.0`) and compile-only
-Xposed API stubs (`Apache-2.0`). Bageo Status and the start scripts can download
-Android SDK Platform-Tools (`adb`) from Google on request; `adb` is distributed
-under Google's own terms and is not part of this repository.
+open-source license. The Bluetooth program (`bluetooth/`) installs BlueZ and
+a few Python packages from the system's package sources; they stay under their
+own licenses and are not part of this repository.
 
 ## Trademarks & third-party services
 
@@ -58,8 +47,10 @@ grants no trademark rights (AGPL-3.0 Section 7(e); see
 Bageo talks only to services you choose and configure with your own keys:
 Google Gemini for the live voice, optionally another model for summaries, and
 the notification services you add. Their terms and prices are strictly between
-you and them. This project is not affiliated with or endorsed by Google LLC or
-any of those services. "Pixel", "Android" and "Gemini" are trademarks of
-Google LLC and are used here solely to identify compatible hardware and APIs.
+you and them. This project is not affiliated with or endorsed by Google LLC,
+Apple Inc., the Bluetooth SIG or any of those services. "Android" and "Gemini"
+are trademarks of Google LLC, "iPhone" is a trademark of Apple Inc., and
+"Bluetooth" is a trademark of the Bluetooth SIG; they are used here solely to
+identify compatible devices and APIs.
 
 <!-- SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call> -->

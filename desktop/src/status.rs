@@ -33,8 +33,6 @@ pub enum Reason {
     Launching,
     /// Bageo did not come up, or kept stopping.
     LaunchFailed,
-    /// No phone, and the Android tools (adb) are missing on this computer.
-    NeedAdb,
     /// Bageo answers, but its console still lists settings to fill in.
     Setup,
 }
@@ -80,12 +78,8 @@ pub struct Snapshot {
     pub version: String,
     pub lang: String,
     pub phones: Vec<Phone>,
-    /// Whether this Bageo can report text messages: null = not known, false = too old.
-    pub sms_supported: Option<bool>,
     /// True when this program started Bageo and will stop it on quit.
     pub local: bool,
-    /// Android tools on this computer: "" (fine or not our business), "missing", "downloading" or "failed".
-    pub adb: String,
     /// How many items the console's "Ready?" list still asks for (0 for an older Bageo).
     pub setup_todo: u32,
 }
@@ -105,9 +99,7 @@ impl Snapshot {
             version: String::new(),
             lang: lang.to_string(),
             phones: Vec::new(),
-            sms_supported: None,
             local: false,
-            adb: String::new(),
             setup_todo: 0,
         }
     }
@@ -380,24 +372,6 @@ fn apply_detail(snap: &mut Snapshot, d: &Value) {
     snap.level = level;
     snap.reason = reason;
     snap.phones = phones;
-}
-
-/// `usb.enabled` and `usb.adb_found` from the devices answer.
-/// Without detail: (false, true), which never asks for adb.
-pub fn usb_flags(devices: &DevicesResult) -> (bool, bool) {
-    let DevicesResult::Detail(d) = devices else { return (false, true) };
-    let Some(usb) = d.get("usb") else { return (false, true) };
-    let flag = |key: &str, default: bool| usb.get(key).and_then(Value::as_bool).unwrap_or(default);
-    (flag("enabled", false), flag("adb_found", true))
-}
-
-/// Stores the adb state. Missing Android tools explain "no phone", so they are named first.
-pub fn apply_adb(snap: &mut Snapshot, adb: &str) {
-    snap.adb = adb.to_string();
-    if !adb.is_empty() && snap.reason == Reason::NoPhone {
-        snap.level = Level::Warn;
-        snap.reason = Reason::NeedAdb;
-    }
 }
 
 /// What to show after /health failed `failures` times in a row.
@@ -731,55 +705,13 @@ mod tests {
     }
 
     #[test]
-    fn usb_flags_come_from_the_devices_answer() {
-        let d = |v: Value| DevicesResult::Detail(v);
-        assert_eq!(usb_flags(&d(json!({"usb": {"enabled": true, "adb_found": false}}))), (true, false));
-        assert_eq!(usb_flags(&d(json!({"usb": {"enabled": true, "adb_found": true}}))), (true, true));
-        assert_eq!(usb_flags(&d(json!({"usb": {"enabled": false, "adb_found": false}}))), (false, false));
-        // Older Bageo or no detail: never ask for adb.
-        assert_eq!(usb_flags(&d(json!({"connected": []}))), (false, true));
-        assert_eq!(usb_flags(&d(json!({"usb": {"enabled": true}}))), (true, true));
-        assert_eq!(usb_flags(&DevicesResult::Locked), (false, true));
-        assert_eq!(usb_flags(&DevicesResult::Unavailable), (false, true));
-    }
-
-    #[test]
-    fn need_adb_replaces_no_phone_only() {
-        // No phone connected: missing Android tools are the thing to fix.
-        let mut s = snap(json!({"connected": [], "labels": {"A1": "Pixel A"}, "phones": []}));
-        apply_adb(&mut s, "missing");
-        assert_eq!((s.level, s.reason, s.adb.as_str()), (Level::Warn, Reason::NeedAdb, "missing"));
-        for state in ["downloading", "failed"] {
-            let mut s = snap(json!({"connected": [], "phones": []}));
-            apply_adb(&mut s, state);
-            assert_eq!((s.level, s.reason, s.adb.as_str()), (Level::Warn, Reason::NeedAdb, state));
-        }
-        // Nothing missing: no_phone stays.
-        let mut s = snap(json!({"connected": [], "phones": []}));
-        apply_adb(&mut s, "");
-        assert_eq!((s.level, s.reason, s.adb.as_str()), (Level::Bad, Reason::NoPhone, ""));
-        // A phone is connected (over Wi-Fi, say): every other state keeps its own reason.
-        let mut s = snap(json!({"connected": ["A1"], "phones": [{"serial": "A1", "connected": true}]}));
-        apply_adb(&mut s, "missing");
-        assert_eq!((s.level, s.reason, s.adb.as_str()), (Level::Ok, Reason::Ready, "missing"));
-        let mut s = snap(json!({"connected": ["A1"], "labels": {"B2": "Pixel B"}, "phones": [{"serial": "A1", "connected": true}]}));
-        apply_adb(&mut s, "missing");
-        assert_eq!((s.level, s.reason), (Level::Warn, Reason::PhoneOffline));
-        let mut s = snap(json!({"connected": [], "phones": [], "calls_in_progress": 1}));
-        apply_adb(&mut s, "missing");
-        assert_eq!((s.level, s.reason), (Level::Ok, Reason::Busy));
-    }
-
-    #[test]
     fn new_reasons_and_fields_serialise_for_the_page() {
         let mut s = Snapshot::blank(Level::Unknown, Reason::Launching, "en", false, "");
         s.local = true;
         let v = serde_json::to_value(&s).unwrap();
-        assert_eq!((v["reason"].as_str(), v["local"].as_bool(), v["adb"].as_str()), (Some("launching"), Some(true), Some("")));
+        assert_eq!((v["reason"].as_str(), v["local"].as_bool()), (Some("launching"), Some(true)));
         s.reason = Reason::LaunchFailed;
         assert_eq!(serde_json::to_value(&s).unwrap()["reason"], "launch_failed");
-        s.reason = Reason::NeedAdb;
-        assert_eq!(serde_json::to_value(&s).unwrap()["reason"], "need_adb");
     }
 
     #[test]

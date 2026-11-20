@@ -76,7 +76,7 @@ body.top .toast{transform:translateY(-6px)}
     };
     document.documentElement.lang = lang;
     const summary = n.kind === "summary";
-    const label = t(summary ? "n_summary" : n.kind === "sms" ? "n_sms" : "n_call");
+    const label = t(summary ? "n_summary" : "n_call");
     const who = String(n.who || "").trim();
     // The small line: what happened, on which phone, and how many more are waiting.
     const small = [];
@@ -86,7 +86,7 @@ body.top .toast{transform:translateY(-6px)}
     $("kind").textContent = small.join(" · ");
     $("kind").hidden = !small.length;
     $("who").textContent = who || label;
-    const text = n.kind === "sms" || summary ? String(n.text || "").trim() : "";
+    const text = summary ? String(n.text || "").trim() : "";
     $("text").textContent = text;
     $("text").classList.toggle("multi", summary);
     $("text").hidden = !text;

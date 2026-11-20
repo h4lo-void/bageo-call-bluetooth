@@ -8,17 +8,17 @@
 
 <p align="center">
   <strong>Assistente de telefone com IA para o seu número de verdade: o Gemini Live atende e faz as suas ligações.</strong><br>
-  Hospedado por você e de código aberto. Um celular Android com root que estava sobrando, com o seu SIM, um programa no seu computador e a sua própria chave do Gemini.
+  Hospedado por você e de código aberto. O seu próprio celular sem root (iPhone ou Android), pareado com um computador Linux com Bluetooth, um programa no seu computador e a sua própria chave do Gemini.
 </p>
 
 <p align="center">
   <a href="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/h4lo-void/bageo-call/releases/tag/v1.6.9"><img src="https://img.shields.io/badge/release-v1.6.9-brightgreen.svg" alt="Versão v1.6.9"></a>
+  <a href="https://github.com/h4lo-void/bageo-call-bluetooth/releases"><img src="https://img.shields.io/github/v/release/h4lo-void/bageo-call-bluetooth?include_prereleases&sort=semver" alt="Versão"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg" alt="Licença: AGPL-3.0-only"></a>
   <a href="COMMERCIAL_LICENSE.md"><img src="https://img.shields.io/badge/commercial-dual%20license-gold.svg" alt="Licença comercial disponível"></a>
 </p>
 
-> **Edição Bluetooth, em desenvolvimento.** Todo o Bageo, mais Bluetooth: um computador Linux com Bluetooth atende as chamadas do seu celular como um carro faz, então o celular não precisa de root nem de app, e o iPhone também funciona. Pelo Bluetooth, SMS e a chamada a três de urgência ainda não funcionam. Configuração: [bluetooth/README.md](bluetooth/README.md) (em inglês).
+> **Edição Bluetooth, em desenvolvimento.** O Bageo por Bluetooth: um computador Linux com Bluetooth atende as chamadas do seu celular como um carro faz, então o celular não precisa de root nem de app, e o iPhone também funciona. Esta edição não inclui SMS nem a chamada a três de urgência. Configuração: [bluetooth/README.md](bluetooth/README.md) (em inglês).
 
 <table>
   <tr>
@@ -153,12 +153,12 @@ Reservar uma mesa, remarcar um horário, perguntar a uma loja sobre estoque ou h
   <img src="docs/images/languages.en.svg" width="900" alt="O Bageo fala nove idiomas: inglês, chinês tradicional, chinês simplificado, japonês, coreano, espanhol, francês, alemão e português. Cada um atende com o seu próprio olá.">
 </p>
 
-A voz da IA, as instruções embutidas (uma base curta e geral que você pode adaptar à sua situação e ao seu estilo), o console web, o app do celular e as notificações existem em nove idiomas. Em um celular com dois SIMs, cada SIM abre as ligações no seu próprio idioma; quem liga do exterior ouve o idioma do seu país e, se a pessoa trocar de idioma no meio da ligação, a IA acompanha. As transcrições guardam as palavras originais, cada linha com uma tradução para o idioma das suas notificações. [Mais sobre idiomas e dois SIMs](docs/en/FEATURES.md#nine-languages-dual-sim-translated-transcripts)
+A voz da IA, as instruções embutidas (uma base curta e geral que você pode adaptar à sua situação e ao seu estilo), o console web e as notificações existem em nove idiomas. Em um celular com dois SIMs, cada SIM abre as ligações no seu próprio idioma; quem liga do exterior ouve o idioma do seu país e, se a pessoa trocar de idioma no meio da ligação, a IA acompanha. As transcrições guardam as palavras originais, cada linha com uma tradução para o idioma das suas notificações. [Mais sobre idiomas e dois SIMs](docs/en/FEATURES.md#nine-languages-dual-sim-translated-transcripts)
 
 ## Como funciona
 
 <p align="center">
-  <img src="docs/images/how-it-works.en.svg" width="900" alt="Como o Bageo funciona: quem liga chega ao seu celular reserva com root pela rede móvel; o celular passa o áudio da ligação por USB ou Wi-Fi ao programa Bageo no seu computador, que conversa com o Gemini Live. As gravações ficam no seu disco, as notificações vão para 32 canais e você controla tudo no console web.">
+  <img src="docs/images/how-it-works.en.svg" width="900" alt="Como o Bageo funciona: quem liga chega ao seu celular pela rede móvel; o celular passa o áudio da ligação por Bluetooth a um computador Linux ao lado, que o entrega ao programa Bageo no seu computador, que conversa com o Gemini Live. As gravações ficam no seu disco, as notificações vão para 32 canais e você controla tudo no console web.">
 </p>
 
 O celular só leva a ligação; todo o resto roda no seu próprio computador. A IA se conecta enquanto o celular ainda está tocando, então a primeira palavra dela sai cerca de **0.43 s** depois do atendimento (mediana medida). Uma ligação, passo a passo: [Arquitetura](docs/en/ARCHITECTURE.md).
@@ -170,7 +170,7 @@ O celular só leva a ligação; todo o resto roda no seu próprio computador. A 
 | **Número** | Um número do serviço, ou as suas ligações redirecionadas para ele | O número que você já tem. As ligações que você faz também mostram esse número. |
 | **Custo** | Uma assinatura ou um valor por minuto | Sem taxa de plataforma. Você paga ao Google pelo uso do Gemini e à operadora pelo SIM. |
 | **Seus dados** | Nos servidores do serviço | Arquivos comuns em uma pasta `data/` no seu próprio disco |
-| **O porém** | Cadastrar e usar | Você precisa de um celular Android com root sobrando e de um computador que fique ligado |
+| **O porém** | Cadastrar e usar | Você precisa de um computador Linux com Bluetooth perto do celular e de um computador que fique ligado |
 
 ## E tem mais
 
@@ -179,7 +179,7 @@ O celular só leva a ligação; todo o resto roda no seu próprio computador. A 
     <td width="33%" align="center" valign="top">
       <img src="docs/images/icons/calendar.svg" width="56" height="56" alt=""><br>
       <strong>Os compromissos esperam por você</strong><br>
-      Com “Compromissos” ligado, quem quer marcar um horário cai na sua lista de “Pendências”. Você aceita ou recusa; a IA avisa por SMS ou liga de volta.
+      Com “Compromissos” ligado, quem quer marcar um horário cai na sua lista de “Pendências”. Você aceita ou recusa; a IA liga de volta.
     </td>
     <td width="33%" align="center" valign="top">
       <img src="docs/images/icons/contacts.svg" width="56" height="56" alt=""><br>
@@ -189,7 +189,7 @@ O celular só leva a ligação; todo o resto roda no seu próprio computador. A 
     <td width="33%" align="center" valign="top">
       <img src="docs/images/icons/switch.svg" width="56" height="56" alt=""><br>
       <strong>Um botão para voltar a ser um telefone normal</strong><br>
-      Transforme o celular reserva em um telefone comum e volte, pelo console ou pelo app.
+      Alterne no console entre a IA e o celular normal. No modo celular normal, as ligações ficam no seu celular.
     </td>
   </tr>
   <tr>
@@ -215,22 +215,22 @@ Todos os recursos em detalhes: [Recursos](docs/en/FEATURES.md).
 
 ## O que você precisa
 
-1. **Um celular Android reserva** com o seu SIM, com root pelo Magisk ou KernelSU, Android 10 ou mais novo. Testado: Google Pixel 7, 7a, 8 e 9.
-2. **Um computador** ligado enquanto as ligações devem ser atendidas: Windows 10/11, macOS, Linux ou Docker.
-3. **Um cabo USB** (Wi-Fi também funciona).
+1. **Um celular com o seu SIM**, iPhone ou Android. Sem root e sem app.
+2. **Um computador Linux com Bluetooth** perto do celular (uns 10 m): Debian, Ubuntu ou Raspberry Pi OS. Pode ser o mesmo que roda o Bageo.
+3. **Um computador que rode o Bageo** enquanto as ligações devem ser atendidas: Windows 10/11, macOS, Linux ou Docker.
 4. **Uma chave de API do Gemini** do [Google AI Studio](https://aistudio.google.com/apikey). O Google cobra por uso.
 
 ## Início rápido
 
-Se o celular já tem root, são cerca de 3 minutos do download até a primeira chamada atendida pela IA.
+O computador do Bluetooth precisa ser Linux; o próprio Bageo também roda em Windows, macOS e Docker.
 
-1. **Baixe** o arquivo para o seu sistema em [Releases](https://github.com/h4lo-void/bageo-call/releases): `bageo-call-<version>-windows-x64-setup.exe` no Windows, `bageo-call-<version>-macos-arm64.dmg` (chip Apple) ou `bageo-call-<version>-macos-x64.dmg` (Intel) no macOS, `bageo-call-<version>-linux-x64.tar.gz` no Linux. Para Docker, há imagens prontas em `bageo/bageo-call` e `ghcr.io/h4lo-void/bageo-call`. No Docker, o celular pareia pelo endereço IP com um código do console web; veja [Phone setup → Wi-Fi](docs/en/PHONE.md#wi-fi).
+1. **Baixe** o arquivo para o seu sistema em [Releases](https://github.com/h4lo-void/bageo-call-bluetooth/releases): `bageo-call-bluetooth-<version>-windows-x64-setup.exe` no Windows, `bageo-call-bluetooth-<version>-macos-arm64.dmg` (chip Apple) ou `bageo-call-bluetooth-<version>-macos-x64.dmg` (Intel) no macOS, `bageo-call-bluetooth-<version>-linux-x64.tar.gz` no Linux. Para Docker, construa a partir deste repositório com `docker compose up -d --build`.
 2. **Instale e inicie.** Windows: clique duas vezes em `setup.exe` e depois no atalho **Bageo** da área de trabalho. macOS: abra o `.dmg`, arraste o Bageo para *Aplicativos* e clique nele. Linux: descompacte e execute `./start.sh`. O console abre em <http://localhost:8787/>; depois de definir uma senha do console, <http://bageo.local/> também funciona neste computador e na mesma rede Wi-Fi.
 3. **Preencha o básico** em **Configurações**: sua chave de API do Gemini, seu nome e o idioma. Toque em ▶ para ouvir as vozes e escolha uma.
-4. **Prepare o celular** uma única vez: instale `bageo-phone-module-<version>.zip` como módulo no Magisk ou KernelSU, reinicie, abra o app **Bageo**, siga as etapas de configuração dele e conecte o celular.
+4. **Conecte o celular** uma única vez: no computador do Bluetooth, execute `sudo ./bluetooth/install.sh` (vem no download do Linux) e pareie o celular. Se o Bageo roda em outro computador ou no Docker, ligue os dois com um código de pareamento do console. Detalhes: [bluetooth/README.md](bluetooth/README.md) (em inglês).
 5. **Ligue para ele** de outro telefone: um toque e a IA atende.
 
-Travou? Cada passo em detalhes: [Primeiros passos](docs/en/GETTING_STARTED.md) · [Configurar o celular](docs/en/PHONE.md).
+Travou? Cada passo em detalhes: [Primeiros passos](docs/en/GETTING_STARTED.md) · [Configurar o celular (em inglês)](bluetooth/README.md).
 
 ## Documentação
 
@@ -238,44 +238,33 @@ A documentação detalhada ainda está só em inglês.
 
 | | |
 |---|---|
-| **Começar** | [Primeiros passos](docs/en/GETTING_STARTED.md) · [Configurar o celular](docs/en/PHONE.md) · [Solução de problemas e perguntas frequentes](docs/en/TROUBLESHOOTING.md) |
+| **Começar** | [Primeiros passos](docs/en/GETTING_STARTED.md) · [Configurar o celular (em inglês)](bluetooth/README.md) · [Solução de problemas e perguntas frequentes](docs/en/TROUBLESHOOTING.md) |
 | **Usar** | [Recursos](docs/en/FEATURES.md) · [Comandos de chat e controle das notificações](docs/en/CHAT_COMMANDS.md) · [Como escrever o prompt](docs/en/PROMPTS.md) · [Referência das configurações](docs/en/SETTINGS.md) · [Notificações](docs/en/NOTIFICATIONS.md) |
-| **Ir mais fundo** | [Arquitetura](docs/en/ARCHITECTURE.md) · [API](docs/en/API.md) · [MCP](docs/en/MCP.md) · [Roteiro](docs/en/ROADMAP.md) · [Registro de alterações](CHANGELOG.md) · [`android/`](android/README.md) · [`tools/sms_forward/`](tools/sms_forward/README.md) |
+| **Ir mais fundo** | [Arquitetura](docs/en/ARCHITECTURE.md) · [API](docs/en/API.md) · [MCP](docs/en/MCP.md) · [Roteiro](docs/en/ROADMAP.md) · [Registro de alterações](CHANGELOG.md) · [`bluetooth/` (em inglês)](bluetooth/README.md) |
 | **Jurídico** | [Privacidade, segurança e a lei](docs/en/PRIVACY_AND_LEGAL.md) · [Aviso legal e termos para operadores](LEGAL.md) · [Licença dupla e comercial](COMMERCIAL_LICENSE.md) · [Auditoria de segurança e conformidade do projeto](AUDIT_REPORT.md) |
 
-**Estado dos testes:** mais de 1.400 testes automáticos no CI, 234 ligações simuladas em 28 idiomas e ligações reais em Pixel 7, 7a e 9. [Detalhes](docs/en/FEATURES.md#test-status). Relatos de outros celulares e idiomas são os que mais ajudam: [CONTRIBUTING.md](CONTRIBUTING.md).
+**Estado dos testes:** mais de 1.400 testes automáticos no CI, 234 ligações simuladas em 28 idiomas e ligações reais por Bluetooth em um Pixel 9. [Detalhes](docs/en/FEATURES.md#test-status). Relatos de outros celulares e idiomas são os que mais ajudam: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Perguntas frequentes
 
 <details>
-<summary><strong>Uma IA pode atender ligações no meu número de telefone atual?</strong></summary>
+<summary><strong>A IA pode atender as ligações do meu número atual?</strong></summary>
 
-Sim, é para isso que o Bageo existe. Coloque o seu SIM em um celular Android
-com root que esteja sobrando, e a IA atende as ligações para o seu número e
-faz ligações a partir dele. Para manter o SIM no seu celular principal,
-redirecione as ligações não atendidas para o número do celular reserva: o seu
-celular toca primeiro e as ligações perdidas vão para a IA (as ligações feitas
-a seu pedido e os retornos vão então mostrar o número do celular reserva).
+Sim, é para isso que o Bageo existe. O seu celular pareia por Bluetooth com um computador Linux, como faz com um carro; a IA atende as ligações para o seu número e liga a partir dele. No modo celular normal, as ligações ficam no celular.
 
 </details>
 
 <details>
 <summary><strong>Funciona sem root ou em um iPhone?</strong></summary>
 
-Não. O Android só deixa apps privilegiados do sistema gravarem uma ligação e
-tocarem som nela, por isso o celular precisa de Magisk ou KernelSU para
-instalar o módulo do Bageo. O iOS não permite isso de jeito nenhum.
+Sim. O celular não precisa de root nem de app, e tanto iPhone quanto Android funcionam. O Bageo usa o viva-voz Bluetooth, o mesmo que um carro usa.
 
 </details>
 
 <details>
-<summary><strong>Quais celulares são compatíveis?</strong></summary>
+<summary><strong>Quais celulares e computadores são compatíveis?</strong></summary>
 
-Os Google Pixel 7, 7a, 8 e 9 foram testados, com Android 10 ou mais novo. Outros
-celulares com root só funcionam se a camada de áudio do hardware deixar um app
-gravar a ligação e tocar som nela; se não, a ligação é atendida, mas um dos
-lados não ouve nada. Veja
-[Quais celulares](docs/en/PHONE.md#which-phones).
+Celulares que pareiam com o viva-voz de um carro devem funcionar. Ligações reais foram testadas em um Google Pixel 9; o iPhone também pareia, mas foi menos testado. O computador do Bluetooth precisa ser Linux (Debian, Ubuntu ou Raspberry Pi OS); Windows e macOS não servem para isso, mas o Bageo roda neles. Veja [a configuração do Bluetooth](bluetooth/README.md) (em inglês).
 
 </details>
 
@@ -327,7 +316,7 @@ voz totalmente local não faz parte da configuração com suporte
   assim é uma IA: leia os resumos e os resultados.
 - **Não conte com ela em emergências.** As ligações da IA nunca discam para
   números de emergência.
-- **O root anula a garantia e pode dar errado.** Use um celular reserva.
+- **Esta edição está em desenvolvimento.** Ainda não dependa só dela para as ligações importantes.
 
 ## Licença e aviso legal
 
@@ -336,6 +325,6 @@ voz totalmente local não faz parte da configuração com suporte
 - **Licença da comunidade de código aberto:** [GNU Affero General Public License v3.0 only (`AGPL-3.0-only`)](LICENSE), com os termos adicionais da Seção 7 em [LICENSING.md](LICENSING.md) — gratuita para uso pessoal, acadêmico e de código aberto. Quem modificar o Bageo e deixar outras pessoas interagirem com ele por uma rede ou por uma linha telefônica precisa publicar todo o código-fonte correspondente sob `AGPL-3.0-only`.
 - **Obter uma Licença Comercial:** operadores, empresas, provedores de SaaS ou de call center e fabricantes de hardware que queiram implantar, incorporar ou hospedar o Bageo sem a divulgação de código-fonte exigida pela `AGPL-3.0-only` podem obter uma licença proprietária separada, por escrito — veja os [**Termos da Licença Comercial**](COMMERCIAL_LICENSE.md).
 
-**Isenção de responsabilidade e leis locais:** o Bageo é um software hospedado por quem o usa, fornecido “NO ESTADO EM QUE SE ENCONTRA” (“AS IS”), sem garantia; o autor não opera nenhum serviço e não recebe dados de usuários. Quem o implanta é responsável por cumprir as leis locais sobre gravação de ligações, aviso de que se trata de uma IA e discagem automática, e também pelo root do aparelho e pelas cobranças da operadora e das APIs. Leia [**LEGAL.md**](LEGAL.md), [Privacidade, segurança e a lei](docs/en/PRIVACY_AND_LEGAL.md) e a [nota de revisão interna da v1.0 assistida por IA](AUDIT_REPORT.md) (`gemini-4-carbon`, não é uma auditoria de terceiros) antes de usar. Os avisos de terceiros (incluindo os dicionários `Apache-2.0` do OpenCC) estão em [NOTICE.md](NOTICE.md). Sem afiliação com a Google LLC; Pixel, Android e Gemini são marcas comerciais da Google LLC.
+**Isenção de responsabilidade e leis locais:** o Bageo é um software hospedado por quem o usa, fornecido “NO ESTADO EM QUE SE ENCONTRA” (“AS IS”), sem garantia; o autor não opera nenhum serviço e não recebe dados de usuários. Quem o implanta é responsável por cumprir as leis locais sobre gravação de ligações, aviso de que se trata de uma IA e discagem automática, e também pelas cobranças da operadora e das APIs. Leia [**LEGAL.md**](LEGAL.md), [Privacidade, segurança e a lei](docs/en/PRIVACY_AND_LEGAL.md) e a [nota de revisão interna da v1.0 assistida por IA](AUDIT_REPORT.md) (`gemini-4-carbon`, não é uma auditoria de terceiros) antes de usar. Os avisos de terceiros (incluindo os dicionários `Apache-2.0` do OpenCC) estão em [NOTICE.md](NOTICE.md). Sem afiliação com a Google LLC, a Apple Inc. nem o Bluetooth SIG; Android e Gemini são marcas comerciais da Google LLC, iPhone da Apple Inc. e Bluetooth do Bluetooth SIG.
 
 <!-- SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call> -->

@@ -349,7 +349,7 @@ async fn review_at_with_context(
     let dialogue_chars = dialogue.trim().chars().count();
     let key = api_key.trim();
     let caller_id = ctx.number.as_str();
-    let caller_tail = crate::urgent_call::masked(caller_id);
+    let caller_tail = crate::transfer::masked(caller_id);
     if key.is_empty() {
         warn!("stall review: no Gemini key ({purpose:?}) caller={caller_tail} dialogue_chars={dialogue_chars}");
         return Review::unavailable(true);
@@ -398,7 +398,7 @@ fn local_or_unavailable(dialogue: &str, hits: &[String], purpose: Purpose, calle
                 r.verdict,
                 r.confidence.as_str(),
                 r.scenario.as_str(),
-                crate::urgent_call::masked(caller_id)
+                crate::transfer::masked(caller_id)
             );
             r
         }

@@ -144,7 +144,6 @@ mod tests {
     #[test]
     fn only_call_summaries_get_the_taller_card() {
         assert_eq!(height_for(Kind::Call), HEIGHT);
-        assert_eq!(height_for(Kind::Sms), HEIGHT);
         assert_eq!(height_for(Kind::Summary), HEIGHT_SUMMARY);
     }
 }

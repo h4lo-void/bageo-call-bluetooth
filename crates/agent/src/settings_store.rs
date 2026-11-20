@@ -219,13 +219,13 @@ pub struct RuntimeSettings {
     #[serde(default = "default_thinking_level")]
     pub gemini_thinking_level: String,
     /// The language the AI speaks with callers: its prompt, its first words, the
-    /// blocked-number announcement, the texts it sends callers
+    /// blocked-number announcement
     /// (`en`, `zh-TW`, `zh-CN`, `ja`, `ko`, `es`, `fr`, `de`, `pt`).
     #[serde(default = "default_language")]
     pub language: String,
     /// The language of what the owner reads: notifications, the post-call
     /// summary (also in the web console's call list), appointment cards and
-    /// their results, the SMS forwarder's messages. Empty = `language`;
+    /// their results. Empty = `language`;
     /// otherwise one of its codes.
     #[serde(default)]
     pub notify_language: String,
@@ -286,10 +286,10 @@ pub struct RuntimeSettings {
     /// Empty = off.
     #[serde(default = "default_mdns_name")]
     pub mdns_name: String,
-    /// Phones may connect over Wi-Fi: a phone plugged in by USB once gets
-    /// the Wi-Fi addresses with the pairing key ([`crate::phone_wifi`]) and
-    /// connects there when unplugged. Off: the Wi-Fi entry closes (no restart)
-    /// and the phones on Wi-Fi are dropped.
+    /// Phones may connect over the network: a Bluetooth computer elsewhere
+    /// links with a pairing code and gets the pairing key ([`crate::phone_wifi`]).
+    /// Off: the network entry closes (no restart) and the phones connected
+    /// over the network are dropped.
     #[serde(default = "default_true")]
     pub phone_wifi: bool,
     /// When a call fixes a date (delivery, appointment, callback time), add an
@@ -308,14 +308,10 @@ pub struct RuntimeSettings {
     /// `auto` saved by an older agent reads as `confirm`.
     #[serde(default = "default_appointment_mode")]
     pub appointment_mode: String,
-    /// After the owner accepts or declines, text the caller through the phone
-    /// that took the call (numbers that take texts only).
-    #[serde(default)]
-    pub appointment_sms: bool,
     /// How the owner's answer reaches a caller when the owner does not pick a
-    /// way ([`crate::appointments::default_reply`]): `auto` (default: a text to
-    /// a mobile, the AI calls back a landline, nobody for a hidden number),
-    /// `sms` or `call`. Also what the AI promises on the call.
+    /// way: `auto` (default) or `call`; both mean the AI calls back a number a
+    /// call-back may dial, else nobody. An `sms` saved by a version that texted
+    /// callers reads as `auto` ([`crate::appointments::sanitize_reply_setting`]).
     #[serde(default = "default_auto")]
     pub appointment_reply: String,
     /// Who the AI is on the calls it makes for the owner ([`crate::errands`]):
@@ -367,25 +363,23 @@ pub struct RuntimeSettings {
     /// What to do when a Whitelist contact (`kind == "whitelist"`) calls:
     /// `off` (normal AI answering with known-contact prompt), `direct` (decline
     /// on the AI phone so carrier conditional call forwarding rings the owner's
-    /// real number immediately, or bridge/notify), or `emergency` (AI answers first
-    /// and transfers / alerts the owner's real number only when the caller has an
-    /// urgent matter).
+    /// real number immediately, or bridge/notify), or `emergency` (AI answers first;
+    /// when the caller has an urgent matter the owner is alerted and the AI says
+    /// the owner will call back).
     #[serde(default = "default_whitelist_mode")]
     pub whitelist_mode: String,
-    /// The owner's real phone number for Whitelist forwarding / emergency call.
+    /// The owner's real phone number for Whitelist forwarding (`direct`).
     #[serde(default)]
     pub whitelist_forward_number: String,
-    /// Old switch for the urgent call. Kept so older settings files and backups still
-    /// load; it no longer changes anything. With `whitelist_mode` emergency and a
-    /// forwarding number, an urgent Whitelist caller is put on hold, the phone dials
-    /// that number from the same SIM and merges the two calls (`crate::urgent_call`);
-    /// without the number only an alert goes out.
+    /// Old switch for the urgent call to the owner. Kept so older settings files
+    /// and backups still load; it changes nothing (`whitelist_mode` emergency
+    /// only alerts the owner).
     #[serde(default)]
     pub whitelist_urgent_call: bool,
     /// Who may be forwarded to the owner (`whitelist_mode` direct or emergency):
     /// Whitelist contacts (on by default, as before these switches), other
     /// contacts, and numbers not in the contacts (hidden ones too). Blacklist
-    /// and stall-list contacts never are (`crate::urgent_call::transfer_target`).
+    /// and stall-list contacts never are (`crate::transfer::transfer_target`).
     #[serde(default = "default_true")]
     pub transfer_whitelist: bool,
     #[serde(default)]
@@ -1139,7 +1133,6 @@ impl RuntimeSettings {
             calendar_suggest: env_bool("CALENDAR_SUGGEST", true),
             calendar_app: String::new(),
             appointment_mode: sanitize_appointment_mode(&env_or("APPOINTMENT_MODE", "off")),
-            appointment_sms: env_bool("APPOINTMENT_SMS", false),
             appointment_reply: crate::appointments::sanitize_reply_setting(&env_or("APPOINTMENT_REPLY", "auto")),
             errand_identity: sanitize_errand_identity(&env_or("ERRAND_IDENTITY", "assistant")),
             telegram_control: env_bool("TELEGRAM_CONTROL", false),
@@ -1553,7 +1546,6 @@ impl RuntimeSettings {
             ambience_level,
             reply_in_caller_language,
             calendar_suggest,
-            appointment_sms,
             ui_password_prompted,
         );
         self.summary_key_saved = ov.summary_api_key.as_deref().is_some_and(|k| !k.trim().is_empty())
@@ -2018,8 +2010,6 @@ struct Overrides {
     calendar_app: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     appointment_mode: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    appointment_sms: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     appointment_reply: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2821,7 +2811,6 @@ fn patch_overrides(ov: &mut Overrides, patch: &Value) {
     if let Some(v) = ov.appointment_mode.take() {
         ov.appointment_mode = Some(sanitize_appointment_mode(&v));
     }
-    p_bool(patch, "appointment_sms", &mut ov.appointment_sms);
     p_string(patch, "appointment_reply", &mut ov.appointment_reply);
     if let Some(v) = ov.appointment_reply.take() {
         ov.appointment_reply = Some(crate::appointments::sanitize_reply_setting(&v));
@@ -3525,7 +3514,7 @@ mod tests {
         let rt = store.snapshot();
         assert_eq!(rt.whitelist_mode, "emergency");
         assert!(rt.transfer_whitelist && !rt.transfer_contacts && !rt.transfer_others);
-        use crate::urgent_call::{transfer_who, TransferWho};
+        use crate::transfer::{transfer_who, TransferWho};
         assert_eq!(transfer_who(&rt, Some("whitelist"), false), Some(TransferWho::Whitelist));
         assert_eq!(transfer_who(&rt, Some(""), false), None);
         assert_eq!(transfer_who(&rt, None, false), None);
@@ -3861,18 +3850,15 @@ mod tests {
         base.calls_data_dir = dir.to_string_lossy().to_string();
         let store = SettingsStore::load(base.clone());
         let rt = store.snapshot();
-        assert_eq!((rt.appointment_mode.as_str(), rt.appointment_sms), ("off", false));
+        assert_eq!(rt.appointment_mode, "off");
         let shown = store.masked_json();
         assert_eq!(shown["appointment_mode"], "off");
-        assert_eq!(shown["appointment_sms"], false);
-        let rt = store
-            .apply_patch(&json!({ "appointment_mode": " Confirm ", "appointment_sms": true }))
-            .unwrap();
-        assert_eq!((rt.appointment_mode.as_str(), rt.appointment_sms), ("confirm", true));
+        assert!(shown.get("appointment_sms").is_none());
+        let rt = store.apply_patch(&json!({ "appointment_mode": " Confirm " })).unwrap();
+        assert_eq!(rt.appointment_mode, "confirm");
         // Survives a restart (settings.json override).
         let again = SettingsStore::load(base.clone());
         assert_eq!(again.snapshot().appointment_mode, "confirm");
-        assert!(again.snapshot().appointment_sms);
         // Anything unknown is off; "auto" (gone with Google Calendar) is
         // confirm; another key leaves both alone.
         let rt = again.apply_patch(&json!({ "appointment_mode": "always" })).unwrap();
@@ -3880,7 +3866,6 @@ mod tests {
         let rt = again.apply_patch(&json!({ "appointment_mode": "auto" })).unwrap();
         let rt2 = again.apply_patch(&json!({ "calendar_suggest": false })).unwrap();
         assert_eq!((rt.appointment_mode.as_str(), rt2.appointment_mode.as_str()), ("confirm", "confirm"));
-        assert!(rt2.appointment_sms);
         assert_eq!(SettingsStore::load(base).snapshot().appointment_mode, "confirm");
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -3911,7 +3896,7 @@ mod tests {
         let store = SettingsStore::load(base.clone());
         let rt = store.snapshot();
         assert_eq!(rt.gmail_user, "bot@gmail.com");
-        assert!(!rt.calendar_suggest && rt.appointment_sms);
+        assert!(!rt.calendar_suggest);
         assert_eq!((rt.appointment_mode.as_str(), rt.calendar_app.as_str()), ("confirm", ""));
         let shown = store.masked_json().to_string();
         assert!(!shown.contains("gcal") && !shown.contains("calendar_auto_add") && !shown.contains("refresh-123456"), "{shown}");
@@ -3940,10 +3925,12 @@ mod tests {
         // Another key leaves it alone; a name it does not know is "not chosen".
         assert_eq!(store.apply_patch(&json!({ "calendar_suggest": true })).unwrap().calendar_app, "apple");
         assert_eq!(store.apply_patch(&json!({ "calendar_app": "outlook.com" })).unwrap().calendar_app, "");
-        // The default way to tell a caller: automatic until another is picked.
+        // How a caller is told: automatic until "call" is picked; an "sms" from
+        // a version that texted callers, or anything else, is automatic.
         assert_eq!(store.snapshot().appointment_reply, "auto");
         assert_eq!(store.apply_patch(&json!({ "appointment_reply": " Call " })).unwrap().appointment_reply, "call");
         assert_eq!(SettingsStore::load(base.clone()).snapshot().appointment_reply, "call");
+        assert_eq!(store.apply_patch(&json!({ "appointment_reply": "sms" })).unwrap().appointment_reply, "auto");
         assert_eq!(store.apply_patch(&json!({ "appointment_reply": "fax" })).unwrap().appointment_reply, "auto");
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -4319,6 +4306,7 @@ mod tests {
         let old = json!({
             "appointment_mode": "confirm",
             "appointment_sms": true,
+            "appointment_reply": "sms",
             "appointment_test_numbers": ["16505550100"],
             "appointment_test_sms_phone": "Pixel 9",
             "appointment_test_sms_sim": "Tello"
@@ -4329,20 +4317,21 @@ mod tests {
         base.calls_data_dir = dir.to_string_lossy().to_string();
         let store = SettingsStore::load(base.clone());
         let rt = store.snapshot();
-        assert_eq!((rt.appointment_mode.as_str(), rt.appointment_sms), ("confirm", true));
+        assert_eq!(rt.appointment_mode, "confirm");
+        assert_eq!(rt.appointment_reply, "auto", "an old \"sms\" reads as the default");
         // The data folder comes from the env base and is never shown.
         assert_eq!(rt.calls_data_dir, base.calls_data_dir);
         let shown = store.masked_json();
         assert!(shown.get("calls_data_dir").is_none());
         let shown = shown.to_string();
-        assert!(!shown.contains("appointment_test") && !shown.contains("Tello"), "{shown}");
+        assert!(!shown.contains("appointment_test") && !shown.contains("Tello") && !shown.contains("appointment_sms"), "{shown}");
         // The next save writes only what this agent knows.
-        let rt = store.apply_patch(&json!({ "appointment_reply": "sms" })).unwrap();
-        assert_eq!(rt.appointment_reply, "sms");
+        let rt = store.apply_patch(&json!({ "calendar_suggest": false })).unwrap();
+        assert!(!rt.calendar_suggest);
         let saved: Value = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
         let saved = saved.as_object().unwrap();
-        assert!(saved.keys().all(|k| !k.starts_with("appointment_test")), "{saved:?}");
-        assert_eq!((saved["appointment_mode"].as_str(), saved["appointment_sms"].as_bool()), (Some("confirm"), Some(true)));
+        assert!(saved.keys().all(|k| !k.starts_with("appointment_test") && k != "appointment_sms"), "{saved:?}");
+        assert_eq!(saved["appointment_mode"].as_str(), Some("confirm"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 

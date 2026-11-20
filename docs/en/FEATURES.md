@@ -47,11 +47,9 @@ have asked you on the console first.
   answering for you and takes a message. *As me* answers the way you would,
   without agreeing to anything for you. Choose it under **Settings → Basics**
   (*Answer style*).
-- **Callers can cut in.** At the start of every call Bageo checks whether the
-  phone's capture contains the AI's own voice. Where it does not (the Pixel 9 in
-  testing), about 0.8 seconds of speech stops the AI; a quick "mm" or "OK" does
-  not. The setting is *Let the caller interrupt*, under *More options* in
-  **How it answers**.
+- **Callers can cut in.** About 0.8 seconds of speech from the caller stops the AI;
+  a quick "mm" or "OK" does not. The setting is *Let the caller interrupt*,
+  under *More options* in **How it answers**.
 - **No hanging up on a whim.** A silent line gets "are you still there?". The AI
   hangs up when the caller's own last words are a goodbye; ordinary calls wrap up
   politely at *Longest normal call* (5 minutes by default) in **How it answers**.
@@ -109,7 +107,7 @@ default) or as **You in person**.
 - **Safe dialing.** Emergency numbers, short codes, premium-rate numbers and
   numbers written after an international call prefix are refused, so an errand
   never turns into an international call by mistake.
-- **The right SIM.** Phone app 1.4 and later reports its active SIMs automatically on connect and when SIMs change (`phone_sims.json`; older apps learn them from incoming calls), and errands dial only on a SIM of the number's own country. If the phone reports a different SIM as the call starts, Bageo hangs up before it connects (`wrong_sim`).
+- **The right SIM.** Errands and call-backs dial only when the country of the SIM is known. Type the SIM's phone number in the console (*System → Phones*), or set the country on the Bluetooth computer (see [Phone setup](PHONE.md)).
 - **Sensible limits.** One call to a number at a time; at most 10 minutes per
   call, with a wrap-up at 9:30; no automatic redials unless you turn on
   **Redial until answered** (otherwise **Call again** is your button); voice
@@ -160,9 +158,8 @@ politely and ends the call.
 ## Appointments become a to-do list
 
 When a caller wants to set a time, the AI does not agree on the spot. It says it
-will check and text or call back, depending on what can reach that number. This
-is the *Appointments* setting, off by default; turn it on under **Settings →
-Summary & calendar**.
+will check and call back. This is the *Appointments* setting, off by default;
+turn it on under **Settings → Summary & calendar**.
 
 After the call the request waits under **To do** on the console: who, what and
 when, and you press **Accept** or **Decline**. With a bot set through
@@ -170,8 +167,6 @@ when, and you press **Accept** or **Decline**. With a bot set through
 
 You choose how the caller hears your answer:
 
-- **Text**, from the SIM that took the call. It contains the time, never the
-  caller's own words.
 - **AI call-back.** The AI waits through the ringback until the callee picks up
   and speaks, gives your answer once in the language of the original call,
   says goodbye and hangs up.
@@ -202,16 +197,16 @@ skipped, and the whole list exports as vCard.
 Every contact can be assigned to one of four lists (from the Contacts page, via one-tap buttons on call summary notifications, or via chat commands `/block`, `/stall`, `/white`, `/unblock`):
 
 - **Contacts**: the AI knows who is calling and reads your note about them.
-- **Whitelist (`whitelist`)**: close friends, family and clients, who can be put through to your phone (turn on *Turn on forwarding* in **Settings → How it answers**; the Contacts page can set it too). It is off by default, so the AI answers as usual and tells you afterwards, and a confirmation box comes first when you turn it on. Once it is on, choose *Who can be forwarded* (**Whitelist** by default, plus optional **Other contacts** and **Numbers not in your contacts**, the latter at most one call to you every 30 minutes); Blacklist, stall-list and confirmed sales or scam calls are never forwarded. Two ways:
-  1. *AI answers, puts you through if urgent*: the AI answers first. If the caller says it is urgent (in any of the 9 languages), the AI asks them to hold and this phone calls you (background sound pauses while dialing); once you pick up you talk to them directly, and Bageo sends you an urgent alert at once. Without your number you only get the alert. The summary records whether you were put through, could not be reached, or only got an alert.
-  2. *Don't answer: send to your phone*: this phone doesn't answer; your carrier forwards the call to your phone, the AI stays silent, and you get a notification at once. First switch the phone to normal phone and dial `**67*your number#` to turn on forward-when-busy, or callers reach voicemail.
+- **Whitelist (`whitelist`)**: close friends, family and clients, who get special treatment (turn on *Turn on forwarding* in **Settings → How it answers**; the Contacts page can set it too). It is off by default, so the AI answers as usual and tells you afterwards, and a confirmation box comes first when you turn it on. Once it is on, choose *Who can be forwarded* (**Whitelist** by default, plus optional **Other contacts** and **Numbers not in your contacts**, the latter at most one alert to you every 30 minutes); Blacklist, stall-list and confirmed sales or scam calls are never forwarded. Two ways:
+  1. *AI answers, tells you if urgent*: the AI answers first. If the caller says it is urgent (in any of the 9 languages), Bageo sends you an urgent notification at once and the AI tells the caller you will call back. The summary records that you were alerted.
+  2. *Don't answer: send to your phone*: Bageo turns the call away on the phone, your carrier forwards it to your own number, the AI stays silent, and you get a notification at once. First dial `**67*your number#` from the phone to turn on forward-when-busy, or callers reach voicemail.
 - **Blacklist (`blacklist`)**: turned away while ringing, or after a short "not available" announcement, without using the AI; the **Blacklist** tab sets which. A number ending in `*` (`0800*`, at least three digits not counting leading zeros) covers every number that starts that way.
 - **Stall list (`stall`)**: known debt collectors, sales callers or harassers. The AI starts wasting their time the moment the call connects, without waiting for keywords.
 
 ## Nine languages, dual SIM, translated transcripts
 
 - **Nine languages** for the AI's voice, the built-in prompts, the web
-  console, the phone app and the notifications: English, 繁體中文 (Taiwan),
+  console and the notifications: English, 繁體中文 (Taiwan),
   简体中文, 日本語, 한국어, Español, Français, Deutsch, Português.
 - **A main language per SIM.** On a dual-SIM phone each SIM opens calls in its
   own language, and a caller from abroad hears their country's language when
@@ -230,15 +225,12 @@ Every contact can be assigned to one of four lists (from the Contacts page, via 
 
 ## AI phone or normal phone, one switch
 
-From the console's **System** page or in the Bageo app, turn the spare phone
-back into an ordinary phone and back again.
+From the console's **System** page, switch the phone between AI answering and
+an ordinary phone.
 
-In normal mode Google's phone app is the dialer again, Do Not Disturb is off,
-the volumes are restored and calls ring for you to answer. The mode survives a
-reboot.
-
-The Magisk / KernelSU module's root helper makes the change, so the Bageo app
-itself never needs root access. See [Normal phone mode](PHONE.md#normal-phone-mode).
+In normal phone mode Bageo leaves the calls alone: they ring on the phone and
+you answer them yourself. The switch happens on the Bluetooth computer and
+takes effect on the next call. See [Normal phone mode](PHONE.md#normal-phone-mode).
 
 ## 32 notification channels, data on your disk
 
@@ -251,21 +243,11 @@ message goes to all of them. Bageo supports these 32:
 - **Business and Chinese-market services:** WeCom, DingTalk (with signing), Feishu / Lark, ServerChan, PushPlus, PushDeer, WxPusher.
 - **Email and automation:** Gmail, email through any SMTP server, Home Assistant, IFTTT, Apprise, and a JSON webhook for n8n or Zapier.
 
-The optional [SMS forwarder](../../tools/sms_forward/README.md) sends the phone's
-incoming text messages to the same channels.
-
-While the forwarder runs, those texts also show up on the console's **SMS** page, one
-conversation per number like your phone's messages app (with the contact's name when
-you have one). You can reply right there: by default the reply goes out from the phone
-and SIM that received the text, and you can pick another number. You can search, copy
-and delete them. Like the other records they are kept for 15 days; change that with
-*Days to keep records* in the settings.
-
 Built-in **Backup & restore** lets you schedule automatic backups, run manual
 backups and selectively export or import settings, keys, contacts and call
 records (with optional `.bageo` password encryption). On Windows and macOS,
 the **Bageo Status** tray app runs Bageo in the background and shows desktop
-notifications for incoming calls, text messages and ready call summaries.
+notifications for incoming calls and ready call summaries.
 
 Only three things leave your computer:
 
@@ -301,8 +283,8 @@ More, including the techniques that make the biggest difference:
 |---|---|
 | **Automated** | More than 1,400 unit and integration tests run in CI on every change. |
 | **Simulated calls** | 234 calls against Bageo itself, with Gemini playing callers in 28 languages, plus 15 AI errand scenarios. All pass. |
-| **Real phones** | Pixel 7, 7a and 9: answering, interruptions, background sound, sales and scam stalling, blocked numbers, appointment texts, AI call-backs, normal phone mode (including Android 15+), SIM change reporting and urgent 3-way call merge. |
-| **Needs real-world reports** | AI errands dialing out, the call-back's ringback filter on a real ringback, notification channels other than Telegram on live accounts, other languages, the *AI assistant* style, Docker, USB on macOS and Linux. |
+| **Real phones** | Bluetooth answering and hang-up with iPhone and Android, sales and scam stalling, blocked numbers, AI call-backs, AI errands and normal phone mode, tested with real calls (see [Phone setup](PHONE.md)). |
+| **Needs real-world reports** | Other phone models, the call-back's ringback filter on a real ringback, notification channels other than Telegram on live accounts, other languages, the *AI assistant* style, Docker. |
 
 Reports from other phones and languages help the most: see
 [CONTRIBUTING.md](../../CONTRIBUTING.md).

@@ -247,14 +247,11 @@ Keep these in your own words:
   Traditional and Simplified Chinese never switch to each other: a `+86`
   caller to a 繁體中文 setup hears your setting's 「喂？」.
 
-  A phone app older than 1.0 does not report the SIM. Then "from abroad" means
+  Without the SIM's country, "from abroad" means
   a `+…` number whose country code is not yours
   ([Country calling code](SETTINGS.md#country-calling-code), `COUNTRY_CODE`;
   `886` by default for 繁體中文).
 
-  Some phones report the SIM only at pick-up. If that changes the language, the
-  line prepared while it rang is dropped and the AI answers a moment later in
-  the right language.
 - **Short spoken turns.** Long turns feel slow on a phone line and are hard to
   interrupt.
 - **Never make the caller wait.** An AI that says "let me check" has nothing to
@@ -425,8 +422,7 @@ a time.
 
 - It first asks the time back in full ("Thursday, November 19, at 4:30 pm,
   right?") and waits for a yes.
-- Then it says it will check and get back to the caller by text or by phone
-  (whichever can reach that number), and records the request with
+- Then it says it will check and call the caller back, and records the request with
   `propose_appointment`.
 - A request sent without the caller's yes (`confirmed_by_caller`) is answered
   `confirm_first` and the AI asks first. Each time is sent back once, at most

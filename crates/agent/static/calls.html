@@ -197,79 +197,6 @@ pre.block.prose{font:inherit;font-size:.9rem}
 .call .call-acts .btn{border-color:transparent;background:transparent;color:var(--muted);min-height:25px;padding:1px 8px;font-size:.79rem}
 .call .call-acts .btn:hover{background:var(--surface);border-color:var(--line);color:var(--text)}
 .call .call-acts .btn.danger:hover{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 32%,var(--line));color:var(--bad)}
-/* SMS page: one conversation per number, like a phone's messages app (scoped: .chat and .note mean other things elsewhere on this page) */
-#view-sms .chat{display:grid;grid-template-columns:300px minmax(0,1fr);height:calc(100vh - var(--top-h) - 150px);min-height:460px;overflow:hidden;padding:0}
-#view-sms .chat-list{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--line)}
-#view-sms .chat-search{padding:12px 12px 8px}
-#view-sms .chat-search input{min-height:36px}
-#view-sms .threads{flex:1 1 auto;overflow-y:auto;padding:0 6px 6px}
-#view-sms .th{display:grid;grid-template-columns:36px minmax(0,1fr);gap:11px;align-items:center;width:100%;padding:9px 10px;border:0;border-radius:var(--radius-sm);background:transparent;text-align:left;cursor:pointer;color:var(--text);font:inherit}
-#view-sms .th:hover{background:var(--surface2)}
-#view-sms .th[aria-current=true]{background:var(--nav-active-bg)}
-#view-sms .th .th-top{display:flex;gap:8px;align-items:baseline;min-width:0}
-#view-sms .threads,#view-sms .msgs{scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
-#view-sms .b .acts .btn{white-space:nowrap}
-#view-sms .th .name{flex:1 1 auto;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
-#view-sms .th .time{flex:0 0 auto;font-size:.76rem;color:var(--muted);font-variant-numeric:tabular-nums}
-#view-sms .th .prev{display:flex;gap:6px;align-items:center;min-width:0;color:var(--muted);font-size:.86rem;margin-top:1px}
-#view-sms .th .prev span{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#view-sms .th.unread .name{font-weight:700}
-#view-sms .th.unread .prev{color:var(--text)}
-#view-sms .th .new{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:0 0 auto}
-#view-sms .th-empty{padding:28px 14px;text-align:center;color:var(--muted);font-size:.88rem}
-#view-sms .th-empty b{display:block;color:var(--text);font-weight:600;margin-bottom:4px}
-#view-sms .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--surface2);color:var(--muted);font-weight:600;font-size:.9rem;flex:0 0 auto}
-#view-sms .av svg{width:18px;height:18px;display:block}
-#view-sms .chat-list-foot{padding:6px 10px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;min-height:40px}
-#view-sms .convo{display:flex;flex-direction:column;min-width:0;min-height:0}
-#view-sms .chat-pick{flex:1 1 auto;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted);font-size:.92rem}
-#view-sms .convo-head{display:flex;align-items:center;gap:10px;padding:10px 14px 10px 18px;border-bottom:1px solid var(--line);min-height:58px}
-#view-sms .convo-head .who{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
-#view-sms .convo-head .num{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
-#view-sms .convo-head .back{display:none}
-#view-sms .convo-to{display:flex;align-items:center;gap:10px}
-#view-sms .convo-to label{color:var(--muted);font-size:.9rem;flex:0 0 auto}
-#view-sms .convo-to input{max-width:17rem;min-height:36px}
-#view-sms .msgs{flex:1 1 auto;overflow-y:auto;padding:14px 18px 10px;display:flex;flex-direction:column;gap:3px}
-#view-sms .msgs .earlier{align-self:center;margin:2px 0 8px}
-#view-sms .day{align-self:center;margin:12px 0 6px;font-size:.75rem;font-weight:500;color:var(--muted)}
-#view-sms .b{display:flex;align-items:center;gap:4px;max-width:min(78%,560px)}
-#view-sms .b.in{align-self:flex-start}
-#view-sms .b.out{align-self:flex-end;flex-direction:row-reverse}
-#view-sms .b .bub{padding:8px 13px;border-radius:17px;background:var(--bubble-caller);white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;user-select:text}
-#view-sms .b.out .bub{background:var(--bubble-ai)}
-#view-sms .b.in.last .bub{border-bottom-left-radius:6px}
-#view-sms .b.out.last .bub{border-bottom-right-radius:6px}
-#view-sms .b.out.sending .bub{opacity:.6}
-#view-sms .b.out.failed .bub{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--bad) 45%,transparent)}
-#view-sms .b .acts{display:flex;gap:2px;opacity:0;transition:opacity .14s}
-#view-sms .b:hover .acts,#view-sms .b:focus-within .acts{opacity:1}
-#view-sms .b .acts .btn{border-color:transparent;background:transparent;color:var(--muted);min-height:24px;padding:1px 7px;font-size:.76rem}
-#view-sms .b .acts .btn:hover{background:var(--surface2);color:var(--text)}
-#view-sms .b .acts .btn.danger:hover{background:var(--bad-soft);color:var(--bad)}
-#view-sms .meta{font-size:.74rem;color:var(--muted);margin:2px 6px 9px;font-variant-numeric:tabular-nums;max-width:min(78%,560px)}
-#view-sms .meta.in{align-self:flex-start}
-#view-sms .meta.out{align-self:flex-end;text-align:right}
-#view-sms .meta .bad{color:var(--bad)}
-#view-sms .meta .link{border:0;background:none;padding:0;margin-left:4px;color:var(--accent-ink);font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-#view-sms .composer{border-top:1px solid var(--line);padding:9px 14px 12px}
-#view-sms .composer .from{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:.84rem;color:var(--muted)}
-#view-sms .composer .from select{width:auto;max-width:100%;min-height:30px;padding:2px 26px 2px 9px;font-size:.84rem;border-radius:7px}
-#view-sms .composer .crow{display:flex;gap:8px;align-items:flex-end}
-#view-sms .composer textarea{flex:1 1 auto;min-height:40px;height:40px;max-height:150px;resize:none;overflow-y:hidden;border-radius:20px;padding:9px 15px;line-height:1.45}
-#view-sms .composer .btn.primary{flex:0 0 auto;white-space:nowrap;border-radius:20px;min-height:40px;padding:7px 18px}
-#view-sms .composer .count{font-size:.74rem;color:var(--muted);text-align:right;margin-top:4px;font-variant-numeric:tabular-nums}
-#view-sms .composer .note{font-size:.84rem;color:var(--muted);margin-top:6px;padding-left:0;border-left:0}
-.nav .dot.sms{background:var(--accent)}
-@media (max-width:760px){
-  #view-sms .chat{grid-template-columns:minmax(0,1fr);height:calc(100dvh - var(--top-h) - 200px - env(safe-area-inset-bottom));min-height:380px}
-  #view-sms .chat.open .chat-list{display:none}
-  #view-sms .chat:not(.open) .convo{display:none}
-  #view-sms .chat-list{border-right:0}
-  #view-sms .convo-head{padding-left:8px}
-  #view-sms .convo-head .back{display:inline-flex}
-  #view-sms .b,#view-sms .meta{max-width:88%}
-}
 .more{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 0}
 
 /* detail */
@@ -303,7 +230,6 @@ pre.block.prose{font:inherit;font-size:.9rem}
 .appt-msg{white-space:pre-wrap}
 .appt-one+.appt-one{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .appt-one>.btns{margin-top:6px}
-.appt-retry select{width:auto;max-width:16rem;min-height:36px;padding:4px 10px}
 .appt-kv{margin:0;grid-template-columns:auto minmax(0,1fr)}
 .appt-kv dd{font-weight:600}
 .appt-act{align-items:center}
@@ -651,13 +577,6 @@ dialog form{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflo
   dialog .dlg-btns{position:sticky;bottom:0;z-index:1;background:var(--surface);margin:16px -16px 0;padding:12px 16px 16px;border-top:1px solid var(--line)}
   dialog .dlg-btns .btn{flex:1 1 auto;min-height:44px}
 }
-/* touch screens have no hover: show each text message's copy and delete buttons under it */
-@media (hover:none){
-  #view-sms .b{flex-direction:column;align-items:flex-start;gap:2px}
-  #view-sms .b.out{flex-direction:column;align-items:flex-end}
-  #view-sms .b .acts{opacity:1;gap:6px}
-  #view-sms .b .acts .btn{min-height:34px;padding:2px 10px}
-}
 </style>
 </head>
 <body>
@@ -671,7 +590,6 @@ dialog form{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflo
     </a>
     <nav class="nav" id="nav" data-i18n-aria="nav_main">
       <a href="#calls" data-tab="calls"><span data-i18n="tab_calls"></span></a>
-      <a href="#sms" data-tab="sms"><span data-i18n="tab_sms"></span><i class="dot sms" id="navSms" hidden></i></a>
       <a href="#errands" data-tab="errands"><span data-i18n="tab_errands"></span></a>
       <a href="#contacts" data-tab="contacts"><span data-i18n="tab_contacts"></span></a>
       <a href="#settings" data-tab="settings"><span data-i18n="tab_settings"></span><i class="dot" id="navDirty" hidden></i></a>
@@ -708,7 +626,7 @@ dialog form{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflo
       <h2 data-i18n="setup_title"></h2>
       <div class="steps">
         <a class="step" id="step1" href="#settings/basics"><span class="num">1</span><span><b data-i18n="setup_1_t"></b><span class="d" data-i18n="setup_1_d"></span></span></a>
-        <a class="step" id="step2" href="#system"><span class="num">2</span><span><b data-i18n="setup_2_t"></b><span class="d" data-i18n="setup_2_d"></span></span></a>
+        <a class="step" id="step2" href="https://github.com/h4lo-void/bageo-call-bluetooth/blob/main/bluetooth/README.md" target="_blank" rel="noopener"><span class="num">2</span><span><b data-i18n="setup_2_t"></b><span class="d" data-i18n="setup_2_d"></span></span></a>
         <a class="step" id="step3" href="#settings/notify"><span class="num">3</span><span><b data-i18n="setup_3_t"></b><span class="d" data-i18n="setup_3_d"></span></span></a>
       </div>
     </div>
@@ -819,40 +737,6 @@ dialog form{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflo
           </div>
         </div>
       </aside>
-    </div>
-  </section>
-
-  <!-- ======================= SMS ======================= -->
-  <!-- Text messages as conversations (one per number): what the phones received
-       (handed over by the SMS forwarder) and the replies sent from here -->
-  <section id="view-sms" data-view="sms" hidden>
-    <h1 class="view-title" data-i18n="tab_sms"></h1>
-    <div class="row" style="margin-bottom:14px">
-      <span class="muted small" id="smsMeta" style="margin-left:auto"></span>
-      <button type="button" class="btn sm" id="smsNew" data-i18n="sms_new"></button>
-    </div>
-    <div class="card chat" id="smsChat">
-      <aside class="chat-list">
-        <div class="chat-search"><input type="search" id="smsQ" autocomplete="off" data-i18n-ph="sms_search_ph" /></div>
-        <div class="threads" id="smsThreads"></div>
-        <div class="chat-list-foot"><button type="button" class="btn xs ghost danger" id="smsClear" data-i18n="sms_clear" hidden></button></div>
-      </aside>
-      <section class="convo" id="smsConvo">
-        <div class="chat-pick" id="smsPick" data-i18n="sms_pick"></div>
-        <header class="convo-head" id="smsHead" hidden>
-          <button type="button" class="btn xs ghost back" id="smsBack" data-i18n="sms_back"></button>
-          <div class="grow" id="smsWho"><div class="who" id="smsName"></div><div class="num" id="smsNum"></div></div>
-          <div class="convo-to grow" id="smsToRow" hidden><label for="smsTo" data-i18n="sms_to"></label><input type="tel" id="smsTo" autocomplete="off" data-i18n-ph="sms_to_ph" /></div>
-          <button type="button" class="btn xs ghost danger" id="smsDelThread" data-i18n="sms_del_thread"></button>
-        </header>
-        <div class="msgs" id="smsMsgs" hidden></div>
-        <form class="composer" id="smsForm" hidden>
-          <div class="from"><label for="smsFrom" data-i18n="sms_from"></label><select id="smsFrom"></select></div>
-          <div class="crow"><textarea id="smsText" rows="1" maxlength="500" data-i18n-ph="sms_input_ph"></textarea><button type="submit" class="btn primary" id="smsSend" data-i18n="sms_send"></button></div>
-          <div class="count" id="smsCount" hidden></div>
-          <div class="note" id="smsNote" hidden></div>
-        </form>
-      </section>
     </div>
   </section>
 
@@ -1263,10 +1147,9 @@ dialog form{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflo
               <option value="off" data-i18n="appt_off"></option><option value="confirm" data-i18n="appt_confirm"></option>
             </select>
             <div class="help" data-i18n="f_appt_mode_h"></div></div>
-          <label class="sw"><input type="checkbox" data-k="appointment_sms" data-t="bool" /><span><b data-i18n="f_appt_sms"></b><small data-i18n="f_appt_sms_h"></small></span></label>
           <div class="field"><label for="f-appointment_reply" data-i18n="f_appt_reply"></label>
             <select id="f-appointment_reply" data-k="appointment_reply" data-t="text" style="max-width:20rem">
-              <option value="auto" data-i18n="ar_auto"></option><option value="sms" data-i18n="ar_sms"></option><option value="call" data-i18n="ar_call"></option>
+              <option value="auto" data-i18n="ar_auto"></option><option value="call" data-i18n="ar_call"></option>
             </select>
             <div class="help" data-i18n="f_appt_reply_h"></div></div>
         </div></div>
@@ -1533,8 +1416,6 @@ dialog form{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflo
       <li data-i18n="wl_call_terms_1"></li>
       <li data-i18n="wl_call_terms_2"></li>
       <li data-i18n="wl_call_terms_3"></li>
-      <li data-i18n="wl_call_terms_4"></li>
-      <li data-i18n="wl_call_terms_5"></li>
     </ul>
     <div class="dlg-btns">
       <button type="button" class="btn" id="wlTermsCancel" data-i18n="wl_call_terms_cancel"></button>
@@ -1577,7 +1458,7 @@ dialog form{max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);overflo
  * JSON API under /calls/api/.
  *
  * LINKS
- *   #calls  #sms  #sms/<number>  #sms/new  #settings  #settings/<section>  #system  #call=<call id>
+ *   #calls  #settings  #settings/<section>  #system  #call=<call id>
  *   ?lang=<code>  ?theme=light|dark  ?token=<CALLS_UI_TOKEN>
  *
  * TRANSLATIONS
@@ -1644,8 +1525,8 @@ I18N["en"] = {
   setup_title: "Welcome! Three steps and your phone answers itself",
   setup_1_t: "Basics",
   setup_1_d: "Add your Gemini API key and your name.",
-  setup_2_t: "Phone",
-  setup_2_d: "Plug in the phone with the app installed by USB and wait until it shows “Ready for calls”. After that you can unplug it: it switches to Wi-Fi by itself.",
+  setup_2_t: "Connect your phone",
+  setup_2_d: "On a Linux computer with Bluetooth, run bluetooth/install.sh and pair your phone. Click for the steps.",
   setup_3_t: "Notifications",
   setup_3_d: "Choose where call summaries go, such as Telegram or Discord.",
   live_active: "Call in progress",
@@ -1669,7 +1550,7 @@ I18N["en"] = {
   load_more: "Show more",
   list_count: "Showing {a} of {b}",
   empty_title: "No calls yet",
-  empty_body: "Plug in your phone and call its number. The call shows up here with a summary and the recording.",
+  empty_body: "Call your phone's number. The call shows up here with a summary and the recording.",
   empty_filtered: "No calls match",
   empty_clear: "Clear filters",
   hidden_number: "Hidden number",
@@ -1703,29 +1584,12 @@ I18N["en"] = {
   d_appt_booked: "Booked during the call",
   d_appt_confirmed: "Accepted",
   d_appt_declined: "Declined",
-  d_appt_sms_sent: "text sent",
   ap_panel: "To do",
   ap_confirm: "Accept",
   ap_decline: "Decline",
   ap_open_call: "Open the call",
-  ap_working: "Working… (up to about 90 seconds when a text is sent)",
+  ap_working: "Working…",
   ap_already: "Already handled",
-  d_appt_sms_failed: "text not sent ({code})",
-  d_appt_sms_none: "number can't take texts",
-  ap_retry_sms: "Send the text again",
-  ap_sms_from: "Send from",
-  ap_sms_from_call: "{phone} (took the call)",
-  sms_c_offline: "the phone is not connected",
-  sms_c_old_app: "the phone app is too old",
-  sms_c_timeout: "the phone did not respond",
-  sms_c_busy: "the same text is already being sent",
-  sms_c_no_permission: "the phone app may not send texts",
-  sms_c_no_service: "no mobile signal",
-  sms_c_radio_off: "the phone's radio is off (airplane mode)",
-  sms_c_generic_failure: "the carrier did not take the text",
-  sms_c_exception: "the phone app ran into an error",
-  sms_c_bad_request: "the number or the text was not accepted",
-  sms_c_sim_not_found: "the chosen SIM card is not in the phone",
   d_cal_allday: "All day",
   cal_add: "Add to calendar",
   cal_change: "Pick another calendar",
@@ -1746,17 +1610,11 @@ I18N["en"] = {
   ap_k_what: "What",
   ap_k_when: "When",
   ap_reply: "Tell them by",
-  ap_reply_sms: "Text",
   ap_reply_call: "AI call-back",
   ap_reply_none: "Don't tell them",
   ap_reply_cant: "(not for this number)",
   ap_res_yes: "Accepted",
   ap_res_no: "Declined",
-  ap_res_yes_sent: "Accepted, and the caller got a text",
-  ap_res_no_sent: "Declined, and the caller got a text",
-  ap_res_sms_sent_short: "Text sent to the caller",
-  ap_res_sms_failed: "The text didn't go out: {why}",
-  ap_res_sms_none: "This number can't take texts, so call them back yourself",
   ap_res_none: "The caller wasn't told",
   ap_res_hidden: "Hidden number: the caller can't be told",
   ap_call_dialing: "The AI is calling them back…",
@@ -1931,7 +1789,7 @@ I18N["en"] = {
   f_notify_lang_h: "The language of the notifications and summaries you read. It does not change the language the AI speaks to callers.",
   nl_same: "Same as the AI's language",
   f_simlang: "Main language for each SIM",
-  f_simlang_h: "Only for a phone with a SIM from another country: calls to that SIM start in the language picked here. Needs phone app 1.0 or later.",
+  f_simlang_h: "Only for a phone with a SIM from another country: calls to that SIM start in the language picked here.",
   sl_country: "SIM country",
   sl_lang: "Main language",
   sl_pick: "Choose a country",
@@ -1964,7 +1822,7 @@ I18N["en"] = {
   pv_playing: "Playing: {what}",
   pv_failed: "Preview failed: {msg}",
   f_enabled: "AI answers calls",
-  f_enabled_h: "Off: calls are picked up and ended at once. To let the phone ring as usual, use “Switch to normal phone” on the System page or in the phone app.",
+  f_enabled_h: "Off: calls are picked up and ended at once. To let the phone ring as usual, use “Switch to normal phone” on the System page.",
   vc_informative: "informative",
   vc_upbeat: "upbeat",
   vc_excitable: "excitable",
@@ -2168,12 +2026,9 @@ I18N["en"] = {
   f_appt_mode_h: "When a caller wants to set a time, the AI does not agree on the spot; it says it will check and get back to them. You then press Accept or Decline under “To do” on the Calls page, or in the notification.",
   appt_off: "Off",
   appt_confirm: "Ask me first",
-  f_appt_sms: "Text the caller",
-  f_appt_sms_h: "After you decide, the phone that took the call texts the caller (mobile numbers only). Off: the AI calls them back instead.",
   f_appt_reply: "Default reply",
-  f_appt_reply_h: "Automatic: a text to a mobile, an AI call-back to a landline. Hidden numbers and numbers that can't be called back (abroad, toll-free and the like) get no reply.",
+  f_appt_reply_h: "Automatic: the AI calls the person back when it can. Hidden numbers and numbers that can't be called back (abroad, toll-free and the like) get no reply.",
   ar_auto: "Automatic (by number)",
-  ar_sms: "Always a text",
   ar_call: "Always an AI call-back",
   // ---- settings: advanced
   f_think: "Thinking level",
@@ -2185,24 +2040,11 @@ I18N["en"] = {
   sys_phones: "Phones",
   sys_updated: "Updated {time}",
   sys_connected: "Connected to Bageo",
-  sys_usb: "Plugged in by USB",
   sys_calls_now: "Calls in progress: {n}",
   ph_ready: "Ready for calls",
   ph_incall: "On a call",
   ph_seen: "Seen earlier, not connected now",
-  ph_none: "Plug the phone in with a USB data cable, turn on USB debugging and open the app.",
-  ph_unauth: "Waiting for permission: unlock the phone and accept the “Allow USB debugging?” prompt.",
-  ph_offline: "Offline: unplug the cable and plug it in again.",
-  ph_state: "State: {state}",
-  ph_noapp: "The Bageo app is not installed on this phone.",
-  ph_link_ok: "USB link is up and the app is installed",
-  ph_link_bad: "The USB link is not set up yet. Wait a few seconds.",
-  usb_off: "The USB helper is turned off",
-  usb_off_d: "Phones connect to Bageo over the network instead.",
-  usb_noadb: "adb was not found",
-  usb_noadb_d: "Phones on USB cannot be set up automatically. Install the Android platform-tools or set ADB_BIN.",
-  usb_error: "USB problem",
-  usb_none: "No phone found on USB",
+  ph_none: "No phone connected. Pair your phone with the Bluetooth computer and keep it nearby.",
   chk_title: "Is everything ready?",
   chk_key: "Gemini API key",
   chk_key_bad: "Add your key so the AI can talk.",
@@ -2350,7 +2192,6 @@ I18N["en"] = {
   err_unauthorized: "That password is not right.",
   err_not_found: "Not found.",
   err_invalid_id: "That ID is not valid.",
-  err_sms_not_retryable: "This text can't be sent again: the appointment isn't decided yet, or the text already went out.",
   err_invalid_serial: "That phone is not valid.",
   err_no_calendar: "This call has no calendar suggestion.",
   err_no_audio: "This call has no recording of that kind.",
@@ -2392,8 +2233,6 @@ I18N["en"] = {
   cu_ip: "Phones that cannot open .local addresses (some older Android phones) use:",
   // ---- phone mode (System view)
   ph_mode_normal: "Normal phone: calls ring, the AI does not answer",
-  ph_app: "App {v}",
-  ph_need_update: "Update the Bageo app on this phone to switch it from here",
   ph_to_normal: "Switch to normal phone",
   ph_to_ai: "Let the AI answer again",
   ph_switching: "Switching…",
@@ -2406,15 +2245,9 @@ I18N["en"] = {
   ph_last_seen: "Last connected {time}",
   pm_err_in_call: "the phone is on a call. Try again after it ends",
   pm_err_busy: "the phone is still finishing the previous switch",
-  pm_err_no_root: "the Bageo module is not running on the phone. In Magisk or KernelSU, check that Bageo Uplink is enabled, then restart the phone",
   pm_err_save_failed: "the phone could not save the mode",
-  pm_err_dialer_failed: "the phone could not change its default phone app",
-  pm_err_screening_failed: "the phone could not change its call screening setting",
-  pm_err_dnd_failed: "the phone could not change Do Not Disturb",
-  pm_err_volume_failed: "the phone could not turn its ringer back on",
   pm_err_invalid_mode: "the phone did not recognize this mode",
   pm_err_offline: "the phone is not connected",
-  pm_err_unsupported: "the app on the phone is too old. Update it first",
   pm_err_timeout: "Result not confirmed yet. Refresh this page in a moment.",
   pm_err_network: "Bageo could not be reached",
   pm_err_failed: "something went wrong on the phone",
@@ -2546,7 +2379,7 @@ I18N["en"] = {
   ct_tab_stall: "Stall list",
   ct_kind: "List",
   ct_kind_contact: "Contact",
-  ct_kind_whitelist: "Whitelist (family and friends; can be put through to you)",
+  ct_kind_whitelist: "Whitelist (family and friends; urgent calls reach you)",
   ct_kind_blacklist: "Blacklist (turned away, no AI)",
   ct_kind_stall: "Stall list (the AI wastes their time from the start)",
   ct_kind_help: "How calls from this number are handled.",
@@ -2554,10 +2387,10 @@ I18N["en"] = {
   wl_desc: "Choose who can reach you and when. This does not replace emergency services.",
   f_wl_mode: "Transfer",
   wl_m_direct: "Don't answer: send to your phone",
-  wl_m_emergency: "AI answers, puts you through if urgent",
+  wl_m_emergency: "AI answers, alerts you if urgent",
   f_wl_num: "Your own phone number",
   f_wl_num_ph: "e.g. 0912345678",
-  f_wl_num_h: "The number the phone calls when something is urgent.",
+  f_wl_num_h: "The number calls go to when you pick “Don't answer: send to your phone”.",
   f_ui_pw: "Console password",
   f_ui_pw_h: "Once set, the console asks for it when opened (once per browser). Needed to open the console on your phone or another computer.",
   pw_setup_title: "Set a console password (optional)",
@@ -2587,15 +2420,6 @@ I18N["en"] = {
   n_ctl_h_matrix: "Check calls, have the AI call someone and handle to-dos right from this chat. Send \"@your bot /help\" for the commands.",
   k_ai_errand: "AI errand call",
   ev_ai_errand: "AI errand call",
-  ev_whitelist_urgent_call_merged: "Urgent: you were put through",
-  ev_whitelist_urgent_call_failed: "Urgent: could not reach you",
-  ev_whitelist_urgent_call_ai_ended: "Urgent: the AI dropped off while calling you",
-  urg_why_no_answer: "you did not answer",
-  urg_why_ended: "the call to you ended",
-  urg_why_caller_left: "the caller hung up",
-  urg_why_bad_number: "your number is not valid",
-  urg_why_merge: "Could not put you through",
-  urg_why_phone: "the phone could not place the call",
   er_err_empty_text: "Write what you want to say.",
   er_err_text_too_long: "That's too long. Please shorten it.",
   er_err_question_closed: "That question was already answered or has timed out.",
@@ -2627,58 +2451,16 @@ I18N["en"] = {
   bl_mode: "When someone on the Blacklist calls:",
   bl_voice_link: "Choose the announcement voice",
   ct_bad_prefix: "Only Blacklist numbers can end with *, with at least 3 digits before it, not counting leading zeros.",
-  tab_sms: "SMS",
-  sms_count: "{n} messages",
-  sms_search_ph: "Search sender or text",
-  sms_clear: "Delete all",
-  sms_clear_t: "Delete all text messages?",
-  sms_clear_b: "This cannot be undone.",
-  sms_del: "Delete",
-  sms_del_t: "Delete this text message?",
-  sms_copy: "Copy",
-  sms_empty_t: "No text messages yet",
-  sms_empty_d: "Texts your phones receive show up here once the SMS forwarder is running.",
-  sms_none_found: "No text message matches.",
-  sms_unknown: "Unknown sender",
   unit_days: "days",
-  sms_new: "New message",
-  sms_pick: "Pick a conversation, or press “New message”.",
-  sms_to: "To",
-  sms_to_ph: "Phone number",
-  sms_from: "From",
-  sms_input_ph: "Text message",
-  sms_send: "Send",
-  sms_sending: "Sending…",
-  sms_sent: "Sent",
-  sms_failed: "Not sent",
-  sms_unsure: "Not confirmed yet",
-  sms_retry: "Retry",
-  sms_you: "You: ",
-  sms_no_line: "No phone can send texts right now.",
-  sms_no_reply: "You can't reply to this sender.",
-  sms_del_thread: "Delete conversation",
-  sms_del_thread_t: "Delete all messages with {name}?",
-  sms_back: "Back",
-  sms_earlier: "Show earlier messages",
-  sms_sim_n: "SIM {n}",
-  sms_err_offline: "The phone is not connected.",
-  sms_err_old_app: "This phone's app is too old to send texts.",
-  sms_err_permission: "The phone's app may not send texts. Allow it on the phone.",
-  sms_err_no_service: "The phone has no signal.",
-  sms_err_generic: "The phone could not send it.",
-  sms_err_number: "Check the number and try again.",
-  sms_err_sim_not_found: "The chosen SIM card is not in the phone.",
   f_keep: "Days to keep records",
-  f_keep_h: "Calls and recordings, texts, errands and to-dos older than this are deleted automatically.",
+  f_keep_h: "Calls and recordings, errands and to-dos older than this are deleted automatically.",
   f_phone_wifi: "Phones can also connect over Wi-Fi",
-  f_phone_wifi_h: "On: a phone plugged in by USB once keeps working over Wi-Fi after you unplug it. Off: phones connect by USB only.",
+  f_phone_wifi_h: "On: the Bluetooth computer can connect over the network with a pairing code. Off: only the computer running Bageo can connect.",
   repair_btn: "Pair phones again",
   f_repair_h: "Use this if a phone was lost or someone else used it.",
   repair_t: "Pair phones again?",
-  repair_b: "Phones on Wi-Fi are disconnected. Plug each one in by USB once more to connect it again.",
-  repair_done: "Phones paired again. Plug each Wi-Fi phone in by USB once.",
-  ph_link_usb: "Connected by USB",
-  ph_link_wifi: "Connected over Wi-Fi",
+  repair_b: "Connected phones are disconnected. Connect each one again with a new pairing code.",
+  repair_done: "Paired again. Connect each phone again with a new pairing code.",
   g_backup: "Backup & restore",
   g_backup_d: "Backup files hold your keys and passwords. Keep them where only you can get them.",
   bk_schedule: "Automatic backup",
@@ -2696,7 +2478,7 @@ I18N["en"] = {
   bk_import: "Import settings",
   bk_keep: "Automatic backups to keep",
   bk_unit_copies: "copies",
-  bk_calls: "Include call records, recordings and texts",
+  bk_calls: "Include call records and recordings",
   bk_calls_h: "Backup files get much bigger.",
   bk_files: "Backup files",
   bk_files_empty: "No backup files yet.",
@@ -2719,7 +2501,6 @@ I18N["en"] = {
   bk_item_phones: "SIM card details",
   bk_item_errands: "AI errands",
   bk_item_calls: "Call records and recordings",
-  bk_item_sms: "Texts",
   bk_item_tasks: "To do items",
   bk_item_n: "{name}: {n}",
   bk_dlg_title: "Restore from this backup?",
@@ -2786,14 +2567,12 @@ I18N["en"] = {
   bk_del_b: "Once deleted, it can't be brought back.",
   bk_done_delete: "Backup deleted.",
   bk_del_need_password: "To delete it, open the console on the computer that runs Bageo, or set a console password first.",
-  f_wl_mode_h_direct: "This phone doesn't answer; your carrier forwards the call to your number and the AI stays silent. First switch the phone to normal phone and dial **67*your number# to turn on forward-when-busy, or callers reach voicemail.",
-  f_wl_mode_h_emergency: "The AI answers first; if it's urgent, it asks the caller to hold and calls you, and once you pick up you talk to them directly. If you don't answer, the AI says you'll call back. Without your number, you only get an alert.",
+  f_wl_mode_h_direct: "Bageo turns the call away on the phone and your carrier forwards it to your number; the AI stays silent. Turn on forward-when-busy first: dial **67*your number# on the phone, or callers reach voicemail.",
+  f_wl_mode_h_emergency: "The AI answers first. If it's urgent, you get an alert and the AI tells the caller you'll call back.",
   wl_call_terms_title: "Before you turn this on",
-  wl_call_terms_1: "The AI can get it wrong: it may not call you about something truly urgent, or may call you when it isn't.",
+  wl_call_terms_1: "The AI can get it wrong: it may miss something truly urgent, or treat something as urgent when it isn't.",
   wl_call_terms_2: "This does not replace emergency services. If a life is at risk, the caller should call the local emergency number directly.",
-  wl_call_terms_3: "The call to you is made from this phone's SIM. Your carrier charges as usual; international or roaming calls may cost more.",
-  wl_call_terms_4: "After you are put through, the call is recorded according to your settings. You are responsible for following local laws about telling people they are recorded.",
-  wl_call_terms_5: "The call to you may not get through. You use this at your own risk; Bageo and its developers are not liable for any loss.",
+  wl_call_terms_3: "Forwarding and alerts may not get through. You use this at your own risk; Bageo and its developers are not liable for any loss.",
   wl_call_terms_ok: "I understand, turn it on",
   wl_call_terms_cancel: "Cancel",
   f_wl_who: "Who can be forwarded",
@@ -2803,10 +2582,10 @@ I18N["en"] = {
   f_wl_who_others_h: "Includes hidden numbers. A stranger saying it's urgent may be a scam; turn this on only if you need it.",
   f_wl_who_h: "People on the Blacklist or the Stall list are never forwarded.",
   wl_enable: "Turn on forwarding",
-  ippair_title: "Pair a phone by IP address",
-  ippair_h: "Use this when Bageo runs in Docker or on another computer and the phone can't be plugged in.",
+  ippair_title: "Connect by IP address",
+  ippair_h: "Use this when Bageo runs on another computer or in Docker. Enter the address and code on the Bluetooth computer.",
   ippair_btn: "Get a pairing code",
-  ippair_step: "In the Bageo app on the phone, tap \"Connect by IP address\" and enter:",
+  ippair_step: "On the Bluetooth computer, run “bageo-bluetooth link” with:",
   ippair_addr: "Address",
   ippair_code: "Pairing code",
   ippair_valid: "Valid for 10 minutes",
@@ -2858,8 +2637,8 @@ I18N["zh-TW"] = {
   setup_title: "歡迎！三個步驟，讓手機自己接電話",
   setup_1_t: "基本設定",
   setup_1_d: "填 Gemini API 金鑰和你的名字。",
-  setup_2_t: "手機",
-  setup_2_d: "用 USB 線接上裝好 App 的手機，顯示「待命中」就可以了。接過一次之後拔掉線，也會自動改用 Wi-Fi 連線。",
+  setup_2_t: "連上手機",
+  setup_2_d: "在有藍牙的 Linux 電腦上執行 bluetooth/install.sh，再配對手機。點這裡看步驟。",
   setup_3_t: "通知",
   setup_3_d: "選通話摘要要傳到哪裡，例如 Telegram、LINE。",
   live_active: "通話進行中",
@@ -2883,7 +2662,7 @@ I18N["zh-TW"] = {
   load_more: "顯示更多",
   list_count: "顯示 {a} 筆，共 {b} 筆",
   empty_title: "還沒有通話",
-  empty_body: "把手機接上，再撥打它的號碼。通話會連同摘要和錄音出現在這裡。",
+  empty_body: "打電話到你的手機號碼。通話會連同摘要和錄音出現在這裡。",
   empty_filtered: "沒有符合的通話",
   empty_clear: "清除篩選",
   hidden_number: "未顯示號碼",
@@ -2917,29 +2696,12 @@ I18N["zh-TW"] = {
   d_appt_booked: "通話中已排入",
   d_appt_confirmed: "已同意",
   d_appt_declined: "已婉拒",
-  d_appt_sms_sent: "已傳簡訊",
   ap_panel: "待處理事項",
   ap_confirm: "同意",
   ap_decline: "不同意",
   ap_open_call: "看這通電話",
-  ap_working: "處理中…（要傳簡訊時最多約 90 秒）",
+  ap_working: "處理中…",
   ap_already: "已經處理過了",
-  d_appt_sms_failed: "簡訊沒傳出（{code}）",
-  d_appt_sms_none: "對方號碼收不到簡訊",
-  ap_retry_sms: "重傳簡訊",
-  ap_sms_from: "用哪支手機傳",
-  ap_sms_from_call: "{phone}（接這通的手機）",
-  sms_c_offline: "手機沒連線",
-  sms_c_old_app: "手機 App 太舊",
-  sms_c_timeout: "手機沒有回應（逾時）",
-  sms_c_busy: "同一則簡訊正在傳送中",
-  sms_c_no_permission: "手機 App 沒有傳簡訊的權限",
-  sms_c_no_service: "手機沒有訊號",
-  sms_c_radio_off: "手機的行動網路關閉（飛航模式）",
-  sms_c_generic_failure: "電信端沒有收下這則簡訊",
-  sms_c_exception: "手機 App 發生錯誤",
-  sms_c_bad_request: "號碼或內容不被接受",
-  sms_c_sim_not_found: "找不到指定的 SIM 卡",
   d_cal_allday: "整天",
   cal_add: "加入行事曆",
   cal_change: "換一個行事曆",
@@ -2960,17 +2722,11 @@ I18N["zh-TW"] = {
   ap_k_what: "什麼事",
   ap_k_when: "時間",
   ap_reply: "回覆方式",
-  ap_reply_sms: "傳簡訊",
   ap_reply_call: "AI 回電",
   ap_reply_none: "不通知對方",
   ap_reply_cant: "（這個號碼不行）",
   ap_res_yes: "已同意",
   ap_res_no: "已婉拒",
-  ap_res_yes_sent: "已同意，已傳簡訊給對方",
-  ap_res_no_sent: "已婉拒，已傳簡訊給對方",
-  ap_res_sms_sent_short: "已傳簡訊給對方",
-  ap_res_sms_failed: "簡訊沒傳出去：{why}",
-  ap_res_sms_none: "對方號碼收不到簡訊，請自己回電",
   ap_res_none: "沒有通知對方",
   ap_res_hidden: "未顯示號碼，沒辦法通知對方",
   ap_call_dialing: "AI 正在回電給對方…",
@@ -3121,7 +2877,7 @@ I18N["zh-TW"] = {
   ct_tab_stall: "陪聊名單",
   ct_kind: "分類",
   ct_kind_contact: "一般聯絡人",
-  ct_kind_whitelist: "白名單（重要親友，可轉接給你）",
+  ct_kind_whitelist: "白名單（重要親友，有急事會通知你）",
   ct_kind_blacklist: "黑名單（直接拒接）",
   ct_kind_stall: "陪聊名單（一接起就陪聊拖時間）",
   ct_kind_help: "這個號碼打來時要怎麼處理。",
@@ -3129,10 +2885,10 @@ I18N["zh-TW"] = {
   wl_desc: "選哪些人打來可以轉給你、什麼時候轉。這不能代替報警或叫救護車。",
   f_wl_mode: "轉接方式",
   wl_m_direct: "不接，直接轉到你的手機",
-  wl_m_emergency: "AI 先接，有急事才轉給你",
+  wl_m_emergency: "AI 先接，有急事就通知你",
   f_wl_num: "你自己的手機號碼",
   f_wl_num_ph: "例如：0912345678",
-  f_wl_num_h: "有急事時手機會打這個號碼找你。",
+  f_wl_num_h: "選「不接，直接轉到你的手機」時，電話會轉到這個號碼。",
   f_ui_pw: "控制台密碼",
   f_ui_pw_h: "設了以後，打開控制台要輸入密碼（每個瀏覽器只要輸入一次）。要用手機或別台電腦打開控制台，一定要設。",
   pw_setup_title: "設定控制台密碼（可不設）",
@@ -3176,7 +2932,7 @@ I18N["zh-TW"] = {
   f_notify_lang_h: "你收到的通知和摘要用這個語言。AI 跟來電者講話的語言不受影響。",
   nl_same: "跟 AI 講話的語言相同",
   f_simlang: "各 SIM 卡的主要語言",
-  f_simlang_h: "手機有其他國家的 SIM 卡才需要設：打到那張卡的電話，AI 會用這裡選的語言開場。手機 App 要 1.0 以上。",
+  f_simlang_h: "手機有其他國家的 SIM 卡才需要設：打到那張卡的電話，AI 會用這裡選的語言開場。",
   sl_country: "SIM 卡國家",
   sl_lang: "主要語言",
   sl_pick: "選擇國家",
@@ -3209,7 +2965,7 @@ I18N["zh-TW"] = {
   pv_playing: "正在播放：{what}",
   pv_failed: "試聽失敗：{msg}",
   f_enabled: "由 AI 接聽來電",
-  f_enabled_h: "關閉後，來電會被接起再馬上掛斷。想讓電話照常響，請到「系統」頁或手機 App 改成一般手機。",
+  f_enabled_h: "關閉後，來電會被接起再馬上掛斷。想讓電話照常響，請到「系統」頁改成一般手機。",
   vc_informative: "清楚穩重",
   vc_upbeat: "輕快",
   vc_excitable: "有活力",
@@ -3413,12 +3169,9 @@ I18N["zh-TW"] = {
   f_appt_mode_h: "對方想約時間時，AI 不會當場答應，會說確認後再回覆。你再到「通話」頁的「待處理事項」或通知裡按「同意」或「不同意」。",
   appt_off: "關閉",
   appt_confirm: "先問我",
-  f_appt_sms: "傳簡訊告訴對方",
-  f_appt_sms_h: "你決定後，由接那通電話的手機傳簡訊告訴對方（只能傳給手機號碼）。關閉：改由 AI 回電。",
   f_appt_reply: "預設回覆方式",
-  f_appt_reply_h: "自動：手機號碼傳簡訊，市話由 AI 回電。不能回電的號碼（國外、0800 這類）和未顯示號碼不會通知。",
+  f_appt_reply_h: "自動：能回電的號碼由 AI 回電。不能回電的號碼（國外、0800 這類）和未顯示號碼不會通知。",
   ar_auto: "自動（依號碼判斷）",
-  ar_sms: "一律傳簡訊",
   ar_call: "一律 AI 回電",
   // ---- settings: advanced
   f_think: "思考程度",
@@ -3430,24 +3183,11 @@ I18N["zh-TW"] = {
   sys_phones: "手機",
   sys_updated: "更新於 {time}",
   sys_connected: "已連上 Bageo",
-  sys_usb: "USB 連接",
   sys_calls_now: "進行中的通話：{n}",
   ph_ready: "待命中，可以接電話",
   ph_incall: "通話中",
   ph_seen: "之前連過，現在沒有連線",
-  ph_none: "請用 USB 傳輸線接上手機，開啟 USB 偵錯，並打開 App。",
-  ph_unauth: "等待授權：請解鎖手機，在「允許 USB 偵錯嗎？」的視窗按允許。",
-  ph_offline: "離線：請拔掉傳輸線再重新接上。",
-  ph_state: "狀態：{state}",
-  ph_noapp: "這支手機還沒安裝 Bageo App。",
-  ph_link_ok: "USB 連線正常，App 已安裝",
-  ph_link_bad: "USB 連線還沒建立好，請等幾秒。",
-  usb_off: "USB 輔助功能已關閉",
-  usb_off_d: "手機改由網路或其他連線連到 Bageo。",
-  usb_noadb: "找不到 adb",
-  usb_noadb_d: "無法自動設定 USB 上的手機。請安裝 Android platform-tools，或設定 ADB_BIN。",
-  usb_error: "USB 發生問題",
-  usb_none: "USB 上沒有找到手機",
+  ph_none: "沒有連線的手機。請讓手機和藍牙電腦配對，並放在附近。",
   chk_title: "都準備好了嗎？",
   chk_key: "Gemini API 金鑰",
   chk_key_bad: "填入金鑰，AI 才能講話。",
@@ -3595,7 +3335,6 @@ I18N["zh-TW"] = {
   err_unauthorized: "密碼不正確。",
   err_not_found: "找不到。",
   err_invalid_id: "這個 ID 不正確。",
-  err_sms_not_retryable: "這則簡訊不能重傳：預約還沒決定，或簡訊已經傳出去了。",
   err_invalid_serial: "這支手機不正確。",
   err_no_calendar: "這通電話沒有行事曆建議。",
   err_no_audio: "這通電話沒有這種錄音。",
@@ -3637,8 +3376,6 @@ I18N["zh-TW"] = {
   cu_ip: "打不開 .local 網址的手機（有些舊的 Android）請用：",
   // ---- phone mode (System view)
   ph_mode_normal: "一般手機：來電會正常響，AI 不接",
-  ph_app: "App 版本 {v}",
-  ph_need_update: "這支手機的 Bageo App 要更新，才能從這裡切換",
   ph_to_normal: "改成一般手機",
   ph_to_ai: "改回 AI 接聽",
   ph_switching: "切換中…",
@@ -3651,15 +3388,9 @@ I18N["zh-TW"] = {
   ph_last_seen: "最後連線 {time}",
   pm_err_in_call: "手機正在通話，掛斷後再試",
   pm_err_busy: "手機上一次切換還沒做完",
-  pm_err_no_root: "手機上的 Bageo 模組沒有在執行。請在 Magisk 或 KernelSU 確認 Bageo Uplink 模組已啟用，然後重新開機",
   pm_err_save_failed: "手機無法儲存模式設定",
-  pm_err_dialer_failed: "手機沒辦法更換預設電話 App",
-  pm_err_screening_failed: "手機沒辦法更換來電過濾設定",
-  pm_err_dnd_failed: "手機沒辦法更改勿擾模式",
-  pm_err_volume_failed: "手機沒辦法把鈴聲調回來",
   pm_err_invalid_mode: "手機不認得這個模式",
   pm_err_offline: "手機沒有連上",
-  pm_err_unsupported: "手機上的 App 太舊，請先更新",
   pm_err_timeout: "結果未確認，請稍後重新整理。",
   pm_err_network: "連不上 Bageo",
   pm_err_failed: "手機上發生沒預期到的錯誤",
@@ -3801,15 +3532,6 @@ I18N["zh-TW"] = {
   n_ctl_h_matrix: "打開後，可以在這個聊天室查通話、叫 AI 代打電話、決定待處理事項。傳「@你的機器人 /help」看指令。",
   k_ai_errand: "AI 代打",
   ev_ai_errand: "AI 代打電話",
-  ev_whitelist_urgent_call_merged: "有急事：你已接上對方",
-  ev_whitelist_urgent_call_failed: "有急事：沒接通你",
-  ev_whitelist_urgent_call_ai_ended: "有急事：打給你時 AI 先離開了通話",
-  urg_why_no_answer: "你沒接",
-  urg_why_ended: "打給你的電話先斷了",
-  urg_why_caller_left: "對方先掛了",
-  urg_why_bad_number: "你的號碼不正確",
-  urg_why_merge: "沒能把你接上對方",
-  urg_why_phone: "手機撥不出去",
   er_err_empty_text: "請寫要說的話。",
   er_err_text_too_long: "太長了，請縮短。",
   er_err_question_closed: "這個問題已經回答過，或已逾時。",
@@ -3841,58 +3563,16 @@ I18N["zh-TW"] = {
   bl_mode: "黑名單打來時：",
   bl_voice_link: "選拒接語音的聲音",
   ct_bad_prefix: "結尾加 * 只能用在黑名單，而且 * 前面除了開頭的 0 至少要 3 碼。",
-  tab_sms: "簡訊",
-  sms_count: "{n} 則",
-  sms_search_ph: "搜尋寄件人或內容",
-  sms_clear: "全部刪除",
-  sms_clear_t: "刪除全部簡訊？",
-  sms_clear_b: "刪除後無法復原。",
-  sms_del: "刪除",
-  sms_del_t: "刪除這則簡訊？",
-  sms_copy: "複製",
-  sms_empty_t: "還沒有簡訊",
-  sms_empty_d: "簡訊轉發開始運作後，手機收到的簡訊會出現在這裡。",
-  sms_none_found: "找不到符合的簡訊。",
-  sms_unknown: "未知寄件人",
   unit_days: "天",
-  sms_new: "新簡訊",
-  sms_pick: "選一則對話，或按「新簡訊」。",
-  sms_to: "收件人",
-  sms_to_ph: "輸入電話號碼",
-  sms_from: "從",
-  sms_input_ph: "輸入簡訊",
-  sms_send: "傳送",
-  sms_sending: "傳送中…",
-  sms_sent: "已送出",
-  sms_failed: "沒有送出",
-  sms_unsure: "還不確定有沒有送出",
-  sms_retry: "重試",
-  sms_you: "你：",
-  sms_no_line: "現在沒有可以傳簡訊的手機。",
-  sms_no_reply: "這個寄件人不能回覆。",
-  sms_del_thread: "刪除對話",
-  sms_del_thread_t: "刪除跟 {name} 的所有簡訊？",
-  sms_back: "返回",
-  sms_earlier: "顯示更早的簡訊",
-  sms_sim_n: "SIM {n}",
-  sms_err_offline: "手機沒有連線。",
-  sms_err_old_app: "這支手機的 App 太舊，不能傳簡訊。",
-  sms_err_permission: "手機的 App 沒有傳簡訊的權限，請在手機上允許。",
-  sms_err_no_service: "手機沒有訊號。",
-  sms_err_generic: "手機沒有送出這則簡訊。",
-  sms_err_number: "請檢查號碼後再試一次。",
-  sms_err_sim_not_found: "找不到指定的 SIM 卡。",
   f_keep: "紀錄保留幾天",
-  f_keep_h: "通話和錄音、簡訊、AI 代打和待處理事項，超過天數就自動刪除。",
+  f_keep_h: "通話和錄音、AI 代打和待處理事項，超過天數就自動刪除。",
   f_phone_wifi: "手機也能用 Wi-Fi 連",
-  f_phone_wifi_h: "開：手機用 USB 接過一次後，拔掉線也能繼續用 Wi-Fi 連線。關：手機只能用 USB 連。",
+  f_phone_wifi_h: "開：藍牙電腦可以用配對碼透過網路連線。關：只有執行 Bageo 的這台電腦能連。",
   repair_btn: "重新配對手機",
   f_repair_h: "手機遺失或給別人用過時使用。",
   repair_t: "重新配對手機？",
-  repair_b: "用 Wi-Fi 連線的手機會斷線，每支都要再用 USB 接一次才能連回來。",
-  repair_done: "已重新配對。用 Wi-Fi 的手機請再用 USB 接一次。",
-  ph_link_usb: "用 USB 連線",
-  ph_link_wifi: "用 Wi-Fi 連線",
+  repair_b: "已連線的手機會斷線，每支都要用新的配對碼重新連。",
+  repair_done: "已重新配對。請用新的配對碼重新連每支手機。",
   g_backup: "備份與還原",
   g_backup_d: "備份檔裡有金鑰和密碼，要放在只有自己拿得到的地方。",
   bk_schedule: "自動備份",
@@ -3910,7 +3590,7 @@ I18N["zh-TW"] = {
   bk_import: "匯入設定",
   bk_keep: "自動備份保留幾份",
   bk_unit_copies: "份",
-  bk_calls: "連通話紀錄、錄音和簡訊一起備份",
+  bk_calls: "連通話紀錄和錄音一起備份",
   bk_calls_h: "檔案會大很多。",
   bk_files: "備份檔",
   bk_files_empty: "還沒有備份檔。",
@@ -3933,7 +3613,6 @@ I18N["zh-TW"] = {
   bk_item_phones: "SIM 卡資料",
   bk_item_errands: "AI 代打",
   bk_item_calls: "通話紀錄與錄音",
-  bk_item_sms: "簡訊",
   bk_item_tasks: "待處理事項",
   bk_item_n: "{name}：{n}",
   bk_dlg_title: "要用這份備份還原嗎？",
@@ -4000,14 +3679,12 @@ I18N["zh-TW"] = {
   bk_del_b: "刪了就救不回來。",
   bk_done_delete: "已刪除備份。",
   bk_del_need_password: "要刪除，請在執行 Bageo 的電腦上打開控制台，或先設控制台密碼。",
-  f_wl_mode_h_direct: "這支手機不接，由電信轉到你的號碼，AI 不出聲。要先把手機切到「一般手機」，撥 **67*你的號碼# 開好忙線轉接，沒開的話對方會進語音信箱。",
-  f_wl_mode_h_emergency: "AI 先接聽，對方有急事就請他稍等並打給你，你接起來就能直接跟他講；你沒接，AI 會說你會盡快回電。沒填你的號碼的話，只會通知你。",
+  f_wl_mode_h_direct: "Bageo 會讓手機拒接，由電信轉到你的號碼，AI 不出聲。要先在手機撥 **67*你的號碼# 開好忙線轉接，沒開的話對方會進語音信箱。",
+  f_wl_mode_h_emergency: "AI 先接聽。對方有急事就通知你，AI 會跟對方說你會回電。",
   wl_call_terms_title: "開啟前請先看完",
-  wl_call_terms_1: "AI 可能判斷錯：真的急事可能沒打給你，不急的事也可能打給你。",
+  wl_call_terms_1: "AI 可能判斷錯誤：真正的急事可能沒被發現，不急的事也可能被當成急事。",
   wl_call_terms_2: "這不能取代報警或叫救護車。有生命危險時，請對方直接打當地的緊急電話。",
-  wl_call_terms_3: "打給你的電話由這支手機的 SIM 卡撥出，電信照常收費，國際或漫遊可能更貴。",
-  wl_call_terms_4: "轉給你之後的通話會照你的設定錄音。錄音前要不要先告知對方，請依當地法律自行處理。",
-  wl_call_terms_5: "可能撥不通或接不起來。使用這個功能造成的任何損失由你自行負責，Bageo 及開發者不負任何責任。",
+  wl_call_terms_3: "轉接或通知可能沒有送達。使用風險由你自己承擔，Bageo 與開發者不負任何損失責任。",
   wl_call_terms_ok: "我了解，開啟",
   wl_call_terms_cancel: "取消",
   f_wl_who: "誰打來可以轉",
@@ -4017,10 +3694,10 @@ I18N["zh-TW"] = {
   f_wl_who_others_h: "包含未顯示號碼。陌生人說有急事也可能是詐騙，需要時再打開。",
   f_wl_who_h: "黑名單和陪聊名單的人不會轉。",
   wl_enable: "開啟轉接",
-  ippair_title: "用 IP 位址配對手機",
-  ippair_h: "Bageo 裝在 Docker 或另一台電腦、手機插不上 USB 時用。",
+  ippair_title: "用 IP 位址連線",
+  ippair_h: "Bageo 裝在 Docker 或另一台電腦時用。在藍牙電腦輸入下面的位址和配對碼。",
   ippair_btn: "產生配對碼",
-  ippair_step: "在手機的 Bageo App 點「用 IP 位址連線」，輸入：",
+  ippair_step: "在藍牙電腦執行「bageo-bluetooth link」，接著輸入：",
   ippair_addr: "位址",
   ippair_code: "配對碼",
   ippair_valid: "10 分鐘內有效",
@@ -4072,8 +3749,8 @@ I18N["zh-CN"] = {
   setup_title: "欢迎！三步设置，让手机自己接电话",
   setup_1_t: "基本设置",
   setup_1_d: "填写 Gemini API 密钥和你的名字。",
-  setup_2_t: "手机",
-  setup_2_d: "用 USB 数据线连接装好 App 的手机，显示“待命中”就可以了。连过一次之后拔掉线，也会自动改用 Wi-Fi 连接。",
+  setup_2_t: "连上手机",
+  setup_2_d: "在有蓝牙的 Linux 电脑上运行 bluetooth/install.sh，再配对手机。点这里看步骤。",
   setup_3_t: "通知",
   setup_3_d: "选择通话摘要发到哪里，例如 Telegram、钉钉。",
   live_active: "通话进行中",
@@ -4097,7 +3774,7 @@ I18N["zh-CN"] = {
   load_more: "显示更多",
   list_count: "显示 {a} 条，共 {b} 条",
   empty_title: "还没有通话",
-  empty_body: "接上手机，再拨打它的号码。通话会连同摘要和录音显示在这里。",
+  empty_body: "拨打你的手机号码。通话会连同摘要和录音显示在这里。",
   empty_filtered: "没有符合条件的通话",
   empty_clear: "清除筛选",
   hidden_number: "未显示号码",
@@ -4131,29 +3808,12 @@ I18N["zh-CN"] = {
   d_appt_booked: "通话中已排入",
   d_appt_confirmed: "已同意",
   d_appt_declined: "已婉拒",
-  d_appt_sms_sent: "已发短信",
   ap_panel: "待处理事项",
   ap_confirm: "同意",
   ap_decline: "不同意",
   ap_open_call: "查看这通电话",
-  ap_working: "处理中…（要发短信时最多约 90 秒）",
+  ap_working: "处理中…",
   ap_already: "已经处理过了",
-  d_appt_sms_failed: "短信没发出（{code}）",
-  d_appt_sms_none: "对方号码收不到短信",
-  ap_retry_sms: "重发短信",
-  ap_sms_from: "用哪部手机发",
-  ap_sms_from_call: "{phone}（接这通电话的手机）",
-  sms_c_offline: "手机没连线",
-  sms_c_old_app: "手机 App 太旧",
-  sms_c_timeout: "手机没有回应（超时）",
-  sms_c_busy: "同一条短信正在发送中",
-  sms_c_no_permission: "手机 App 没有发短信的权限",
-  sms_c_no_service: "手机没有信号",
-  sms_c_radio_off: "手机的移动网络关闭（飞行模式）",
-  sms_c_generic_failure: "运营商没有接收这条短信",
-  sms_c_exception: "手机 App 出错了",
-  sms_c_bad_request: "号码或内容不被接受",
-  sms_c_sim_not_found: "找不到指定的 SIM 卡",
   d_cal_allday: "全天",
   cal_add: "添加到日历",
   cal_change: "换一个日历",
@@ -4174,17 +3834,11 @@ I18N["zh-CN"] = {
   ap_k_what: "什么事",
   ap_k_when: "时间",
   ap_reply: "回复方式",
-  ap_reply_sms: "发短信",
   ap_reply_call: "AI 回拨",
   ap_reply_none: "不通知对方",
   ap_reply_cant: "（这个号码不行）",
   ap_res_yes: "已同意",
   ap_res_no: "已婉拒",
-  ap_res_yes_sent: "已同意，已发短信给对方",
-  ap_res_no_sent: "已婉拒，已发短信给对方",
-  ap_res_sms_sent_short: "已发短信给对方",
-  ap_res_sms_failed: "短信没发出去：{why}",
-  ap_res_sms_none: "对方号码收不到短信，请自己回电",
   ap_res_none: "没有通知对方",
   ap_res_hidden: "未显示号码，没办法通知对方",
   ap_call_dialing: "AI 正在回拨给对方…",
@@ -4359,7 +4013,7 @@ I18N["zh-CN"] = {
   f_notify_lang_h: "你收到的通知和摘要用这个语言。AI 跟来电者说话的语言不受影响。",
   nl_same: "与 AI 说话的语言相同",
   f_simlang: "各 SIM 卡的主要语言",
-  f_simlang_h: "手机有其他国家的 SIM 卡才需要设置：打到那张卡的电话，AI 会用这里选的语言开场。手机 App 需要 1.0 以上。",
+  f_simlang_h: "手机有其他国家的 SIM 卡才需要设置：打到那张卡的电话，AI 会用这里选的语言开场。",
   sl_country: "SIM 卡国家",
   sl_lang: "主要语言",
   sl_pick: "选择国家",
@@ -4392,7 +4046,7 @@ I18N["zh-CN"] = {
   pv_playing: "正在播放：{what}",
   pv_failed: "试听失败：{msg}",
   f_enabled: "由 AI 接听来电",
-  f_enabled_h: "关闭后，来电会被接起再马上挂断。想让电话照常响铃，请到“系统”页或手机 App 改成普通手机。",
+  f_enabled_h: "关闭后，来电会被接起再马上挂断。想让电话照常响铃，请到“系统”页改成普通手机。",
   vc_informative: "清晰稳重",
   vc_upbeat: "轻快",
   vc_excitable: "有活力",
@@ -4596,12 +4250,9 @@ I18N["zh-CN"] = {
   f_appt_mode_h: "对方想约时间时，AI 不会当场答应，会说确认后再回复。你再到“通话”页的“待处理事项”或通知里点“同意”或“不同意”。",
   appt_off: "关闭",
   appt_confirm: "先问我",
-  f_appt_sms: "发短信告诉对方",
-  f_appt_sms_h: "你决定后，由接那通电话的手机发短信告诉对方（只能发给手机号码）。关闭：改由 AI 回电。",
   f_appt_reply: "默认回复方式",
-  f_appt_reply_h: "自动：手机号码发短信，固定电话由 AI 回电。不能回电的号码（国外、400 这类）和未显示号码不会通知。",
+  f_appt_reply_h: "自动：能回电的号码由 AI 回电。不能回电的号码（国外、400 这类）和未显示号码不会通知。",
   ar_auto: "自动（按号码判断）",
-  ar_sms: "一律发短信",
   ar_call: "一律 AI 回拨",
   // ---- settings: advanced
   f_think: "思考程度",
@@ -4613,24 +4264,11 @@ I18N["zh-CN"] = {
   sys_phones: "手机",
   sys_updated: "更新于 {time}",
   sys_connected: "已连上 Bageo",
-  sys_usb: "USB 连接",
   sys_calls_now: "进行中的通话：{n}",
   ph_ready: "待命中，可以接电话",
   ph_incall: "通话中",
   ph_seen: "之前连接过，现在没有连接",
-  ph_none: "请用 USB 数据线接上手机，开启 USB 调试，并打开应用。",
-  ph_unauth: "等待授权：请解锁手机，在“允许 USB 调试吗？”的弹窗里点允许。",
-  ph_offline: "离线：请拔掉数据线再重新插上。",
-  ph_state: "状态：{state}",
-  ph_noapp: "这部手机还没有安装 Bageo 应用。",
-  ph_link_ok: "USB 连接正常，应用已安装",
-  ph_link_bad: "USB 连接还没建立好，请等几秒。",
-  usb_off: "USB 辅助功能已关闭",
-  usb_off_d: "手机改由网络或其他连接连到 Bageo。",
-  usb_noadb: "找不到 adb",
-  usb_noadb_d: "无法自动设置 USB 上的手机。请安装 Android platform-tools，或设置 ADB_BIN。",
-  usb_error: "USB 出现问题",
-  usb_none: "USB 上没有找到手机",
+  ph_none: "没有连线的手机。请让手机和蓝牙电脑配对，并放在附近。",
   chk_title: "都准备好了吗？",
   chk_key: "Gemini API 密钥",
   chk_key_bad: "填写密钥，AI 才能说话。",
@@ -4778,7 +4416,6 @@ I18N["zh-CN"] = {
   err_unauthorized: "密码不正确。",
   err_not_found: "找不到。",
   err_invalid_id: "这个 ID 不正确。",
-  err_sms_not_retryable: "这条短信不能重发：预约还没决定，或者短信已经发出去了。",
   err_invalid_serial: "这部手机不正确。",
   err_no_calendar: "这通电话没有日历建议。",
   err_no_audio: "这通电话没有这种录音。",
@@ -4820,8 +4457,6 @@ I18N["zh-CN"] = {
   cu_ip: "打不开 .local 地址的手机（有些旧的 Android）请用：",
   // ---- phone mode (System view)
   ph_mode_normal: "普通手机：来电正常响铃，AI 不接",
-  ph_app: "App 版本 {v}",
-  ph_need_update: "这部手机的 Bageo 应用需要更新，才能从这里切换",
   ph_to_normal: "改成普通手机",
   ph_to_ai: "改回 AI 接听",
   ph_switching: "切换中…",
@@ -4834,15 +4469,9 @@ I18N["zh-CN"] = {
   ph_last_seen: "最后连接 {time}",
   pm_err_in_call: "手机正在通话，挂断后再试",
   pm_err_busy: "手机上一次切换还没做完",
-  pm_err_no_root: "手机上的 Bageo 模块没有在运行。请在 Magisk 或 KernelSU 中确认 Bageo Uplink 模块已启用，然后重启手机",
   pm_err_save_failed: "手机无法保存模式设置",
-  pm_err_dialer_failed: "手机没办法更换默认电话应用",
-  pm_err_screening_failed: "手机没办法更改来电过滤设置",
-  pm_err_dnd_failed: "手机没办法更改勿扰模式",
-  pm_err_volume_failed: "手机没办法把铃声调回来",
   pm_err_invalid_mode: "手机不认识这个模式",
   pm_err_offline: "手机没有连接",
-  pm_err_unsupported: "手机上的应用太旧，请先更新",
   pm_err_timeout: "结果未确认，请稍后刷新。",
   pm_err_network: "连接不上 Bageo",
   pm_err_failed: "手机上发生了意外错误",
@@ -4974,7 +4603,7 @@ I18N["zh-CN"] = {
   ct_tab_stall: "陪聊名单",
   ct_kind: "分类",
   ct_kind_contact: "普通联系人",
-  ct_kind_whitelist: "白名单（重要亲友，可转接给你）",
+  ct_kind_whitelist: "白名单（重要亲友，有急事会通知你）",
   ct_kind_blacklist: "黑名单（直接拒接）",
   ct_kind_stall: "陪聊名单（一接起就陪聊拖时间）",
   ct_kind_help: "这个号码打来时怎么处理。",
@@ -4982,10 +4611,10 @@ I18N["zh-CN"] = {
   wl_desc: "选择哪些人打来可以转给你、什么时候转。这不能代替报警或叫救护车。",
   f_wl_mode: "转接方式",
   wl_m_direct: "不接，直接转到你的手机",
-  wl_m_emergency: "AI 先接，有急事才转给你",
+  wl_m_emergency: "AI 先接，有急事就通知你",
   f_wl_num: "你自己的手机号码",
   f_wl_num_ph: "例如：13800138000",
-  f_wl_num_h: "有急事时手机会打这个号码找你。",
+  f_wl_num_h: "选“不接，直接转到你的手机”时，电话会转到这个号码。",
   f_ui_pw: "控制台密码",
   f_ui_pw_h: "设置后，打开控制台要输入密码（每个浏览器只需输入一次）。要用手机或别的电脑打开控制台，必须设置。",
   pw_setup_title: "设置控制台密码（选填）",
@@ -5015,15 +4644,6 @@ I18N["zh-CN"] = {
   n_ctl_h_matrix: "打开后，可以在这个聊天室查通话、让 AI 代打电话、决定待处理事项。发“@你的机器人 /help”看指令。",
   k_ai_errand: "AI 代打",
   ev_ai_errand: "AI 代打电话",
-  ev_whitelist_urgent_call_merged: "有急事：你已接上对方",
-  ev_whitelist_urgent_call_failed: "有急事：没接通你",
-  ev_whitelist_urgent_call_ai_ended: "有急事：打给你时 AI 先离开了通话",
-  urg_why_no_answer: "你没接",
-  urg_why_ended: "打给你的电话先断了",
-  urg_why_caller_left: "对方先挂了",
-  urg_why_bad_number: "你的号码不正确",
-  urg_why_merge: "没能把你接上对方",
-  urg_why_phone: "手机拨不出去",
   er_err_empty_text: "请写要说的话。",
   er_err_text_too_long: "太长了，请缩短。",
   er_err_question_closed: "这个问题已经回答过，或已超时。",
@@ -5055,58 +4675,16 @@ I18N["zh-CN"] = {
   bl_mode: "黑名单打来时：",
   bl_voice_link: "选择拒接语音的声音",
   ct_bad_prefix: "结尾加 * 只能用在黑名单，而且 * 前面除了开头的 0 至少要 3 位。",
-  tab_sms: "短信",
-  sms_count: "{n} 条",
-  sms_search_ph: "搜索发件人或内容",
-  sms_clear: "全部删除",
-  sms_clear_t: "删除全部短信？",
-  sms_clear_b: "删除后无法恢复。",
-  sms_del: "删除",
-  sms_del_t: "删除这条短信？",
-  sms_copy: "复制",
-  sms_empty_t: "还没有短信",
-  sms_empty_d: "短信转发开始运行后，手机收到的短信会出现在这里。",
-  sms_none_found: "找不到符合的短信。",
-  sms_unknown: "未知发件人",
   unit_days: "天",
-  sms_new: "新短信",
-  sms_pick: "选一个对话，或点“新短信”。",
-  sms_to: "收件人",
-  sms_to_ph: "输入电话号码",
-  sms_from: "从",
-  sms_input_ph: "输入短信",
-  sms_send: "发送",
-  sms_sending: "发送中…",
-  sms_sent: "已发送",
-  sms_failed: "没有发出",
-  sms_unsure: "还不确定有没有发出",
-  sms_retry: "重试",
-  sms_you: "你：",
-  sms_no_line: "现在没有可以发短信的手机。",
-  sms_no_reply: "这个发件人不能回复。",
-  sms_del_thread: "删除对话",
-  sms_del_thread_t: "删除和 {name} 的所有短信？",
-  sms_back: "返回",
-  sms_earlier: "显示更早的短信",
-  sms_sim_n: "SIM {n}",
-  sms_err_offline: "手机没有连接。",
-  sms_err_old_app: "这部手机的 App 太旧，不能发短信。",
-  sms_err_permission: "手机的 App 没有发短信的权限，请在手机上允许。",
-  sms_err_no_service: "手机没有信号。",
-  sms_err_generic: "手机没有发出这条短信。",
-  sms_err_number: "请检查号码后再试一次。",
-  sms_err_sim_not_found: "找不到指定的 SIM 卡。",
   f_keep: "记录保留几天",
-  f_keep_h: "通话和录音、短信、AI 代打和待处理事项，超过天数就自动删除。",
+  f_keep_h: "通话和录音、AI 代打和待处理事项，超过天数就自动删除。",
   f_phone_wifi: "手机也能用 Wi-Fi 连接",
-  f_phone_wifi_h: "开：手机用 USB 连过一次后，拔掉线也能继续用 Wi-Fi 连接。关：手机只能用 USB 连接。",
+  f_phone_wifi_h: "开：蓝牙电脑可以用配对码通过网络连接。关：只有运行 Bageo 的这台电脑能连接。",
   repair_btn: "重新配对手机",
   f_repair_h: "手机丢失或给别人用过时使用。",
   repair_t: "重新配对手机？",
-  repair_b: "用 Wi-Fi 连接的手机会断开，每台都要再用 USB 连一次才能连回来。",
-  repair_done: "已重新配对。用 Wi-Fi 的手机请再用 USB 连一次。",
-  ph_link_usb: "通过 USB 连接",
-  ph_link_wifi: "通过 Wi-Fi 连接",
+  repair_b: "已连接的手机会断开，每台都要用新的配对码重新连接。",
+  repair_done: "已重新配对。请用新的配对码重新连接每台手机。",
   g_backup: "备份与还原",
   g_backup_d: "备份文件里有密钥和密码，要放在只有自己拿得到的地方。",
   bk_schedule: "自动备份",
@@ -5124,7 +4702,7 @@ I18N["zh-CN"] = {
   bk_import: "导入设置",
   bk_keep: "自动备份保留几份",
   bk_unit_copies: "份",
-  bk_calls: "连通话记录、录音和短信一起备份",
+  bk_calls: "连通话记录和录音一起备份",
   bk_calls_h: "文件会大很多。",
   bk_files: "备份文件",
   bk_files_empty: "还没有备份文件。",
@@ -5147,7 +4725,6 @@ I18N["zh-CN"] = {
   bk_item_phones: "SIM 卡资料",
   bk_item_errands: "AI 代打",
   bk_item_calls: "通话记录与录音",
-  bk_item_sms: "短信",
   bk_item_tasks: "待处理事项",
   bk_item_n: "{name}：{n}",
   bk_dlg_title: "要用这份备份还原吗？",
@@ -5214,14 +4791,12 @@ I18N["zh-CN"] = {
   bk_del_b: "删了就找不回来。",
   bk_done_delete: "已删除备份。",
   bk_del_need_password: "要删除，请在运行 Bageo 的电脑上打开控制台，或先设置控制台密码。",
-  f_wl_mode_h_direct: "这部手机不接，由运营商转到你的号码，AI 不出声。要先把手机切到「普通手机」，拨 **67*你的号码# 开好遇忙转移，没开的话对方会进语音信箱。",
-  f_wl_mode_h_emergency: "AI 先接听，对方有急事就请他稍等并打给你，你接起来就能直接跟他说；你没接，AI 会说你会尽快回电。没填你的号码的话，只会通知你。",
+  f_wl_mode_h_direct: "Bageo 会让手机拒接，由运营商转到你的号码，AI 不出声。要先在手机上拨 **67*你的号码# 开好遇忙转移，没开的话对方会进语音信箱。",
+  f_wl_mode_h_emergency: "AI 先接听。对方有急事就通知你，AI 会跟对方说你会回电。",
   wl_call_terms_title: "开启前请先看完",
-  wl_call_terms_1: "AI 可能判断错：真的急事可能没打给你，不急的事也可能打给你。",
+  wl_call_terms_1: "AI 可能判断错误：真正的急事可能没被发现，不急的事也可能被当成急事。",
   wl_call_terms_2: "这不能取代报警或叫救护车。有生命危险时，请对方直接打当地的紧急电话。",
-  wl_call_terms_3: "打给你的电话由这部手机的 SIM 卡拨出，运营商照常收费，国际或漫游可能更贵。",
-  wl_call_terms_4: "转给你之后的通话会按你的设置录音。录音前要不要先告知对方，请依当地法律自行处理。",
-  wl_call_terms_5: "可能拨不通或接不起来。使用这个功能造成的任何损失由你自行承担，Bageo 及开发者不负任何责任。",
+  wl_call_terms_3: "转接或通知可能没有送达。使用风险由你自己承担，Bageo 与开发者不负任何损失责任。",
   wl_call_terms_ok: "我了解，开启",
   wl_call_terms_cancel: "取消",
   f_wl_who: "谁打来可以转",
@@ -5231,10 +4806,10 @@ I18N["zh-CN"] = {
   f_wl_who_others_h: "包括未显示号码。陌生人说有急事也可能是诈骗，需要时再打开。",
   f_wl_who_h: "黑名单和陪聊名单里的人不会转。",
   wl_enable: "开启转接",
-  ippair_title: "用 IP 地址配对手机",
-  ippair_h: "Bageo 装在 Docker 或另一台电脑上、手机没法插 USB 时使用。",
+  ippair_title: "用 IP 地址连接",
+  ippair_h: "Bageo 装在 Docker 或另一台电脑上时使用。在蓝牙电脑上输入下面的地址和配对码。",
   ippair_btn: "生成配对码",
-  ippair_step: "在手机的 Bageo App 里点“用 IP 地址连接”，输入：",
+  ippair_step: "在蓝牙电脑上运行“bageo-bluetooth link”，接着输入：",
   ippair_addr: "地址",
   ippair_code: "配对码",
   ippair_valid: "10 分钟内有效",
@@ -5286,8 +4861,8 @@ I18N["ja"] = {
   setup_title: "ようこそ！3 ステップでスマホが自動で電話に出ます",
   setup_1_t: "基本設定",
   setup_1_d: "Gemini API キーとあなたの名前を入力します。",
-  setup_2_t: "スマホ",
-  setup_2_d: "アプリを入れたスマホを USB ケーブルでつなぎ、「待機中」と表示されれば完了です。一度つないだ後はケーブルを抜いても、自動で Wi-Fi に切り替わります。",
+  setup_2_t: "スマホをつなぐ",
+  setup_2_d: "Bluetooth 対応の Linux パソコンで bluetooth/install.sh を実行し、スマホをペアリングします。手順はここをクリック。",
   setup_3_t: "通知",
   setup_3_d: "通話の要約の送り先を選びます（Telegram、LINE など）。",
   live_active: "通話中",
@@ -5311,7 +4886,7 @@ I18N["ja"] = {
   load_more: "さらに表示",
   list_count: "{b} 件中 {a} 件を表示",
   empty_title: "通話はまだありません",
-  empty_body: "スマホをつないで、その番号に電話をかけてみてください。通話が要約と録音つきでここに表示されます。",
+  empty_body: "スマホの番号に電話をかけてみてください。通話が要約と録音つきでここに表示されます。",
   empty_filtered: "条件に合う通話はありません",
   empty_clear: "絞り込みを解除",
   hidden_number: "非通知",
@@ -5345,29 +4920,12 @@ I18N["ja"] = {
   d_appt_booked: "通話中に登録済み",
   d_appt_confirmed: "承諾済み",
   d_appt_declined: "お断り",
-  d_appt_sms_sent: "SMS 送信済み",
   ap_panel: "対応待ち",
   ap_confirm: "承諾",
   ap_decline: "お断り",
   ap_open_call: "通話を開く",
-  ap_working: "処理中…（SMS を送るときは最大約 90 秒）",
+  ap_working: "処理中…",
   ap_already: "すでに処理済みです",
-  d_appt_sms_failed: "SMS 未送信（{code}）",
-  d_appt_sms_none: "相手の番号は SMS 不可",
-  ap_retry_sms: "SMS を再送",
-  ap_sms_from: "送信に使う端末",
-  ap_sms_from_call: "{phone}（この電話を受けた端末）",
-  sms_c_offline: "スマホが接続されていません",
-  sms_c_old_app: "スマホのアプリが古い",
-  sms_c_timeout: "スマホから応答がありません",
-  sms_c_busy: "同じ SMS を送信中です",
-  sms_c_no_permission: "アプリに SMS 送信の権限がありません",
-  sms_c_no_service: "圏外です",
-  sms_c_radio_off: "機内モードなどで電波がオフです",
-  sms_c_generic_failure: "通信事業者が SMS を受け付けませんでした",
-  sms_c_exception: "スマホのアプリでエラーが起きました",
-  sms_c_bad_request: "番号か本文が受け付けられませんでした",
-  sms_c_sim_not_found: "指定された SIM カードが見つかりません",
   d_cal_allday: "終日",
   cal_add: "カレンダーに追加",
   cal_change: "別のカレンダーを選ぶ",
@@ -5388,17 +4946,11 @@ I18N["ja"] = {
   ap_k_what: "用件",
   ap_k_when: "日時",
   ap_reply: "返事の方法",
-  ap_reply_sms: "SMS",
   ap_reply_call: "AI が折り返し電話",
   ap_reply_none: "伝えない",
   ap_reply_cant: "（この番号では不可）",
   ap_res_yes: "承諾しました",
   ap_res_no: "お断りしました",
-  ap_res_yes_sent: "承諾し、相手に SMS を送りました",
-  ap_res_no_sent: "お断りし、相手に SMS を送りました",
-  ap_res_sms_sent_short: "相手に SMS を送りました",
-  ap_res_sms_failed: "SMS を送れませんでした：{why}",
-  ap_res_sms_none: "この番号は SMS を受け取れません。折り返し電話してください",
   ap_res_none: "相手には伝えていません",
   ap_res_hidden: "非通知のため相手に伝えられません",
   ap_call_dialing: "AI が折り返し電話しています…",
@@ -5573,7 +5125,7 @@ I18N["ja"] = {
   f_notify_lang_h: "あなたに届く通知と要約の言語です。AI が相手と話す言語は変わりません。",
   nl_same: "AI が話す言語と同じ",
   f_simlang: "SIM ごとの主な言語",
-  f_simlang_h: "別の国の SIM が入っているスマホだけ設定します。その SIM への電話は、ここで選んだ言語で始まります。スマホアプリ 1.0 以降が必要です。",
+  f_simlang_h: "別の国の SIM が入っているスマホだけ設定します。その SIM への電話は、ここで選んだ言語で始まります。",
   sl_country: "SIM の国",
   sl_lang: "主な言語",
   sl_pick: "国を選択",
@@ -5606,7 +5158,7 @@ I18N["ja"] = {
   pv_playing: "再生中：{what}",
   pv_failed: "試聴できませんでした：{msg}",
   f_enabled: "AI が電話に出る",
-  f_enabled_h: "オフにすると、着信に出てすぐ切ります。普通に鳴らしたいときは、「システム」ページかスマホアプリで通常のスマホに切り替えてください。",
+  f_enabled_h: "オフにすると、着信に出てすぐ切ります。普通に鳴らしたいときは、「システム」ページで通常のスマホに切り替えてください。",
   vc_informative: "落ち着いて明瞭",
   vc_upbeat: "明るい",
   vc_excitable: "元気",
@@ -5810,12 +5362,9 @@ I18N["ja"] = {
   f_appt_mode_h: "相手が日時を決めたいとき、AI はその場で承諾せず、確認して折り返すと伝えます。あなたは「通話」ページの「対応待ち」か通知で「承諾」か「お断り」を押します。",
   appt_off: "オフ",
   appt_confirm: "先に確認",
-  f_appt_sms: "相手に SMS で伝える",
-  f_appt_sms_h: "あなたが決めたら、その電話を受けたスマホが相手に SMS を送ります（携帯番号のみ）。オフ：代わりに AI が折り返し電話します。",
   f_appt_reply: "既定の返事方法",
-  f_appt_reply_h: "自動：携帯には SMS、固定電話には AI が折り返します。折り返せない番号（海外、フリーダイヤルなど）と非通知には連絡しません。",
+  f_appt_reply_h: "自動：折り返せる番号には AI が折り返します。折り返せない番号（海外、フリーダイヤルなど）と非通知には連絡しません。",
   ar_auto: "自動（番号で判断）",
-  ar_sms: "常に SMS",
   ar_call: "常に AI が折り返し電話",
   // ---- settings: advanced
   f_think: "思考レベル",
@@ -5827,24 +5376,11 @@ I18N["ja"] = {
   sys_phones: "スマホ",
   sys_updated: "{time} 更新",
   sys_connected: "Bageo に接続済み",
-  sys_usb: "USB で接続中",
   sys_calls_now: "進行中の通話：{n}",
   ph_ready: "待機中（電話に出られます）",
   ph_incall: "通話中",
   ph_seen: "以前は接続していましたが、今は未接続です",
-  ph_none: "USB データケーブルでスマホをつなぎ、USB デバッグをオンにして、アプリを開いてください。",
-  ph_unauth: "許可待ち：スマホのロックを解除し、「USB デバッグを許可しますか？」で許可してください。",
-  ph_offline: "オフライン：ケーブルを抜いて、もう一度差してください。",
-  ph_state: "状態：{state}",
-  ph_noapp: "このスマホには Bageo アプリが入っていません。",
-  ph_link_ok: "USB 接続は正常で、アプリも入っています",
-  ph_link_bad: "USB 接続の準備がまだできていません。数秒お待ちください。",
-  usb_off: "USB ヘルパーはオフです",
-  usb_off_d: "スマホはネットワーク経由で Bageo に接続します。",
-  usb_noadb: "adb が見つかりません",
-  usb_noadb_d: "USB のスマホを自動で設定できません。Android platform-tools をインストールするか、ADB_BIN を設定してください。",
-  usb_error: "USB で問題が発生しました",
-  usb_none: "USB にスマホが見つかりません",
+  ph_none: "つながっているスマホがありません。スマホを Bluetooth パソコンとペアリングし、近くに置いてください。",
   chk_title: "準備はできていますか？",
   chk_key: "Gemini API キー",
   chk_key_bad: "AI が話せるよう、キーを入力してください。",
@@ -5992,7 +5528,6 @@ I18N["ja"] = {
   err_unauthorized: "パスワードが違います。",
   err_not_found: "見つかりません。",
   err_invalid_id: "この ID は正しくありません。",
-  err_sms_not_retryable: "この SMS は再送できません。予約がまだ決まっていないか、SMS はもう送信済みです。",
   err_invalid_serial: "この端末は正しくありません。",
   err_no_calendar: "この通話にはカレンダーの提案がありません。",
   err_no_audio: "この通話にはその種類の録音がありません。",
@@ -6034,8 +5569,6 @@ I18N["ja"] = {
   cu_ip: ".local のアドレスを開けないスマホ（古い Android など）はこちら：",
   // ---- phone mode (System view)
   ph_mode_normal: "通常のスマホ：着信音が鳴り、AI は出ません",
-  ph_app: "アプリ {v}",
-  ph_need_update: "ここから切り替えるには、このスマホの Bageo アプリを更新してください",
   ph_to_normal: "通常のスマホにする",
   ph_to_ai: "AI が出るように戻す",
   ph_switching: "切り替え中…",
@@ -6048,15 +5581,9 @@ I18N["ja"] = {
   ph_last_seen: "最終接続 {time}",
   pm_err_in_call: "スマホが通話中です。終わってからもう一度",
   pm_err_busy: "スマホが前の切り替えをまだ処理しています",
-  pm_err_no_root: "スマホで Bageo モジュールが動いていません。Magisk か KernelSU で Bageo Uplink モジュールが有効か確認してから、スマホを再起動してください",
   pm_err_save_failed: "スマホがモードを保存できませんでした",
-  pm_err_dialer_failed: "スマホがデフォルトの電話アプリを変更できませんでした",
-  pm_err_screening_failed: "スマホが着信フィルタの設定を変更できませんでした",
-  pm_err_dnd_failed: "スマホがサイレント モードを変更できませんでした",
-  pm_err_volume_failed: "スマホが着信音を元に戻せませんでした",
   pm_err_invalid_mode: "スマホがこのモードを認識できませんでした",
   pm_err_offline: "スマホがつながっていません",
-  pm_err_unsupported: "スマホのアプリが古すぎます。先に更新してください",
   pm_err_timeout: "結果はまだ確認できていません。少したってから再読み込みしてください。",
   pm_err_network: "Bageo に接続できません",
   pm_err_failed: "スマホで予期しないエラーが起きました",
@@ -6188,7 +5715,7 @@ I18N["ja"] = {
   ct_tab_stall: "引き延ばしリスト",
   ct_kind: "分類",
   ct_kind_contact: "通常の連絡先",
-  ct_kind_whitelist: "ホワイトリスト（大切な相手。転送できます）",
+  ct_kind_whitelist: "ホワイトリスト（大切な相手。急ぎなら通知します）",
   ct_kind_blacklist: "着信拒否（そのまま断る）",
   ct_kind_stall: "引き延ばしリスト（出た瞬間から話を引き延ばす）",
   ct_kind_help: "この番号から着信したときの扱いです。",
@@ -6196,10 +5723,10 @@ I18N["ja"] = {
   wl_desc: "誰からの電話を、いつあなたに転送するかを選びます。緊急通報の代わりにはなりません。",
   f_wl_mode: "転送方法",
   wl_m_direct: "応答せず、あなたのスマホへ転送",
-  wl_m_emergency: "AI が先に応答、急ぎならあなたにつなぐ",
+  wl_m_emergency: "AI が先に応答、急ぎなら通知",
   f_wl_num: "あなたのスマホの番号",
   f_wl_num_ph: "例：09012345678",
-  f_wl_num_h: "急ぎのとき、スマホがこの番号に電話してあなたを呼び出します。",
+  f_wl_num_h: "「応答せず、あなたのスマホへ転送」を選んだとき、電話がこの番号に転送されます。",
   f_ui_pw: "コンソールのパスワード",
   f_ui_pw_h: "設定すると、コンソールを開くときにパスワードを求められます（ブラウザごとに一度だけ）。スマホやほかのパソコンで開くには必要です。",
   pw_setup_title: "コンソールのパスワードを設定（任意）",
@@ -6229,15 +5756,6 @@ I18N["ja"] = {
   n_ctl_h_matrix: "オンにすると、このチャットから通話の確認、AI への電話の依頼、対応待ちの処理ができます。「@ボット名 /help」でコマンドを確認できます。",
   k_ai_errand: "AI 代理電話",
   ev_ai_errand: "AI 代理電話",
-  ev_whitelist_urgent_call_merged: "急用：あなたを相手につないだ",
-  ev_whitelist_urgent_call_failed: "急用：あなたにつながらなかった",
-  ev_whitelist_urgent_call_ai_ended: "急用：あなたに電話中に AI が抜けた",
-  urg_why_no_answer: "あなたが出なかった",
-  urg_why_ended: "あなたへの電話が先に切れた",
-  urg_why_caller_left: "相手が先に切った",
-  urg_why_bad_number: "あなたの番号が正しくない",
-  urg_why_merge: "あなたを相手につなげなかった",
-  urg_why_phone: "スマホが電話をかけられなかった",
   er_err_empty_text: "伝えたい内容を書いてください。",
   er_err_text_too_long: "長すぎます。短くしてください。",
   er_err_question_closed: "この質問はすでに回答済みか、時間切れです。",
@@ -6269,58 +5787,16 @@ I18N["ja"] = {
   bl_mode: "着信拒否の相手から電話が来たとき：",
   bl_voice_link: "アナウンスの声を選ぶ",
   ct_bad_prefix: "末尾の * は着信拒否の番号だけに使えます（* の前に、先頭の 0 を除いて 3 桁以上）。",
-  tab_sms: "SMS",
-  sms_count: "{n} 件",
-  sms_search_ph: "差出人や本文を検索",
-  sms_clear: "すべて削除",
-  sms_clear_t: "SMS をすべて削除しますか？",
-  sms_clear_b: "削除すると元に戻せません。",
-  sms_del: "削除",
-  sms_del_t: "この SMS を削除しますか？",
-  sms_copy: "コピー",
-  sms_empty_t: "SMS はまだありません",
-  sms_empty_d: "SMS 転送が動き始めると、スマホに届いた SMS がここに表示されます。",
-  sms_none_found: "一致する SMS がありません。",
-  sms_unknown: "差出人不明",
   unit_days: "日",
-  sms_new: "新規 SMS",
-  sms_pick: "会話を選ぶか、「新規 SMS」を押してください。",
-  sms_to: "宛先",
-  sms_to_ph: "電話番号",
-  sms_from: "送信元",
-  sms_input_ph: "メッセージを入力",
-  sms_send: "送信",
-  sms_sending: "送信中…",
-  sms_sent: "送信済み",
-  sms_failed: "送信できませんでした",
-  sms_unsure: "送信できたか未確認",
-  sms_retry: "再送信",
-  sms_you: "あなた：",
-  sms_no_line: "いま SMS を送れるスマホがありません。",
-  sms_no_reply: "この差出人には返信できません。",
-  sms_del_thread: "会話を削除",
-  sms_del_thread_t: "{name} とのメッセージをすべて削除しますか？",
-  sms_back: "戻る",
-  sms_earlier: "以前のメッセージを表示",
-  sms_sim_n: "SIM {n}",
-  sms_err_offline: "スマホが接続されていません。",
-  sms_err_old_app: "このスマホのアプリは古いため SMS を送れません。",
-  sms_err_permission: "スマホのアプリに SMS 送信の権限がありません。スマホで許可してください。",
-  sms_err_no_service: "スマホが圏外です。",
-  sms_err_generic: "スマホが送信できませんでした。",
-  sms_err_number: "番号を確認して、もう一度お試しください。",
-  sms_err_sim_not_found: "指定された SIM カードが見つかりません。",
   f_keep: "記録を保存する日数",
-  f_keep_h: "通話と録音、SMS、AI 代理電話、対応待ちは、日数を過ぎると自動で削除されます。",
+  f_keep_h: "通話と録音、AI 代理電話、対応待ちは、日数を過ぎると自動で削除されます。",
   f_phone_wifi: "スマホを Wi-Fi でもつなぐ",
-  f_phone_wifi_h: "オン：一度 USB でつないだスマホは、ケーブルを抜いても Wi-Fi でつながります。オフ：USB でのみつながります。",
+  f_phone_wifi_h: "オン：Bluetooth パソコンが、ペアリングコードでネットワーク経由でつながります。オフ：Bageo を動かしているパソコンだけがつながります。",
   repair_btn: "スマホをペアリングし直す",
   f_repair_h: "スマホをなくしたときや、ほかの人が使ったときに使います。",
   repair_t: "スマホをペアリングし直しますか？",
-  repair_b: "Wi-Fi でつながっているスマホは切断されます。それぞれもう一度 USB でつなぐと、またつながります。",
-  repair_done: "ペアリングし直しました。Wi-Fi のスマホはもう一度 USB でつないでください。",
-  ph_link_usb: "USB で接続中",
-  ph_link_wifi: "Wi-Fi で接続中",
+  repair_b: "つながっているスマホは切断されます。それぞれ新しいペアリングコードでつなぎ直してください。",
+  repair_done: "ペアリングし直しました。それぞれ新しいペアリングコードでつなぎ直してください。",
   g_backup: "バックアップと復元",
   g_backup_d: "バックアップファイルにはキーとパスワードが入っています。自分だけが取り出せる場所に置いてください。",
   bk_schedule: "自動バックアップ",
@@ -6338,7 +5814,7 @@ I18N["ja"] = {
   bk_import: "設定を読み込む",
   bk_keep: "自動バックアップを残す数",
   bk_unit_copies: "件",
-  bk_calls: "通話記録・録音・SMS も一緒にバックアップ",
+  bk_calls: "通話記録・録音も一緒にバックアップ",
   bk_calls_h: "ファイルがかなり大きくなります。",
   bk_files: "バックアップファイル",
   bk_files_empty: "バックアップファイルはまだありません。",
@@ -6361,7 +5837,6 @@ I18N["ja"] = {
   bk_item_phones: "SIM カードの情報",
   bk_item_errands: "AI 代理電話",
   bk_item_calls: "通話記録と録音",
-  bk_item_sms: "SMS",
   bk_item_tasks: "対応待ち",
   bk_item_n: "{name}：{n}",
   bk_dlg_title: "このバックアップから復元しますか？",
@@ -6428,14 +5903,12 @@ I18N["ja"] = {
   bk_del_b: "削除すると元に戻せません。",
   bk_done_delete: "バックアップを削除しました。",
   bk_del_need_password: "削除するには、Bageo が動いているパソコンでコンソールを開くか、先にコンソールのパスワードを設定してください。",
-  f_wl_mode_h_direct: "このスマホでは応答せず、携帯会社の転送であなたの番号につなぎます。AI は話しません。先にスマホを「通常のスマホ」に切り替え、**67*あなたの番号# にかけて話中転送を有効にしてください。有効にしていないと、相手は留守番電話につながります。",
-  f_wl_mode_h_emergency: "AI が先に応答し、相手が急ぎなら少し待ってもらってあなたに電話します。あなたが出れば、そのまま相手と直接話せます。出られなかったときは、折り返すと AI が相手に伝えます。あなたの番号が未入力の場合は、通知だけが届きます。",
+  f_wl_mode_h_direct: "Bageo がスマホで着信を拒否し、携帯会社の転送であなたの番号につなぎます。AI は話しません。先にスマホで **67*あなたの番号# にかけて話中転送を有効にしてください。有効にしていないと、相手は留守番電話につながります。",
+  f_wl_mode_h_emergency: "AI が先に応答します。急ぎなら通知が届き、AI が相手に折り返すと伝えます。",
   wl_call_terms_title: "オンにする前にお読みください",
-  wl_call_terms_1: "AI が判断を誤ることがあります。本当に急ぎの用件で電話が来なかったり、急ぎでないのに電話が来たりすることがあります。",
+  wl_call_terms_1: "AI の判断が外れることがあります。本当に急ぎの用件を見逃したり、急ぎでないものを急ぎと判断したりします。",
   wl_call_terms_2: "緊急通報の代わりにはなりません。命に関わるときは、相手に現地の緊急番号へ直接かけてもらってください。",
-  wl_call_terms_3: "あなたへの電話は、このスマホの SIM から発信されます。通話料は通常どおりかかり、国際通話やローミングでは高くなることがあります。",
-  wl_call_terms_4: "あなたにつないだ後の通話は、設定に従って録音されます。録音を相手に知らせるかどうかは、現地の法律に従ってご自身で対応してください。",
-  wl_call_terms_5: "あなたへの電話がつながらないことがあります。この機能の利用で生じた損害は自己責任となり、Bageo と開発者は一切責任を負いません。",
+  wl_call_terms_3: "転送や通知が届かないことがあります。ご利用は自己責任で、Bageo と開発者は損害について責任を負いません。",
   wl_call_terms_ok: "理解したのでオンにする",
   wl_call_terms_cancel: "キャンセル",
   f_wl_who: "転送する相手",
@@ -6445,10 +5918,10 @@ I18N["ja"] = {
   f_wl_who_others_h: "非通知の番号も含みます。知らない人が急ぎだと言っても詐欺のことがあるので、必要なときだけオンにしてください。",
   f_wl_who_h: "「着信拒否」と「引き延ばしリスト」の相手は転送しません。",
   wl_enable: "転送をオンにする",
-  ippair_title: "IP アドレスでスマホをペアリング",
-  ippair_h: "Bageo を Docker やほかのパソコンで動かしていて、スマホを USB でつなげないときに使います。",
+  ippair_title: "IP アドレスでつなぐ",
+  ippair_h: "Bageo を Docker やほかのパソコンで動かしているときに使います。下のアドレスとコードを Bluetooth パソコンに入力します。",
   ippair_btn: "ペアリングコードを表示",
-  ippair_step: "スマホの Bageo アプリで「IP アドレスで接続」をタップして、次を入力します：",
+  ippair_step: "Bluetooth パソコンで「bageo-bluetooth link」を実行し、次を続けて入力します：",
   ippair_addr: "アドレス",
   ippair_code: "ペアリングコード",
   ippair_valid: "10 分間有効",
@@ -6500,8 +5973,8 @@ I18N["ko"] = {
   setup_title: "환영합니다! 세 단계면 휴대폰이 알아서 전화를 받습니다",
   setup_1_t: "기본 설정",
   setup_1_d: "Gemini API 키와 내 이름을 입력합니다.",
-  setup_2_t: "휴대폰",
-  setup_2_d: "앱을 설치한 휴대폰을 USB 케이블로 연결하고 '대기 중'으로 표시되면 됩니다. 한 번 연결한 뒤에는 케이블을 빼도 자동으로 Wi-Fi로 연결됩니다.",
+  setup_2_t: "휴대폰 연결",
+  setup_2_d: "Bluetooth가 있는 Linux 컴퓨터에서 bluetooth/install.sh를 실행하고 휴대폰을 페어링하세요. 눌러서 방법 보기.",
   setup_3_t: "알림",
   setup_3_d: "통화 요약을 받을 곳을 고릅니다(예: Telegram, Discord).",
   live_active: "통화 진행 중",
@@ -6525,7 +5998,7 @@ I18N["ko"] = {
   load_more: "더 보기",
   list_count: "{b}건 중 {a}건 표시",
   empty_title: "아직 통화가 없습니다",
-  empty_body: "휴대폰을 연결하고 그 번호로 전화를 걸어 보세요. 통화가 요약, 녹음과 함께 여기에 표시됩니다.",
+  empty_body: "휴대폰 번호로 전화를 걸어 보세요. 통화가 요약, 녹음과 함께 여기에 표시됩니다.",
   empty_filtered: "조건에 맞는 통화가 없습니다",
   empty_clear: "필터 지우기",
   hidden_number: "발신번호 표시 제한",
@@ -6559,29 +6032,12 @@ I18N["ko"] = {
   d_appt_booked: "통화 중 등록됨",
   d_appt_confirmed: "수락함",
   d_appt_declined: "거절함",
-  d_appt_sms_sent: "문자 보냄",
   ap_panel: "처리할 일",
   ap_confirm: "수락",
   ap_decline: "거절",
   ap_open_call: "통화 보기",
-  ap_working: "처리 중…(문자를 보낼 때는 최대 약 90초)",
+  ap_working: "처리 중…",
   ap_already: "이미 처리되었습니다",
-  d_appt_sms_failed: "문자 못 보냄({code})",
-  d_appt_sms_none: "문자를 받을 수 없는 번호",
-  ap_retry_sms: "문자 다시 보내기",
-  ap_sms_from: "보낼 휴대폰",
-  ap_sms_from_call: "{phone} (이 전화를 받은 휴대폰)",
-  sms_c_offline: "휴대폰이 연결되어 있지 않음",
-  sms_c_old_app: "휴대폰 앱이 오래됨",
-  sms_c_timeout: "휴대폰이 응답하지 않음",
-  sms_c_busy: "같은 문자를 보내는 중",
-  sms_c_no_permission: "앱에 문자 전송 권한이 없음",
-  sms_c_no_service: "휴대폰 신호 없음",
-  sms_c_radio_off: "비행기 모드 등으로 전파가 꺼짐",
-  sms_c_generic_failure: "통신사가 문자를 받지 않음",
-  sms_c_exception: "휴대폰 앱에서 오류 발생",
-  sms_c_bad_request: "번호나 내용이 받아들여지지 않음",
-  sms_c_sim_not_found: "지정한 유심을 찾을 수 없음",
   d_cal_allday: "종일",
   cal_add: "캘린더에 추가",
   cal_change: "다른 캘린더 고르기",
@@ -6602,17 +6058,11 @@ I18N["ko"] = {
   ap_k_what: "무슨 일",
   ap_k_when: "시간",
   ap_reply: "회신 방법",
-  ap_reply_sms: "문자",
   ap_reply_call: "AI 전화",
   ap_reply_none: "알리지 않음",
   ap_reply_cant: "(이 번호는 불가)",
   ap_res_yes: "수락함",
   ap_res_no: "거절함",
-  ap_res_yes_sent: "수락하고 상대에게 문자를 보냈습니다",
-  ap_res_no_sent: "거절하고 상대에게 문자를 보냈습니다",
-  ap_res_sms_sent_short: "상대에게 문자를 보냈습니다",
-  ap_res_sms_failed: "문자를 보내지 못했습니다: {why}",
-  ap_res_sms_none: "상대 번호는 문자를 받을 수 없습니다. 직접 전화해 주세요",
   ap_res_none: "상대에게 알리지 않았습니다",
   ap_res_hidden: "발신번호 표시 제한이라 알릴 수 없습니다",
   ap_call_dialing: "AI가 다시 전화하는 중…",
@@ -6787,7 +6237,7 @@ I18N["ko"] = {
   f_notify_lang_h: "내가 받는 알림과 요약의 언어입니다. AI가 상대방과 말하는 언어는 바뀌지 않습니다.",
   nl_same: "AI가 말하는 언어와 같음",
   f_simlang: "SIM별 주 언어",
-  f_simlang_h: "다른 나라 SIM이 있는 휴대폰에만 필요합니다. 그 SIM으로 온 전화는 여기서 고른 언어로 시작합니다. 휴대폰 앱 1.0 이상이 필요합니다.",
+  f_simlang_h: "다른 나라 SIM이 있는 휴대폰에만 필요합니다. 그 SIM으로 온 전화는 여기서 고른 언어로 시작합니다.",
   sl_country: "SIM 국가",
   sl_lang: "주 언어",
   sl_pick: "국가 선택",
@@ -6820,7 +6270,7 @@ I18N["ko"] = {
   pv_playing: "재생 중: {what}",
   pv_failed: "미리 듣기 실패: {msg}",
   f_enabled: "AI가 전화 받기",
-  f_enabled_h: "끄면 전화를 받자마자 끊습니다. 평소처럼 벨이 울리게 하려면 '시스템' 페이지나 휴대폰 앱에서 일반 휴대전화로 전환해 주세요.",
+  f_enabled_h: "끄면 전화를 받자마자 끊습니다. 평소처럼 벨이 울리게 하려면 '시스템' 페이지에서 일반 휴대전화로 전환해 주세요.",
   vc_informative: "차분하고 또렷한",
   vc_upbeat: "경쾌한",
   vc_excitable: "활기찬",
@@ -7024,12 +6474,9 @@ I18N["ko"] = {
   f_appt_mode_h: "상대방이 시간을 잡으려 하면 AI는 그 자리에서 수락하지 않고, 확인 후 다시 알려 주겠다고 합니다. 그런 다음 '통화' 페이지의 '처리할 일'이나 알림에서 '수락' 또는 '거절'을 누르세요.",
   appt_off: "끄기",
   appt_confirm: "먼저 물어보기",
-  f_appt_sms: "상대에게 문자로 알리기",
-  f_appt_sms_h: "결정하면 그 전화를 받은 휴대폰이 상대방에게 문자를 보냅니다(휴대폰 번호만 가능). 끄기: 대신 AI가 다시 전화합니다.",
   f_appt_reply: "기본 회신 방법",
-  f_appt_reply_h: "자동: 휴대폰에는 문자, 유선 전화에는 AI가 다시 전화합니다. 다시 걸 수 없는 번호(해외, 수신자 부담 등)와 발신번호 표시 제한 전화에는 알리지 않습니다.",
+  f_appt_reply_h: "자동: 다시 걸 수 있는 번호에는 AI가 다시 전화합니다. 다시 걸 수 없는 번호(해외, 수신자 부담 등)와 발신번호 표시 제한 전화에는 알리지 않습니다.",
   ar_auto: "자동(번호로 판단)",
-  ar_sms: "항상 문자",
   ar_call: "항상 AI 전화",
   // ---- settings: advanced
   f_think: "사고 수준",
@@ -7041,24 +6488,11 @@ I18N["ko"] = {
   sys_phones: "휴대폰",
   sys_updated: "{time} 업데이트",
   sys_connected: "Bageo에 연결됨",
-  sys_usb: "USB로 연결됨",
   sys_calls_now: "진행 중인 통화: {n}",
   ph_ready: "대기 중(전화를 받을 수 있음)",
   ph_incall: "통화 중",
   ph_seen: "이전에 연결된 적이 있으나 지금은 연결되어 있지 않음",
-  ph_none: "USB 데이터 케이블로 휴대폰을 연결하고, USB 디버깅을 켠 다음 앱을 열어 주세요.",
-  ph_unauth: "허용 대기 중: 휴대폰 잠금을 풀고 “USB 디버깅을 허용하시겠습니까?” 창에서 허용을 눌러 주세요.",
-  ph_offline: "오프라인: 케이블을 뽑았다가 다시 꽂아 주세요.",
-  ph_state: "상태: {state}",
-  ph_noapp: "이 휴대폰에는 Bageo 앱이 설치되어 있지 않습니다.",
-  ph_link_ok: "USB 연결이 정상이고 앱이 설치되어 있습니다",
-  ph_link_bad: "USB 연결이 아직 준비되지 않았습니다. 몇 초만 기다려 주세요.",
-  usb_off: "USB 도우미가 꺼져 있습니다",
-  usb_off_d: "휴대폰은 네트워크를 통해 Bageo에 연결됩니다.",
-  usb_noadb: "adb를 찾을 수 없습니다",
-  usb_noadb_d: "USB에 연결된 휴대폰을 자동으로 설정할 수 없습니다. Android platform-tools를 설치하거나 ADB_BIN을 설정해 주세요.",
-  usb_error: "USB 문제가 발생했습니다",
-  usb_none: "USB에서 휴대폰을 찾지 못했습니다",
+  ph_none: "연결된 휴대폰이 없습니다. 휴대폰을 Bluetooth 컴퓨터와 페어링하고 가까이 두세요.",
   chk_title: "모두 준비되었나요?",
   chk_key: "Gemini API 키",
   chk_key_bad: "AI가 말할 수 있도록 키를 입력해 주세요.",
@@ -7206,7 +6640,6 @@ I18N["ko"] = {
   err_unauthorized: "비밀번호가 맞지 않습니다.",
   err_not_found: "찾을 수 없습니다.",
   err_invalid_id: "올바른 ID가 아닙니다.",
-  err_sms_not_retryable: "이 문자는 다시 보낼 수 없습니다. 예약이 아직 정해지지 않았거나 문자가 이미 나갔습니다.",
   err_invalid_serial: "올바른 휴대폰이 아닙니다.",
   err_no_calendar: "이 통화에는 캘린더 제안이 없습니다.",
   err_no_audio: "이 통화에는 그런 녹음이 없습니다.",
@@ -7248,8 +6681,6 @@ I18N["ko"] = {
   cu_ip: ".local 주소를 열 수 없는 휴대폰(일부 오래된 Android)은 이 주소를 쓰세요:",
   // ---- phone mode (System view)
   ph_mode_normal: "일반 휴대전화: 전화가 울리고 AI는 받지 않습니다",
-  ph_app: "앱 {v}",
-  ph_need_update: "여기서 전환하려면 이 휴대전화의 Bageo 앱을 업데이트하세요",
   ph_to_normal: "일반 휴대전화로 전환",
   ph_to_ai: "다시 AI가 받기",
   ph_switching: "전환 중…",
@@ -7262,15 +6693,9 @@ I18N["ko"] = {
   ph_last_seen: "마지막 연결 {time}",
   pm_err_in_call: "휴대전화가 통화 중입니다. 끝난 뒤 다시 시도하세요",
   pm_err_busy: "휴대전화가 이전 전환을 아직 처리하고 있습니다",
-  pm_err_no_root: "휴대전화에서 Bageo 모듈이 실행되고 있지 않습니다. Magisk 또는 KernelSU에서 Bageo Uplink 모듈이 켜져 있는지 확인한 뒤 휴대전화를 다시 시작하세요",
   pm_err_save_failed: "휴대전화가 모드를 저장하지 못했습니다",
-  pm_err_dialer_failed: "휴대전화가 기본 전화 앱을 바꾸지 못했습니다",
-  pm_err_screening_failed: "휴대전화가 통화 필터링 설정을 바꾸지 못했습니다",
-  pm_err_dnd_failed: "휴대전화가 방해 금지 모드를 바꾸지 못했습니다",
-  pm_err_volume_failed: "휴대전화가 벨소리를 다시 켜지 못했습니다",
   pm_err_invalid_mode: "휴대전화가 이 모드를 인식하지 못했습니다",
   pm_err_offline: "휴대전화가 연결되어 있지 않습니다",
-  pm_err_unsupported: "휴대전화의 앱이 너무 오래되었습니다. 먼저 업데이트하세요",
   pm_err_timeout: "결과가 아직 확인되지 않았습니다. 잠시 후 새로 고침하세요.",
   pm_err_network: "Bageo에 연결할 수 없습니다",
   pm_err_failed: "휴대전화에서 예상하지 못한 오류가 발생했습니다",
@@ -7402,7 +6827,7 @@ I18N["ko"] = {
   ct_tab_stall: "시간 끌기 목록",
   ct_kind: "분류",
   ct_kind_contact: "일반 연락처",
-  ct_kind_whitelist: "화이트리스트 (소중한 사람, 내게 전환 가능)",
+  ct_kind_whitelist: "화이트리스트 (소중한 사람, 급하면 알림)",
   ct_kind_blacklist: "차단 목록 (바로 거절)",
   ct_kind_stall: "시간 끌기 목록 (받자마자 시간 끌기)",
   ct_kind_help: "이 번호에서 전화가 올 때의 처리 방식입니다.",
@@ -7410,10 +6835,10 @@ I18N["ko"] = {
   wl_desc: "누구의 전화를 언제 나에게 전환할지 정합니다. 응급 신고를 대신할 수 없습니다.",
   f_wl_mode: "전환 방식",
   wl_m_direct: "받지 않고 내 휴대폰으로 전환",
-  wl_m_emergency: "AI가 먼저 받고, 급하면 나에게 연결",
+  wl_m_emergency: "AI가 먼저 받고, 급하면 알림",
   f_wl_num: "내 휴대폰 번호",
   f_wl_num_ph: "예: 01012345678",
-  f_wl_num_h: "급한 일이 있을 때 휴대폰이 이 번호로 전화해 나를 찾습니다.",
+  f_wl_num_h: "'받지 않고 내 휴대폰으로 전환'을 고르면 전화가 이 번호로 전환됩니다.",
   f_ui_pw: "콘솔 비밀번호",
   f_ui_pw_h: "설정하면 콘솔을 열 때 비밀번호를 묻습니다(브라우저마다 한 번). 휴대폰이나 다른 컴퓨터에서 콘솔을 열려면 꼭 필요합니다.",
   pw_setup_title: "콘솔 비밀번호 설정 (선택)",
@@ -7443,15 +6868,6 @@ I18N["ko"] = {
   n_ctl_h_matrix: "켜면 이 채팅에서 통화 조회, AI 대리 전화 요청, 처리할 일 결정을 할 수 있습니다. '@봇 이름 /help'로 명령을 확인하세요.",
   k_ai_errand: "AI 대리 전화",
   ev_ai_errand: "AI 대리 전화",
-  ev_whitelist_urgent_call_merged: "급한 일: 상대방과 연결됨",
-  ev_whitelist_urgent_call_failed: "급한 일: 나에게 연결되지 않음",
-  ev_whitelist_urgent_call_ai_ended: "급한 일: 나에게 거는 중 AI가 빠짐",
-  urg_why_no_answer: "내가 받지 않음",
-  urg_why_ended: "나에게 건 전화가 먼저 끊김",
-  urg_why_caller_left: "상대방이 먼저 끊음",
-  urg_why_bad_number: "내 번호가 올바르지 않음",
-  urg_why_merge: "나를 상대방과 연결하지 못함",
-  urg_why_phone: "휴대폰이 전화를 걸지 못함",
   er_err_empty_text: "전할 말을 적어 주세요.",
   er_err_text_too_long: "너무 깁니다. 줄여 주세요.",
   er_err_question_closed: "이 질문은 이미 답변되었거나 시간이 지났습니다.",
@@ -7483,58 +6899,16 @@ I18N["ko"] = {
   bl_mode: "차단 목록의 번호가 전화하면:",
   bl_voice_link: "안내 음성 목소리 고르기",
   ct_bad_prefix: "끝의 *는 차단 목록 번호에만 쓸 수 있습니다(* 앞에 앞의 0을 빼고 3자리 이상).",
-  tab_sms: "문자",
-  sms_count: "{n}건",
-  sms_search_ph: "보낸 사람 또는 내용 검색",
-  sms_clear: "모두 삭제",
-  sms_clear_t: "문자를 모두 삭제할까요?",
-  sms_clear_b: "삭제하면 되돌릴 수 없습니다.",
-  sms_del: "삭제",
-  sms_del_t: "이 문자를 삭제할까요?",
-  sms_copy: "복사",
-  sms_empty_t: "아직 문자가 없습니다",
-  sms_empty_d: "문자 전달이 작동하면 휴대폰이 받은 문자가 여기에 표시됩니다.",
-  sms_none_found: "일치하는 문자가 없습니다.",
-  sms_unknown: "알 수 없는 발신자",
   unit_days: "일",
-  sms_new: "새 문자",
-  sms_pick: "대화를 고르거나 \"새 문자\"를 누르세요.",
-  sms_to: "받는 사람",
-  sms_to_ph: "전화번호",
-  sms_from: "보내는 번호",
-  sms_input_ph: "문자 입력",
-  sms_send: "보내기",
-  sms_sending: "보내는 중…",
-  sms_sent: "보냄",
-  sms_failed: "보내지 못함",
-  sms_unsure: "전송 여부 확인 전",
-  sms_retry: "다시 보내기",
-  sms_you: "나: ",
-  sms_no_line: "지금 문자를 보낼 수 있는 휴대폰이 없습니다.",
-  sms_no_reply: "이 발신자에게는 답장할 수 없습니다.",
-  sms_del_thread: "대화 삭제",
-  sms_del_thread_t: "{name}님과의 문자를 모두 삭제할까요?",
-  sms_back: "뒤로",
-  sms_earlier: "이전 문자 보기",
-  sms_sim_n: "SIM {n}",
-  sms_err_offline: "휴대폰이 연결되어 있지 않습니다.",
-  sms_err_old_app: "이 휴대폰의 앱이 오래되어 문자를 보낼 수 없습니다.",
-  sms_err_permission: "휴대폰 앱에 문자 전송 권한이 없습니다. 휴대폰에서 허용해 주세요.",
-  sms_err_no_service: "휴대폰에 신호가 없습니다.",
-  sms_err_generic: "휴대폰이 문자를 보내지 못했습니다.",
-  sms_err_number: "번호를 확인하고 다시 시도해 주세요.",
-  sms_err_sim_not_found: "지정한 유심을 찾을 수 없습니다.",
   f_keep: "기록 보관 일수",
-  f_keep_h: "통화와 녹음, 문자, AI 대리 전화, 처리할 일은 기간이 지나면 자동으로 삭제됩니다.",
+  f_keep_h: "통화와 녹음, AI 대리 전화, 처리할 일은 기간이 지나면 자동으로 삭제됩니다.",
   f_phone_wifi: "휴대폰을 Wi-Fi로도 연결",
-  f_phone_wifi_h: "켜기: USB로 한 번 연결한 휴대폰은 케이블을 빼도 Wi-Fi로 계속 연결됩니다. 끄기: USB로만 연결됩니다.",
+  f_phone_wifi_h: "켜기: Bluetooth 컴퓨터가 페어링 코드로 네트워크를 통해 연결됩니다. 끄기: Bageo를 실행 중인 컴퓨터만 연결됩니다.",
   repair_btn: "휴대폰 다시 페어링",
   f_repair_h: "휴대폰을 잃어버렸거나 다른 사람이 사용했을 때 쓰세요.",
   repair_t: "휴대폰을 다시 페어링할까요?",
-  repair_b: "Wi-Fi로 연결된 휴대폰은 연결이 끊깁니다. 각 휴대폰을 USB로 한 번 더 연결하면 다시 연결됩니다.",
-  repair_done: "다시 페어링했습니다. Wi-Fi 휴대폰은 USB로 한 번 더 연결하세요.",
-  ph_link_usb: "USB로 연결됨",
-  ph_link_wifi: "Wi-Fi로 연결됨",
+  repair_b: "연결된 휴대폰은 연결이 끊깁니다. 각 휴대폰을 새 페어링 코드로 다시 연결하세요.",
+  repair_done: "다시 페어링했습니다. 각 휴대폰을 새 페어링 코드로 다시 연결하세요.",
   g_backup: "백업 및 복원",
   g_backup_d: "백업 파일에는 키와 비밀번호가 들어 있습니다. 나만 열 수 있는 곳에 보관하세요.",
   bk_schedule: "자동 백업",
@@ -7552,7 +6926,7 @@ I18N["ko"] = {
   bk_import: "설정 가져오기",
   bk_keep: "자동 백업 보관 개수",
   bk_unit_copies: "개",
-  bk_calls: "통화 기록, 녹음, 문자도 함께 백업",
+  bk_calls: "통화 기록과 녹음도 함께 백업",
   bk_calls_h: "파일이 훨씬 커집니다.",
   bk_files: "백업 파일",
   bk_files_empty: "아직 백업 파일이 없습니다.",
@@ -7575,7 +6949,6 @@ I18N["ko"] = {
   bk_item_phones: "SIM 카드 정보",
   bk_item_errands: "AI 대리 전화",
   bk_item_calls: "통화 기록과 녹음",
-  bk_item_sms: "문자",
   bk_item_tasks: "처리할 일",
   bk_item_n: "{name}: {n}",
   bk_dlg_title: "이 백업으로 복원할까요?",
@@ -7642,14 +7015,12 @@ I18N["ko"] = {
   bk_del_b: "삭제하면 되돌릴 수 없습니다.",
   bk_done_delete: "백업을 삭제했습니다.",
   bk_del_need_password: "삭제하려면 Bageo가 실행 중인 컴퓨터에서 콘솔을 열거나, 먼저 콘솔 비밀번호를 정하세요.",
-  f_wl_mode_h_direct: "이 휴대폰은 받지 않고, 통신사가 내 번호로 전환하며 AI는 말하지 않습니다. 먼저 휴대폰을 ‘일반 휴대전화’로 바꾸고 **67*내 번호#를 눌러 통화 중 착신전환을 켜 두세요. 켜 두지 않으면 상대방은 음성사서함으로 넘어갑니다.",
-  f_wl_mode_h_emergency: "AI가 먼저 받고, 상대방이 급하다고 하면 잠시 기다려 달라고 한 뒤 나에게 전화합니다. 내가 받으면 상대방과 바로 통화할 수 있습니다. 내가 받지 않으면 AI가 곧 다시 전화드리겠다고 말합니다. 내 번호를 입력하지 않으면 알림만 받습니다.",
+  f_wl_mode_h_direct: "Bageo가 휴대폰에서 전화를 거절하고, 통신사가 내 번호로 전환하며 AI는 말하지 않습니다. 먼저 휴대폰에서 **67*내 번호#를 눌러 통화 중 착신전환을 켜 두세요. 켜 두지 않으면 상대방은 음성사서함으로 넘어갑니다.",
+  f_wl_mode_h_emergency: "AI가 먼저 받습니다. 급한 일이면 알림이 오고, AI가 상대방에게 곧 다시 전화드리겠다고 말합니다.",
   wl_call_terms_title: "켜기 전에 꼭 읽어 주세요",
-  wl_call_terms_1: "AI가 잘못 판단할 수 있습니다. 정말 급한 일인데 전화가 오지 않거나, 급하지 않은데 전화가 올 수도 있습니다.",
+  wl_call_terms_1: "AI가 잘못 판단할 수 있습니다. 정말 급한 일을 놓치거나, 급하지 않은 일을 급하다고 볼 수 있습니다.",
   wl_call_terms_2: "응급 신고를 대신할 수 없습니다. 생명이 위험할 때는 상대방이 현지 긴급 전화번호로 직접 전화해야 합니다.",
-  wl_call_terms_3: "나에게 거는 전화는 이 휴대폰의 SIM 카드로 발신됩니다. 통신사 요금이 평소처럼 부과되며, 국제전화나 로밍은 더 비쌀 수 있습니다.",
-  wl_call_terms_4: "나에게 연결된 이후의 통화는 설정에 따라 녹음됩니다. 녹음 사실을 상대방에게 미리 알릴지는 현지 법률에 따라 직접 판단해 처리해야 합니다.",
-  wl_call_terms_5: "나에게 거는 전화가 연결되지 않을 수 있습니다. 이 기능을 사용해 생긴 모든 손해는 본인 책임이며, Bageo와 개발자는 어떠한 책임도 지지 않습니다.",
+  wl_call_terms_3: "전환이나 알림이 전달되지 않을 수 있습니다. 사용에 따른 책임은 본인에게 있으며, Bageo와 개발자는 어떠한 손해에도 책임지지 않습니다.",
   wl_call_terms_ok: "이해했습니다. 켭니다",
   wl_call_terms_cancel: "취소",
   f_wl_who: "전환할 수 있는 사람",
@@ -7659,10 +7030,10 @@ I18N["ko"] = {
   f_wl_who_others_h: "발신번호 표시 제한 번호도 포함됩니다. 모르는 사람이 급하다고 해도 사기일 수 있으니 필요할 때만 켜세요.",
   f_wl_who_h: "‘차단 목록’과 ‘시간 끌기 목록’에 있는 사람은 전환하지 않습니다.",
   wl_enable: "전환 켜기",
-  ippair_title: "IP 주소로 휴대폰 페어링",
-  ippair_h: "Bageo가 Docker나 다른 컴퓨터에서 실행 중이라 휴대폰을 USB로 연결할 수 없을 때 쓰세요.",
+  ippair_title: "IP 주소로 연결",
+  ippair_h: "Bageo가 Docker나 다른 컴퓨터에서 실행 중일 때 쓰세요. 아래 주소와 코드를 Bluetooth 컴퓨터에 입력합니다.",
   ippair_btn: "페어링 코드 받기",
-  ippair_step: "휴대폰의 Bageo 앱에서 'IP 주소로 연결'을 누르고 다음을 입력하세요:",
+  ippair_step: "Bluetooth 컴퓨터에서 'bageo-bluetooth link'를 실행하고 이어서 입력하세요:",
   ippair_addr: "주소",
   ippair_code: "페어링 코드",
   ippair_valid: "10분 동안 유효",
@@ -7714,8 +7085,8 @@ I18N["es"] = {
   setup_title: "¡Te damos la bienvenida! En tres pasos tu teléfono contestará solo",
   setup_1_t: "Lo básico",
   setup_1_d: "Añade tu clave de API de Gemini y tu nombre.",
-  setup_2_t: "Teléfono",
-  setup_2_d: "Conecta por USB el teléfono con la app instalada y espera a que aparezca como listo. Después puedes quitar el cable: pasará a Wi-Fi solo.",
+  setup_2_t: "Conecta tu teléfono",
+  setup_2_d: "En un ordenador Linux con Bluetooth, ejecuta bluetooth/install.sh y empareja el teléfono. Pulsa para ver los pasos.",
   setup_3_t: "Notificaciones",
   setup_3_d: "Elige adónde se envían los resúmenes, por ejemplo Telegram o Discord.",
   live_active: "Llamada en curso",
@@ -7739,7 +7110,7 @@ I18N["es"] = {
   load_more: "Mostrar más",
   list_count: "Mostrando {a} de {b}",
   empty_title: "Aún no hay llamadas",
-  empty_body: "Conecta tu teléfono y llama a su número. La llamada aparecerá aquí con un resumen y la grabación.",
+  empty_body: "Llama al número de tu teléfono. La llamada aparecerá aquí con un resumen y la grabación.",
   empty_filtered: "Ninguna llamada coincide",
   empty_clear: "Quitar filtros",
   hidden_number: "Número oculto",
@@ -7773,29 +7144,12 @@ I18N["es"] = {
   d_appt_booked: "Reservada en la llamada",
   d_appt_confirmed: "Aceptada",
   d_appt_declined: "Rechazada",
-  d_appt_sms_sent: "SMS enviado",
   ap_panel: "Pendientes",
   ap_confirm: "Aceptar",
   ap_decline: "Rechazar",
   ap_open_call: "Ver la llamada",
-  ap_working: "Procesando… (hasta unos 90 segundos si se envía un SMS)",
+  ap_working: "Procesando…",
   ap_already: "Ya se gestionó",
-  d_appt_sms_failed: "SMS no enviado ({code})",
-  d_appt_sms_none: "el número no recibe SMS",
-  ap_retry_sms: "Reenviar el SMS",
-  ap_sms_from: "Enviar desde",
-  ap_sms_from_call: "{phone} (atendió la llamada)",
-  sms_c_offline: "el teléfono no está conectado",
-  sms_c_old_app: "la app del teléfono es demasiado antigua",
-  sms_c_timeout: "el teléfono no respondió",
-  sms_c_busy: "ese SMS ya se está enviando",
-  sms_c_no_permission: "la app no tiene permiso para enviar SMS",
-  sms_c_no_service: "sin cobertura",
-  sms_c_radio_off: "la radio del teléfono está apagada (modo avión)",
-  sms_c_generic_failure: "el operador no aceptó el SMS",
-  sms_c_exception: "la app del teléfono tuvo un error",
-  sms_c_bad_request: "no se aceptó el número o el texto",
-  sms_c_sim_not_found: "no se encontró la tarjeta SIM elegida",
   d_cal_allday: "Todo el día",
   cal_add: "Añadir al calendario",
   cal_change: "Elegir otro calendario",
@@ -7816,17 +7170,11 @@ I18N["es"] = {
   ap_k_what: "Qué",
   ap_k_when: "Cuándo",
   ap_reply: "Avisar por",
-  ap_reply_sms: "SMS",
   ap_reply_call: "Llamada de la IA",
   ap_reply_none: "No avisar",
   ap_reply_cant: "(no para este número)",
   ap_res_yes: "Aceptada",
   ap_res_no: "Rechazada",
-  ap_res_yes_sent: "Aceptada, y se le envió un SMS",
-  ap_res_no_sent: "Rechazada, y se le envió un SMS",
-  ap_res_sms_sent_short: "Se le envió un SMS",
-  ap_res_sms_failed: "El SMS no salió: {why}",
-  ap_res_sms_none: "Ese número no recibe SMS; devuelve tú la llamada",
   ap_res_none: "No se avisó a quien llamó",
   ap_res_hidden: "Número oculto: no se le puede avisar",
   ap_call_dialing: "La IA le está llamando…",
@@ -8001,7 +7349,7 @@ I18N["es"] = {
   f_notify_lang_h: "El idioma de las notificaciones y los resúmenes que lees tú. No cambia el idioma en que la IA habla con quien llama.",
   nl_same: "El mismo idioma que habla la IA",
   f_simlang: "Idioma principal de cada SIM",
-  f_simlang_h: "Solo si el teléfono tiene una SIM de otro país: las llamadas a esa SIM empiezan en el idioma elegido aquí. Requiere la app del teléfono 1.0 o posterior.",
+  f_simlang_h: "Solo si el teléfono tiene una SIM de otro país: las llamadas a esa SIM empiezan en el idioma elegido aquí.",
   sl_country: "País de la SIM",
   sl_lang: "Idioma principal",
   sl_pick: "Elige un país",
@@ -8034,7 +7382,7 @@ I18N["es"] = {
   pv_playing: "Reproduciendo: {what}",
   pv_failed: "La prueba falló: {msg}",
   f_enabled: "La IA contesta las llamadas",
-  f_enabled_h: "Desactivado: las llamadas se contestan y se cuelgan al momento. Para que el teléfono suene como siempre, pásalo a teléfono normal en la página Sistema o en la app.",
+  f_enabled_h: "Desactivado: las llamadas se contestan y se cuelgan al momento. Para que el teléfono suene como siempre, pásalo a teléfono normal en la página Sistema.",
   vc_informative: "informativa",
   vc_upbeat: "animada",
   vc_excitable: "entusiasta",
@@ -8238,12 +7586,9 @@ I18N["es"] = {
   f_appt_mode_h: "Cuando alguien quiere fijar una hora, la IA no acepta en el momento: dice que lo consultará y responderá. Después tú pulsas Aceptar o Rechazar en «Pendientes», en la página Llamadas, o en la notificación.",
   appt_off: "Desactivado",
   appt_confirm: "Preguntarme antes",
-  f_appt_sms: "Avisar por SMS",
-  f_appt_sms_h: "Cuando decidas, el teléfono que atendió la llamada envía un SMS a esa persona (solo a móviles). Desactivado: la IA le devuelve la llamada.",
   f_appt_reply: "Respuesta predeterminada",
-  f_appt_reply_h: "Automática: SMS a un móvil, llamada de la IA a un fijo. Los números ocultos y los que no admiten devolución de llamada (extranjero, gratuitos y similares) no reciben respuesta.",
+  f_appt_reply_h: "Automática: la IA devuelve la llamada cuando se puede. Los números ocultos y los que no admiten devolución de llamada (extranjero, gratuitos y similares) no reciben respuesta.",
   ar_auto: "Automática (según el número)",
-  ar_sms: "Siempre SMS",
   ar_call: "Siempre llamada de la IA",
   // ---- settings: advanced
   f_think: "Nivel de razonamiento",
@@ -8255,24 +7600,11 @@ I18N["es"] = {
   sys_phones: "Teléfonos",
   sys_updated: "Actualizado a las {time}",
   sys_connected: "Conectado a Bageo",
-  sys_usb: "Conectados por USB",
   sys_calls_now: "Llamadas en curso: {n}",
   ph_ready: "Listo para recibir llamadas",
   ph_incall: "En una llamada",
   ph_seen: "Visto antes; ahora no está conectado",
-  ph_none: "Conecta el teléfono con un cable USB de datos, activa la depuración USB y abre la aplicación.",
-  ph_unauth: "Esperando permiso: desbloquea el teléfono y acepta el aviso «¿Permitir depuración USB?».",
-  ph_offline: "Sin conexión: desenchufa el cable y vuelve a enchufarlo.",
-  ph_state: "Estado: {state}",
-  ph_noapp: "La aplicación Bageo no está instalada en este teléfono.",
-  ph_link_ok: "La conexión USB funciona y la aplicación está instalada",
-  ph_link_bad: "La conexión USB aún no está lista. Espera unos segundos.",
-  usb_off: "El asistente USB está desactivado",
-  usb_off_d: "Los teléfonos se conectan a Bageo por la red.",
-  usb_noadb: "No se encontró adb",
-  usb_noadb_d: "Los teléfonos conectados por USB no se pueden configurar automáticamente. Instala las platform-tools de Android o define ADB_BIN.",
-  usb_error: "Problema con el USB",
-  usb_none: "No se encontró ningún teléfono por USB",
+  ph_none: "No hay ningún teléfono conectado. Empareja el teléfono con el ordenador Bluetooth y déjalo cerca.",
   chk_title: "¿Está todo listo?",
   chk_key: "Clave de API de Gemini",
   chk_key_bad: "Añade tu clave para que la IA pueda hablar.",
@@ -8420,7 +7752,6 @@ I18N["es"] = {
   err_unauthorized: "La contraseña no es correcta.",
   err_not_found: "No se encontró.",
   err_invalid_id: "Ese ID no es válido.",
-  err_sms_not_retryable: "Este SMS no se puede reenviar: la cita aún no está decidida o el SMS ya se envió.",
   err_invalid_serial: "Ese teléfono no es válido.",
   err_no_calendar: "Esta llamada no tiene sugerencia de calendario.",
   err_no_audio: "Esta llamada no tiene una grabación de ese tipo.",
@@ -8462,8 +7793,6 @@ I18N["es"] = {
   cu_ip: "Teléfonos que no abren direcciones .local (algunos Android antiguos):",
   // ---- phone mode (System view)
   ph_mode_normal: "Teléfono normal: las llamadas suenan y la IA no contesta",
-  ph_app: "App {v}",
-  ph_need_update: "Actualiza la app Bageo de este teléfono para cambiarlo desde aquí",
   ph_to_normal: "Pasar a teléfono normal",
   ph_to_ai: "Volver a que conteste la IA",
   ph_switching: "Cambiando…",
@@ -8476,15 +7805,9 @@ I18N["es"] = {
   ph_last_seen: "Última conexión: {time}",
   pm_err_in_call: "el teléfono está en una llamada. Inténtalo cuando termine",
   pm_err_busy: "el teléfono aún está terminando el cambio anterior",
-  pm_err_no_root: "el módulo de Bageo no está en funcionamiento en el teléfono. Comprueba en Magisk o KernelSU que Bageo Uplink esté activado y reinicia el teléfono",
   pm_err_save_failed: "el teléfono no pudo guardar el modo",
-  pm_err_dialer_failed: "el teléfono no pudo cambiar su app de teléfono predeterminada",
-  pm_err_screening_failed: "el teléfono no pudo cambiar el filtro de llamadas",
-  pm_err_dnd_failed: "el teléfono no pudo cambiar No molestar",
-  pm_err_volume_failed: "el teléfono no pudo volver a activar el tono",
   pm_err_invalid_mode: "el teléfono no reconoce este modo",
   pm_err_offline: "el teléfono no está conectado",
-  pm_err_unsupported: "la app del teléfono es demasiado antigua. Actualízala primero",
   pm_err_timeout: "El resultado aún no está confirmado. Vuelve a cargar la página en un momento.",
   pm_err_network: "no se pudo conectar con Bageo",
   pm_err_failed: "algo salió mal en el teléfono",
@@ -8616,7 +7939,7 @@ I18N["es"] = {
   ct_tab_stall: "Entretener",
   ct_kind: "Lista",
   ct_kind_contact: "Contacto",
-  ct_kind_whitelist: "Lista blanca (familia y amigos; la llamada puede pasar a tu teléfono)",
+  ct_kind_whitelist: "Lista blanca (familia y amigos; si es urgente, recibes un aviso)",
   ct_kind_blacklist: "Lista negra (se rechaza, sin IA)",
   ct_kind_stall: "Lista para entretener (la IA les hace perder el tiempo desde el inicio)",
   ct_kind_help: "Cómo se tratan las llamadas de este número.",
@@ -8624,10 +7947,10 @@ I18N["es"] = {
   wl_desc: "Elige quién puede localizarte y cuándo. Esto no sustituye a los servicios de emergencia.",
   f_wl_mode: "Transferencia",
   wl_m_direct: "No contestar: pasar a tu teléfono",
-  wl_m_emergency: "La IA contesta, te pasa la llamada si es urgente",
+  wl_m_emergency: "La IA contesta y te avisa si es urgente",
   f_wl_num: "Tu propio número de teléfono",
   f_wl_num_ph: "p. ej. +34600123456",
-  f_wl_num_h: "El número al que te llama el teléfono cuando es urgente.",
+  f_wl_num_h: "El número al que pasan las llamadas con «No contestar: pasar a tu teléfono».",
   f_ui_pw: "Contraseña de la consola",
   f_ui_pw_h: "Si la pones, la consola la pedirá al abrirla (una vez por navegador). Hace falta para abrir la consola en el teléfono u otro equipo.",
   pw_setup_title: "Configurar una contraseña de la consola (opcional)",
@@ -8657,15 +7980,6 @@ I18N["es"] = {
   n_ctl_h_matrix: "Desde este chat puedes consultar llamadas, pedir a la IA que llame a alguien y resolver pendientes. Envía «@tu bot /help» para ver los comandos.",
   k_ai_errand: "Encargo de la IA",
   ev_ai_errand: "Llamada por encargo de la IA",
-  ev_whitelist_urgent_call_merged: "Urgente: se te pasó la llamada",
-  ev_whitelist_urgent_call_failed: "Urgente: no se pudo contactar contigo",
-  ev_whitelist_urgent_call_ai_ended: "Urgente: la IA salió mientras te llamaba",
-  urg_why_no_answer: "no contestaste",
-  urg_why_ended: "la llamada hacia ti se cortó",
-  urg_why_caller_left: "quien llamaba colgó",
-  urg_why_bad_number: "tu número no es válido",
-  urg_why_merge: "no se pudo pasarte con quien llamaba",
-  urg_why_phone: "el teléfono no pudo hacer la llamada",
   er_err_empty_text: "Escribe lo que quieres decir.",
   er_err_text_too_long: "Es demasiado largo. Acórtalo.",
   er_err_question_closed: "Esa pregunta ya se respondió o caducó.",
@@ -8697,58 +8011,16 @@ I18N["es"] = {
   bl_mode: "Cuando llama alguien de la Lista negra:",
   bl_voice_link: "Elegir la voz del aviso",
   ct_bad_prefix: "Solo los números de la Lista negra pueden terminar en *, con al menos 3 cifras antes sin contar los ceros iniciales.",
-  tab_sms: "SMS",
-  sms_count: "{n} mensajes",
-  sms_search_ph: "Buscar remitente o texto",
-  sms_clear: "Borrar todo",
-  sms_clear_t: "¿Borrar todos los SMS?",
-  sms_clear_b: "No se puede deshacer.",
-  sms_del: "Borrar",
-  sms_del_t: "¿Borrar este SMS?",
-  sms_copy: "Copiar",
-  sms_empty_t: "Aún no hay SMS",
-  sms_empty_d: "Cuando el reenvío de SMS esté en marcha, los SMS que reciban tus teléfonos aparecerán aquí.",
-  sms_none_found: "Ningún SMS coincide.",
-  sms_unknown: "Remitente desconocido",
   unit_days: "días",
-  sms_new: "Nuevo mensaje",
-  sms_pick: "Elige una conversación o pulsa «Nuevo mensaje».",
-  sms_to: "Para",
-  sms_to_ph: "Número de teléfono",
-  sms_from: "Desde",
-  sms_input_ph: "Escribe un SMS",
-  sms_send: "Enviar",
-  sms_sending: "Enviando…",
-  sms_sent: "Enviado",
-  sms_failed: "No enviado",
-  sms_unsure: "Sin confirmar",
-  sms_retry: "Reintentar",
-  sms_you: "Tú: ",
-  sms_no_line: "Ahora no hay ningún teléfono que pueda enviar SMS.",
-  sms_no_reply: "No puedes responder a este remitente.",
-  sms_del_thread: "Borrar conversación",
-  sms_del_thread_t: "¿Borrar todos los mensajes con {name}?",
-  sms_back: "Atrás",
-  sms_earlier: "Ver mensajes anteriores",
-  sms_sim_n: "SIM {n}",
-  sms_err_offline: "El teléfono no está conectado.",
-  sms_err_old_app: "La app de este teléfono es demasiado antigua para enviar SMS.",
-  sms_err_permission: "La app del teléfono no tiene permiso para enviar SMS. Permítelo en el teléfono.",
-  sms_err_no_service: "El teléfono no tiene señal.",
-  sms_err_generic: "El teléfono no pudo enviarlo.",
-  sms_err_number: "Revisa el número e inténtalo de nuevo.",
-  sms_err_sim_not_found: "No se encontró la tarjeta SIM elegida.",
   f_keep: "Días que se guardan los registros",
-  f_keep_h: "Las llamadas y grabaciones, los SMS, los encargos y los pendientes más antiguos se borran solos.",
+  f_keep_h: "Las llamadas y grabaciones, los encargos y los pendientes más antiguos se borran solos.",
   f_phone_wifi: "Conectar teléfonos también por Wi-Fi",
-  f_phone_wifi_h: "Activado: un teléfono conectado una vez por USB sigue funcionando por Wi-Fi al quitar el cable. Desactivado: solo por USB.",
+  f_phone_wifi_h: "Activado: el ordenador Bluetooth puede conectarse por la red con un código de emparejamiento. Desactivado: solo el ordenador donde funciona Bageo.",
   repair_btn: "Volver a emparejar teléfonos",
   f_repair_h: "Úsalo si perdiste un teléfono o lo usó otra persona.",
   repair_t: "¿Volver a emparejar los teléfonos?",
-  repair_b: "Los teléfonos conectados por Wi-Fi se desconectan. Conecta cada uno por USB una vez más para que vuelva a conectarse.",
-  repair_done: "Teléfonos emparejados de nuevo. Conecta por USB una vez cada teléfono que usaba Wi-Fi.",
-  ph_link_usb: "Conectado por USB",
-  ph_link_wifi: "Conectado por Wi-Fi",
+  repair_b: "Los teléfonos conectados se desconectan. Conecta cada uno de nuevo con un código de emparejamiento nuevo.",
+  repair_done: "Emparejados de nuevo. Conecta cada teléfono otra vez con un código nuevo.",
   g_backup: "Copia de seguridad y restauración",
   g_backup_d: "Las copias contienen tus claves y contraseñas. Guárdalas donde solo tú puedas acceder.",
   bk_schedule: "Copia automática",
@@ -8766,7 +8038,7 @@ I18N["es"] = {
   bk_import: "Importar ajustes",
   bk_keep: "Copias automáticas que se conservan",
   bk_unit_copies: "copias",
-  bk_calls: "Incluir registro de llamadas, grabaciones y SMS",
+  bk_calls: "Incluir registro de llamadas y grabaciones",
   bk_calls_h: "Los archivos pesan mucho más.",
   bk_files: "Archivos de copia",
   bk_files_empty: "Todavía no hay copias.",
@@ -8789,7 +8061,6 @@ I18N["es"] = {
   bk_item_phones: "Datos de las SIM",
   bk_item_errands: "Encargos",
   bk_item_calls: "Registro de llamadas y grabaciones",
-  bk_item_sms: "SMS",
   bk_item_tasks: "Pendientes",
   bk_item_n: "{name}: {n}",
   bk_dlg_title: "¿Restaurar esta copia?",
@@ -8856,14 +8127,12 @@ I18N["es"] = {
   bk_del_b: "Una vez eliminada, no se puede recuperar.",
   bk_done_delete: "Copia eliminada.",
   bk_del_need_password: "Para eliminarla, abre la consola en el equipo donde está Bageo o pon antes una contraseña a la consola.",
-  f_wl_mode_h_direct: "Este teléfono no contesta: tu operador desvía la llamada a tu número y la IA no dice nada. Primero pasa el teléfono a «Teléfono normal» y marca en él **67*tu número# para activar el desvío si comunica; si no, quien llama oirá el buzón de voz.",
-  f_wl_mode_h_emergency: "La IA contesta primero; si es urgente, pide a quien llama que espere y te llama, y cuando contestes hablas con esa persona directamente. Si no contestas, la IA le dice que le devolverás la llamada. Si no has puesto tu número, solo recibes un aviso.",
+  f_wl_mode_h_direct: "Bageo rechaza la llamada en el teléfono, tu operador la desvía a tu número y la IA no dice nada. Primero marca en el teléfono **67*tu número# para activar el desvío si comunica; si no, quien llama oirá el buzón de voz.",
+  f_wl_mode_h_emergency: "La IA contesta primero. Si es urgente, recibes un aviso y la IA dice a quien llama que le devolverás la llamada.",
   wl_call_terms_title: "Léelo antes de activarlo",
-  wl_call_terms_1: "La IA puede equivocarse: puede que no te llame por algo realmente urgente, o que te llame cuando no lo es.",
+  wl_call_terms_1: "La IA puede equivocarse: puede pasar por alto algo realmente urgente o tomar por urgente algo que no lo es.",
   wl_call_terms_2: "Esto no sustituye a los servicios de emergencia. Si hay una vida en peligro, quien llama debe marcar directamente el número de emergencias local.",
-  wl_call_terms_3: "La llamada hacia ti sale de la SIM de este teléfono. Tu operador cobra como siempre; las llamadas internacionales o en roaming pueden costar más.",
-  wl_call_terms_4: "Una vez que te pasan la llamada, se graba según tu configuración. Avisar o no a las personas de que se graba depende de la ley local, y cumplirla es cosa tuya.",
-  wl_call_terms_5: "Puede que la llamada hacia ti no se establezca. Lo usas bajo tu propia responsabilidad; Bageo y sus desarrolladores no responden por ninguna pérdida.",
+  wl_call_terms_3: "El desvío o el aviso puede no llegar. Lo usas bajo tu propia responsabilidad; Bageo y sus desarrolladores no responden de ninguna pérdida.",
   wl_call_terms_ok: "Lo entiendo, activar",
   wl_call_terms_cancel: "Cancelar",
   f_wl_who: "Quién puede pasar",
@@ -8873,10 +8142,10 @@ I18N["es"] = {
   f_wl_who_others_h: "Incluye números ocultos. Un desconocido que dice que es urgente puede ser una estafa; actívalo solo si lo necesitas.",
   f_wl_who_h: "Las personas de «Lista negra» y «Entretener» nunca se pasan.",
   wl_enable: "Activar el reenvío",
-  ippair_title: "Emparejar un teléfono por dirección IP",
-  ippair_h: "Úsalo cuando Bageo funciona en Docker o en otro ordenador y no puedes conectar el teléfono por USB.",
+  ippair_title: "Conectar por dirección IP",
+  ippair_h: "Úsalo cuando Bageo funciona en otro ordenador o en Docker. Introduce la dirección y el código en el ordenador Bluetooth.",
   ippair_btn: "Obtener un código",
-  ippair_step: "En la app Bageo del teléfono, toca «Conectar por dirección IP» e introduce:",
+  ippair_step: "En el ordenador Bluetooth, ejecuta «bageo-bluetooth link» con:",
   ippair_addr: "Dirección",
   ippair_code: "Código de emparejamiento",
   ippair_valid: "Válido durante 10 minutos",
@@ -8928,8 +8197,8 @@ I18N["fr"] = {
   setup_title: "Bienvenue ! Trois étapes et votre téléphone répond tout seul",
   setup_1_t: "L'essentiel",
   setup_1_d: "Ajoutez votre clé API Gemini et votre nom.",
-  setup_2_t: "Téléphone",
-  setup_2_d: "Branchez en USB le téléphone où l'application est installée et attendez qu'il apparaisse comme prêt. Ensuite, vous pouvez débrancher le câble : il passe tout seul en Wi-Fi.",
+  setup_2_t: "Connecter le téléphone",
+  setup_2_d: "Sur un ordinateur Linux avec Bluetooth, lancez bluetooth/install.sh et associez le téléphone. Cliquez pour voir les étapes.",
   setup_3_t: "Notifications",
   setup_3_d: "Choisissez où envoyer les résumés d'appel, par exemple Telegram ou Discord.",
   live_active: "Appel en cours",
@@ -8953,7 +8222,7 @@ I18N["fr"] = {
   load_more: "Afficher plus",
   list_count: "{a} affichés sur {b}",
   empty_title: "Aucun appel pour l'instant",
-  empty_body: "Branchez votre téléphone et appelez son numéro. L'appel apparaîtra ici avec un résumé et l'enregistrement.",
+  empty_body: "Appelez le numéro de votre téléphone. L'appel apparaîtra ici avec un résumé et l'enregistrement.",
   empty_filtered: "Aucun appel ne correspond",
   empty_clear: "Effacer les filtres",
   hidden_number: "Numéro masqué",
@@ -8987,29 +8256,12 @@ I18N["fr"] = {
   d_appt_booked: "Pris pendant l'appel",
   d_appt_confirmed: "Accepté",
   d_appt_declined: "Refusé",
-  d_appt_sms_sent: "SMS envoyé",
   ap_panel: "À traiter",
   ap_confirm: "Accepter",
   ap_decline: "Refuser",
   ap_open_call: "Voir l'appel",
-  ap_working: "Traitement en cours… (jusqu'à environ 90 secondes si un SMS est envoyé)",
+  ap_working: "Traitement en cours…",
   ap_already: "Déjà traité",
-  d_appt_sms_failed: "SMS non envoyé ({code})",
-  d_appt_sms_none: "numéro sans SMS",
-  ap_retry_sms: "Renvoyer le SMS",
-  ap_sms_from: "Envoyer depuis",
-  ap_sms_from_call: "{phone} (a pris l'appel)",
-  sms_c_offline: "le téléphone n'est pas connecté",
-  sms_c_old_app: "l'application du téléphone est trop ancienne",
-  sms_c_timeout: "le téléphone n'a pas répondu",
-  sms_c_busy: "ce SMS est déjà en cours d'envoi",
-  sms_c_no_permission: "l'application n'a pas le droit d'envoyer des SMS",
-  sms_c_no_service: "pas de réseau mobile",
-  sms_c_radio_off: "la radio du téléphone est coupée (mode avion)",
-  sms_c_generic_failure: "l'opérateur n'a pas accepté le SMS",
-  sms_c_exception: "l'application du téléphone a rencontré une erreur",
-  sms_c_bad_request: "le numéro ou le texte n'a pas été accepté",
-  sms_c_sim_not_found: "la carte SIM choisie est introuvable",
   d_cal_allday: "Toute la journée",
   cal_add: "Ajouter à l'agenda",
   cal_change: "Choisir un autre agenda",
@@ -9030,17 +8282,11 @@ I18N["fr"] = {
   ap_k_what: "Quoi",
   ap_k_when: "Quand",
   ap_reply: "Prévenir par",
-  ap_reply_sms: "SMS",
   ap_reply_call: "Rappel par l'IA",
   ap_reply_none: "Ne pas prévenir",
   ap_reply_cant: "(impossible pour ce numéro)",
   ap_res_yes: "Accepté",
   ap_res_no: "Refusé",
-  ap_res_yes_sent: "Accepté, et l'appelant a reçu un SMS",
-  ap_res_no_sent: "Refusé, et l'appelant a reçu un SMS",
-  ap_res_sms_sent_short: "L'appelant a reçu un SMS",
-  ap_res_sms_failed: "Le SMS n'est pas parti : {why}",
-  ap_res_sms_none: "Ce numéro ne reçoit pas de SMS, rappelez cette personne vous-même",
   ap_res_none: "L'appelant n'a pas été prévenu",
   ap_res_hidden: "Numéro masqué : impossible de prévenir l'appelant",
   ap_call_dialing: "L'IA rappelle cette personne…",
@@ -9215,7 +8461,7 @@ I18N["fr"] = {
   f_notify_lang_h: "La langue des notifications et des résumés que vous lisez. Elle ne change pas la langue dans laquelle l'IA parle aux correspondants.",
   nl_same: "Comme la langue de l'IA",
   f_simlang: "Langue principale de chaque SIM",
-  f_simlang_h: "Seulement si le téléphone a une SIM d'un autre pays : les appels reçus sur cette SIM commencent dans la langue choisie ici. Nécessite l'application téléphone 1.0 ou plus récente.",
+  f_simlang_h: "Seulement si le téléphone a une SIM d'un autre pays : les appels reçus sur cette SIM commencent dans la langue choisie ici.",
   sl_country: "Pays de la SIM",
   sl_lang: "Langue principale",
   sl_pick: "Choisir un pays",
@@ -9248,7 +8494,7 @@ I18N["fr"] = {
   pv_playing: "Lecture : {what}",
   pv_failed: "Échec de l'aperçu : {msg}",
   f_enabled: "L'IA répond aux appels",
-  f_enabled_h: "Désactivé : les appels sont décrochés puis raccrochés aussitôt. Pour que le téléphone sonne comme d'habitude, passez-le en téléphone normal dans la page Système ou dans l'application.",
+  f_enabled_h: "Désactivé : les appels sont décrochés puis raccrochés aussitôt. Pour que le téléphone sonne comme d'habitude, passez-le en téléphone normal dans la page Système.",
   vc_informative: "posée",
   vc_upbeat: "enjouée",
   vc_excitable: "énergique",
@@ -9452,12 +8698,9 @@ I18N["fr"] = {
   f_appt_mode_h: "Quand un correspondant veut fixer un horaire, l'IA n'accepte pas sur-le-champ : elle dit qu'elle vérifie et le recontactera. Vous appuyez ensuite sur Accepter ou Refuser dans « À traiter », page Appels, ou dans la notification.",
   appt_off: "Désactivé",
   appt_confirm: "Me demander d'abord",
-  f_appt_sms: "Prévenir par SMS",
-  f_appt_sms_h: "Une fois votre décision prise, le téléphone qui a reçu l'appel envoie un SMS au correspondant (numéros mobiles uniquement). Désactivé : l'IA le rappelle à la place.",
   f_appt_reply: "Réponse par défaut",
-  f_appt_reply_h: "Automatique : SMS vers un mobile, rappel par l'IA vers un fixe. Les numéros masqués et ceux qu'on ne peut pas rappeler (étranger, numéros verts, etc.) ne reçoivent pas de réponse.",
+  f_appt_reply_h: "Automatique : l'IA rappelle quand c'est possible. Les numéros masqués et ceux qu'on ne peut pas rappeler (étranger, numéros verts, etc.) ne reçoivent pas de réponse.",
   ar_auto: "Automatique (selon le numéro)",
-  ar_sms: "Toujours un SMS",
   ar_call: "Toujours un rappel de l'IA",
   // ---- settings: advanced
   f_think: "Niveau de réflexion",
@@ -9469,24 +8712,11 @@ I18N["fr"] = {
   sys_phones: "Téléphones",
   sys_updated: "Mis à jour à {time}",
   sys_connected: "Connecté à Bageo",
-  sys_usb: "Branchés en USB",
   sys_calls_now: "Appels en cours : {n}",
   ph_ready: "Prêt à recevoir des appels",
   ph_incall: "En communication",
   ph_seen: "Déjà vu, mais pas connecté en ce moment",
-  ph_none: "Branchez le téléphone avec un câble USB de données, activez le débogage USB et ouvrez l'application.",
-  ph_unauth: "En attente d'autorisation : déverrouillez le téléphone et acceptez la demande « Autoriser le débogage USB ? ».",
-  ph_offline: "Hors ligne : débranchez le câble, puis rebranchez-le.",
-  ph_state: "État : {state}",
-  ph_noapp: "L'application Bageo n'est pas installée sur ce téléphone.",
-  ph_link_ok: "La liaison USB fonctionne et l'application est installée",
-  ph_link_bad: "La liaison USB n'est pas encore prête. Patientez quelques secondes.",
-  usb_off: "L'assistant USB est désactivé",
-  usb_off_d: "Les téléphones se connectent à Bageo par le réseau.",
-  usb_noadb: "adb est introuvable",
-  usb_noadb_d: "Les téléphones branchés en USB ne peuvent pas être configurés automatiquement. Installez les platform-tools Android ou définissez ADB_BIN.",
-  usb_error: "Problème USB",
-  usb_none: "Aucun téléphone détecté en USB",
+  ph_none: "Aucun téléphone connecté. Associez le téléphone à l'ordinateur Bluetooth et gardez-le à proximité.",
   chk_title: "Tout est prêt ?",
   chk_key: "Clé API Gemini",
   chk_key_bad: "Ajoutez votre clé pour que l'IA puisse parler.",
@@ -9634,7 +8864,6 @@ I18N["fr"] = {
   err_unauthorized: "Le mot de passe est incorrect.",
   err_not_found: "Introuvable.",
   err_invalid_id: "Cet identifiant n'est pas valide.",
-  err_sms_not_retryable: "Ce SMS ne peut pas être renvoyé : le rendez-vous n'est pas encore décidé, ou le SMS est déjà parti.",
   err_invalid_serial: "Ce téléphone n'est pas valide.",
   err_no_calendar: "Cet appel n'a pas de suggestion d'agenda.",
   err_no_audio: "Cet appel n'a pas d'enregistrement de ce type.",
@@ -9676,8 +8905,6 @@ I18N["fr"] = {
   cu_ip: "Téléphones qui n'ouvrent pas les adresses .local (certains anciens Android) :",
   // ---- phone mode (System view)
   ph_mode_normal: "Téléphone normal : les appels sonnent, l'IA ne répond pas",
-  ph_app: "Appli {v}",
-  ph_need_update: "Mettez à jour l'appli Bageo de ce téléphone pour le changer d'ici",
   ph_to_normal: "Passer en téléphone normal",
   ph_to_ai: "Laisser l'IA répondre à nouveau",
   ph_switching: "Changement…",
@@ -9690,15 +8917,9 @@ I18N["fr"] = {
   ph_last_seen: "Dernière connexion : {time}",
   pm_err_in_call: "le téléphone est en communication. Réessayez après l'appel",
   pm_err_busy: "le téléphone termine encore le changement précédent",
-  pm_err_no_root: "le module Bageo ne fonctionne pas sur le téléphone. Vérifiez dans Magisk ou KernelSU que Bageo Uplink est activé, puis redémarrez le téléphone",
   pm_err_save_failed: "le téléphone n'a pas pu enregistrer le mode",
-  pm_err_dialer_failed: "le téléphone n'a pas pu changer d'application Téléphone par défaut",
-  pm_err_screening_failed: "le téléphone n'a pas pu modifier le filtrage des appels",
-  pm_err_dnd_failed: "le téléphone n'a pas pu modifier Ne pas déranger",
-  pm_err_volume_failed: "le téléphone n'a pas pu rétablir la sonnerie",
   pm_err_invalid_mode: "le téléphone ne reconnaît pas ce mode",
   pm_err_offline: "le téléphone n'est pas connecté",
-  pm_err_unsupported: "l'appli du téléphone est trop ancienne. Mettez-la d'abord à jour",
   pm_err_timeout: "Résultat pas encore confirmé. Actualisez la page dans un instant.",
   pm_err_network: "Bageo est injoignable",
   pm_err_failed: "une erreur inattendue s'est produite sur le téléphone",
@@ -9830,7 +9051,7 @@ I18N["fr"] = {
   ct_tab_stall: "Les faire parler",
   ct_kind: "Liste",
   ct_kind_contact: "Contact",
-  ct_kind_whitelist: "Liste blanche (famille et amis ; l'appel peut vous être transféré)",
+  ct_kind_whitelist: "Liste blanche (famille et amis ; vous êtes alerté si urgent)",
   ct_kind_blacklist: "Liste noire (refusés, sans IA)",
   ct_kind_stall: "Les faire parler (l'IA leur fait perdre du temps dès le début)",
   ct_kind_help: "Comment les appels de ce numéro sont traités.",
@@ -9838,10 +9059,10 @@ I18N["fr"] = {
   wl_desc: "Choisissez qui peut vous joindre et quand. Cela ne remplace pas les secours.",
   f_wl_mode: "Transfert",
   wl_m_direct: "Ne pas répondre : renvoyer vers votre téléphone",
-  wl_m_emergency: "L'IA répond, vous passe l'appel si urgent",
+  wl_m_emergency: "L'IA répond et vous alerte si urgent",
   f_wl_num: "Votre propre numéro de téléphone",
   f_wl_num_ph: "ex. +33612345678",
-  f_wl_num_h: "Le numéro que le téléphone appelle en cas d'urgence.",
+  f_wl_num_h: "Le numéro vers lequel les appels sont renvoyés avec « Ne pas répondre : renvoyer vers votre téléphone ».",
   f_ui_pw: "Mot de passe de la console",
   f_ui_pw_h: "Une fois défini, la console le demande à l'ouverture (une fois par navigateur). Nécessaire pour ouvrir la console sur votre téléphone ou un autre ordinateur.",
   pw_setup_title: "Définir un mot de passe de la console (facultatif)",
@@ -9871,15 +9092,6 @@ I18N["fr"] = {
   n_ctl_h_matrix: "Depuis ce chat, consultez les appels, demandez à l'IA d'appeler quelqu'un et traitez ce qui est en attente. Envoyez « @votre bot /help » pour voir les commandes.",
   k_ai_errand: "Appel passé par l'IA pour vous",
   ev_ai_errand: "Appel passé par l'IA pour vous",
-  ev_whitelist_urgent_call_merged: "Urgent : l'appelant vous a été passé",
-  ev_whitelist_urgent_call_failed: "Urgent : impossible de vous joindre",
-  ev_whitelist_urgent_call_ai_ended: "Urgent : l'IA a quitté l'appel pendant qu'elle vous appelait",
-  urg_why_no_answer: "vous n'avez pas répondu",
-  urg_why_ended: "l'appel vers vous s'est coupé",
-  urg_why_caller_left: "le correspondant a raccroché",
-  urg_why_bad_number: "votre numéro n'est pas valide",
-  urg_why_merge: "impossible de vous passer l'appelant",
-  urg_why_phone: "le téléphone n'a pas pu passer l'appel",
   er_err_empty_text: "Écrivez ce que vous voulez dire.",
   er_err_text_too_long: "C'est trop long. Raccourcissez-le.",
   er_err_question_closed: "Cette question a déjà reçu une réponse ou a expiré.",
@@ -9911,58 +9123,16 @@ I18N["fr"] = {
   bl_mode: "Quand quelqu'un de la Liste noire appelle :",
   bl_voice_link: "Choisir la voix de l'annonce",
   ct_bad_prefix: "Seuls les numéros de la Liste noire peuvent finir par *, avec au moins 3 chiffres avant, sans compter les zéros du début.",
-  tab_sms: "SMS",
-  sms_count: "{n} messages",
-  sms_search_ph: "Rechercher un expéditeur ou un texte",
-  sms_clear: "Tout supprimer",
-  sms_clear_t: "Supprimer tous les SMS ?",
-  sms_clear_b: "Cette action est définitive.",
-  sms_del: "Supprimer",
-  sms_del_t: "Supprimer ce SMS ?",
-  sms_copy: "Copier",
-  sms_empty_t: "Pas encore de SMS",
-  sms_empty_d: "Une fois le transfert de SMS lancé, les SMS reçus par vos téléphones s'affichent ici.",
-  sms_none_found: "Aucun SMS ne correspond.",
-  sms_unknown: "Expéditeur inconnu",
   unit_days: "jours",
-  sms_new: "Nouveau message",
-  sms_pick: "Choisissez une conversation ou appuyez sur « Nouveau message ».",
-  sms_to: "À",
-  sms_to_ph: "Numéro de téléphone",
-  sms_from: "Depuis",
-  sms_input_ph: "Écrire un SMS",
-  sms_send: "Envoyer",
-  sms_sending: "Envoi…",
-  sms_sent: "Envoyé",
-  sms_failed: "Non envoyé",
-  sms_unsure: "Pas encore confirmé",
-  sms_retry: "Réessayer",
-  sms_you: "Vous : ",
-  sms_no_line: "Aucun téléphone ne peut envoyer de SMS pour le moment.",
-  sms_no_reply: "Vous ne pouvez pas répondre à cet expéditeur.",
-  sms_del_thread: "Supprimer la conversation",
-  sms_del_thread_t: "Supprimer tous les messages avec {name} ?",
-  sms_back: "Retour",
-  sms_earlier: "Afficher les messages précédents",
-  sms_sim_n: "SIM {n}",
-  sms_err_offline: "Le téléphone n'est pas connecté.",
-  sms_err_old_app: "L'app de ce téléphone est trop ancienne pour envoyer des SMS.",
-  sms_err_permission: "L'app du téléphone n'a pas le droit d'envoyer des SMS. Autorisez-la sur le téléphone.",
-  sms_err_no_service: "Le téléphone n'a pas de réseau.",
-  sms_err_generic: "Le téléphone n'a pas pu l'envoyer.",
-  sms_err_number: "Vérifiez le numéro et réessayez.",
-  sms_err_sim_not_found: "La carte SIM choisie est introuvable.",
   f_keep: "Nombre de jours de conservation",
-  f_keep_h: "Les appels et enregistrements, les SMS, les appels IA et les éléments à traiter plus anciens sont supprimés automatiquement.",
+  f_keep_h: "Les appels et enregistrements, les appels IA et les éléments à traiter plus anciens sont supprimés automatiquement.",
   f_phone_wifi: "Connecter aussi les téléphones en Wi-Fi",
-  f_phone_wifi_h: "Activé : un téléphone branché une fois en USB reste connecté en Wi-Fi une fois débranché. Désactivé : USB uniquement.",
+  f_phone_wifi_h: "Activé : l'ordinateur Bluetooth peut se connecter par le réseau avec un code d'association. Désactivé : seul l'ordinateur qui exécute Bageo peut se connecter.",
   repair_btn: "Réassocier les téléphones",
   f_repair_h: "À utiliser si un téléphone a été perdu ou utilisé par quelqu'un d'autre.",
   repair_t: "Réassocier les téléphones ?",
-  repair_b: "Les téléphones connectés en Wi-Fi sont déconnectés. Rebranchez chacun une fois en USB pour le reconnecter.",
-  repair_done: "Téléphones réassociés. Rebranchez une fois en USB chaque téléphone qui était en Wi-Fi.",
-  ph_link_usb: "Connecté en USB",
-  ph_link_wifi: "Connecté en Wi-Fi",
+  repair_b: "Les téléphones connectés sont déconnectés. Reconnectez chacun avec un nouveau code d'association.",
+  repair_done: "Réassociés. Reconnectez chaque téléphone avec un nouveau code d'association.",
   g_backup: "Sauvegarde et restauration",
   g_backup_d: "Les sauvegardes contiennent vos clés et mots de passe. Gardez-les là où vous seul pouvez y accéder.",
   bk_schedule: "Sauvegarde automatique",
@@ -9980,7 +9150,7 @@ I18N["fr"] = {
   bk_import: "Importer les réglages",
   bk_keep: "Sauvegardes automatiques à garder",
   bk_unit_copies: "sauvegardes",
-  bk_calls: "Inclure journal d'appels, enregistrements et SMS",
+  bk_calls: "Inclure journal d'appels et enregistrements",
   bk_calls_h: "Les fichiers deviennent beaucoup plus gros.",
   bk_files: "Fichiers de sauvegarde",
   bk_files_empty: "Aucun fichier de sauvegarde pour le moment.",
@@ -10003,7 +9173,6 @@ I18N["fr"] = {
   bk_item_phones: "Infos des cartes SIM",
   bk_item_errands: "Appels IA",
   bk_item_calls: "Journal d'appels et enregistrements",
-  bk_item_sms: "SMS",
   bk_item_tasks: "À traiter",
   bk_item_n: "{name} : {n}",
   bk_dlg_title: "Restaurer cette sauvegarde ?",
@@ -10070,14 +9239,12 @@ I18N["fr"] = {
   bk_del_b: "Une fois supprimée, elle ne peut pas être récupérée.",
   bk_done_delete: "Sauvegarde supprimée.",
   bk_del_need_password: "Pour la supprimer, ouvrez la console sur l'ordinateur où tourne Bageo, ou définissez d'abord un mot de passe pour la console.",
-  f_wl_mode_h_direct: "Ce téléphone ne répond pas : votre opérateur renvoie l'appel vers votre numéro et l'IA reste muette. Passez d'abord le téléphone en « Téléphone normal », puis composez dessus **67*votre numéro# pour activer le renvoi sur occupation ; sinon l'appelant tombe sur la messagerie vocale.",
-  f_wl_mode_h_emergency: "L'IA répond d'abord ; si c'est urgent, elle demande à l'appelant de patienter et vous appelle, et dès que vous décrochez, vous lui parlez directement. Si vous ne répondez pas, l'IA dit que vous rappellerez. Sans votre numéro, vous recevez seulement une alerte.",
+  f_wl_mode_h_direct: "Bageo refuse l'appel sur le téléphone, votre opérateur le renvoie vers votre numéro et l'IA reste muette. Composez d'abord sur le téléphone **67*votre numéro# pour activer le renvoi sur occupation ; sinon l'appelant tombe sur la messagerie vocale.",
+  f_wl_mode_h_emergency: "L'IA répond d'abord. Si c'est urgent, vous recevez une alerte et l'IA dit à l'appelant que vous rappellerez.",
   wl_call_terms_title: "À lire avant d'activer",
-  wl_call_terms_1: "L'IA peut se tromper : elle peut ne pas vous appeler pour une vraie urgence, ou vous appeler alors que ce n'en est pas une.",
+  wl_call_terms_1: "L'IA peut se tromper : elle peut manquer une vraie urgence ou prendre pour urgent ce qui ne l'est pas.",
   wl_call_terms_2: "Cela ne remplace pas les secours. Si une vie est en danger, l'appelant doit composer directement le numéro d'urgence local.",
-  wl_call_terms_3: "L'appel vers vous part de la carte SIM de ce téléphone. Votre opérateur facture comme d'habitude ; les appels internationaux ou en itinérance peuvent coûter plus cher.",
-  wl_call_terms_4: "Une fois l'appel passé vers vous, il est enregistré selon vos réglages. Prévenir ou non les personnes qu'elles sont enregistrées relève de la loi locale, que vous devez respecter.",
-  wl_call_terms_5: "L'appel vers vous peut ne pas aboutir. Vous l'utilisez à vos risques ; Bageo et ses développeurs déclinent toute responsabilité en cas de perte.",
+  wl_call_terms_3: "Le renvoi ou l'alerte peut ne pas aboutir. Vous l'utilisez à vos propres risques ; Bageo et ses développeurs ne sont responsables d'aucune perte.",
   wl_call_terms_ok: "J'ai compris, activer",
   wl_call_terms_cancel: "Annuler",
   f_wl_who: "Qui peut être transféré",
@@ -10087,10 +9254,10 @@ I18N["fr"] = {
   f_wl_who_others_h: "Inclut les numéros masqués. Un inconnu qui dit que c'est urgent peut être une arnaque ; activez-le seulement si vous en avez besoin.",
   f_wl_who_h: "Les personnes de « Liste noire » et de « Les faire parler » ne sont jamais transférées.",
   wl_enable: "Activer le renvoi",
-  ippair_title: "Associer un téléphone par adresse IP",
-  ippair_h: "À utiliser quand Bageo tourne dans Docker ou sur un autre ordinateur et que le téléphone ne peut pas être branché.",
+  ippair_title: "Connexion par adresse IP",
+  ippair_h: "À utiliser quand Bageo tourne sur un autre ordinateur ou dans Docker. Saisissez l'adresse et le code sur l'ordinateur Bluetooth.",
   ippair_btn: "Obtenir un code",
-  ippair_step: "Dans l’app Bageo du téléphone, touchez « Connexion par adresse IP » et saisissez :",
+  ippair_step: "Sur l'ordinateur Bluetooth, lancez « bageo-bluetooth link » avec :",
   ippair_addr: "Adresse",
   ippair_code: "Code d’association",
   ippair_valid: "Valable 10 minutes",
@@ -10142,8 +9309,8 @@ I18N["de"] = {
   setup_title: "Willkommen! Drei Schritte, dann geht dein Telefon von selbst ran",
   setup_1_t: "Grundlagen",
   setup_1_d: "Trag deinen Gemini-API-Schlüssel und deinen Namen ein.",
-  setup_2_t: "Telefon",
-  setup_2_d: "Schließ das Telefon mit der installierten App per USB an und warte, bis es als bereit angezeigt wird. Danach kannst du das Kabel abziehen: Es wechselt von selbst ins WLAN.",
+  setup_2_t: "Telefon verbinden",
+  setup_2_d: "Führe auf einem Linux-Computer mit Bluetooth bluetooth/install.sh aus und koppel das Telefon. Klick für die Schritte.",
   setup_3_t: "Benachrichtigungen",
   setup_3_d: "Wähle, wohin die Zusammenfassungen gehen, zum Beispiel Telegram oder Discord.",
   live_active: "Anruf läuft",
@@ -10167,7 +9334,7 @@ I18N["de"] = {
   load_more: "Mehr anzeigen",
   list_count: "{a} von {b} angezeigt",
   empty_title: "Noch keine Anrufe",
-  empty_body: "Schließe dein Telefon an und ruf seine Nummer an. Der Anruf erscheint hier mit Zusammenfassung und Aufnahme.",
+  empty_body: "Ruf die Nummer deines Telefons an. Der Anruf erscheint hier mit Zusammenfassung und Aufnahme.",
   empty_filtered: "Keine passenden Anrufe",
   empty_clear: "Filter zurücksetzen",
   hidden_number: "Unterdrückte Nummer",
@@ -10201,29 +9368,12 @@ I18N["de"] = {
   d_appt_booked: "Im Gespräch eingetragen",
   d_appt_confirmed: "Zugesagt",
   d_appt_declined: "Abgesagt",
-  d_appt_sms_sent: "SMS gesendet",
   ap_panel: "Zu erledigen",
   ap_confirm: "Zusagen",
   ap_decline: "Absagen",
   ap_open_call: "Anruf öffnen",
-  ap_working: "Wird bearbeitet … (bis etwa 90 Sekunden, wenn eine SMS rausgeht)",
+  ap_working: "Wird bearbeitet …",
   ap_already: "Bereits bearbeitet",
-  d_appt_sms_failed: "SMS nicht gesendet ({code})",
-  d_appt_sms_none: "Nummer ohne SMS",
-  ap_retry_sms: "SMS erneut senden",
-  ap_sms_from: "Senden von",
-  ap_sms_from_call: "{phone} (hat den Anruf angenommen)",
-  sms_c_offline: "das Telefon ist nicht verbunden",
-  sms_c_old_app: "die App auf dem Telefon ist zu alt",
-  sms_c_timeout: "das Telefon hat nicht geantwortet",
-  sms_c_busy: "dieselbe SMS wird schon gesendet",
-  sms_c_no_permission: "die App darf keine SMS senden",
-  sms_c_no_service: "kein Mobilfunknetz",
-  sms_c_radio_off: "Funk am Telefon aus (Flugmodus)",
-  sms_c_generic_failure: "der Netzbetreiber hat die SMS nicht angenommen",
-  sms_c_exception: "in der App auf dem Telefon ist ein Fehler aufgetreten",
-  sms_c_bad_request: "Nummer oder Text wurde nicht angenommen",
-  sms_c_sim_not_found: "die gewählte SIM-Karte wurde nicht gefunden",
   d_cal_allday: "Ganztägig",
   cal_add: "In den Kalender",
   cal_change: "Anderen Kalender wählen",
@@ -10244,17 +9394,11 @@ I18N["de"] = {
   ap_k_what: "Was",
   ap_k_when: "Wann",
   ap_reply: "Bescheid per",
-  ap_reply_sms: "SMS",
   ap_reply_call: "Rückruf der KI",
   ap_reply_none: "Nicht Bescheid geben",
   ap_reply_cant: "(bei dieser Nummer nicht möglich)",
   ap_res_yes: "Zugesagt",
   ap_res_no: "Abgesagt",
-  ap_res_yes_sent: "Zugesagt, der Anrufer hat eine SMS bekommen",
-  ap_res_no_sent: "Abgesagt, der Anrufer hat eine SMS bekommen",
-  ap_res_sms_sent_short: "Der Anrufer hat eine SMS bekommen",
-  ap_res_sms_failed: "Die SMS ging nicht raus: {why}",
-  ap_res_sms_none: "Die Nummer kann keine SMS empfangen, ruf selbst zurück",
   ap_res_none: "Der Anrufer wurde nicht benachrichtigt",
   ap_res_hidden: "Unterdrückte Nummer: der Anrufer kann nicht benachrichtigt werden",
   ap_call_dialing: "Die KI ruft zurück…",
@@ -10429,7 +9573,7 @@ I18N["de"] = {
   f_notify_lang_h: "Die Sprache der Benachrichtigungen und Zusammenfassungen, die du liest. Sie ändert nicht, in welcher Sprache die KI mit Anrufern spricht.",
   nl_same: "Wie die Sprache der KI",
   f_simlang: "Hauptsprache je SIM",
-  f_simlang_h: "Nur für ein Telefon mit einer SIM aus einem anderen Land: Anrufe auf dieser SIM beginnen in der hier gewählten Sprache. Erfordert die Telefon-App 1.0 oder neuer.",
+  f_simlang_h: "Nur für ein Telefon mit einer SIM aus einem anderen Land: Anrufe auf dieser SIM beginnen in der hier gewählten Sprache.",
   sl_country: "Land der SIM",
   sl_lang: "Hauptsprache",
   sl_pick: "Land auswählen",
@@ -10462,7 +9606,7 @@ I18N["de"] = {
   pv_playing: "Wiedergabe: {what}",
   pv_failed: "Hörprobe fehlgeschlagen: {msg}",
   f_enabled: "KI nimmt Anrufe an",
-  f_enabled_h: "Aus: Anrufe werden angenommen und sofort beendet. Soll das Telefon wie gewohnt klingeln, stell es auf der Seite System oder in der App auf normales Telefon um.",
+  f_enabled_h: "Aus: Anrufe werden angenommen und sofort beendet. Soll das Telefon wie gewohnt klingeln, stell es auf der Seite System auf normales Telefon um.",
   vc_informative: "sachlich",
   vc_upbeat: "beschwingt",
   vc_excitable: "lebhaft",
@@ -10666,12 +9810,9 @@ I18N["de"] = {
   f_appt_mode_h: "Will ein Anrufer einen Termin ausmachen, sagt die KI nicht sofort zu: Sie sagt, sie klärt das und meldet sich. Danach drückst du unter „Zu erledigen“ auf der Seite Anrufe oder in der Benachrichtigung auf Zusagen oder Absagen.",
   appt_off: "Aus",
   appt_confirm: "Erst mich fragen",
-  f_appt_sms: "Per SMS Bescheid geben",
-  f_appt_sms_h: "Nach deiner Entscheidung schickt das Telefon, das den Anruf angenommen hat, dem Anrufer eine SMS (nur an Handynummern). Aus: Stattdessen ruft die KI zurück.",
   f_appt_reply: "Standardantwort",
-  f_appt_reply_h: "Automatisch: SMS an ein Handy, KI-Rückruf ans Festnetz. Unterdrückte Nummern und Nummern, die nicht zurückgerufen werden können (Ausland, gebührenfrei und Ähnliches), bekommen keine Antwort.",
+  f_appt_reply_h: "Automatisch: Die KI ruft zurück, wenn es geht. Unterdrückte Nummern und Nummern, die nicht zurückgerufen werden können (Ausland, gebührenfrei und Ähnliches), bekommen keine Antwort.",
   ar_auto: "Automatisch (nach Nummer)",
-  ar_sms: "Immer per SMS",
   ar_call: "Immer Rückruf der KI",
   // ---- settings: advanced
   f_think: "Denkstufe",
@@ -10683,24 +9824,11 @@ I18N["de"] = {
   sys_phones: "Telefone",
   sys_updated: "Aktualisiert um {time}",
   sys_connected: "Mit Bageo verbunden",
-  sys_usb: "Per USB angeschlossen",
   sys_calls_now: "Laufende Anrufe: {n}",
   ph_ready: "Bereit für Anrufe",
   ph_incall: "Im Gespräch",
   ph_seen: "War schon einmal verbunden, jetzt nicht",
-  ph_none: "Schließe das Telefon mit einem USB-Datenkabel an, schalte USB-Debugging ein und öffne die App.",
-  ph_unauth: "Wartet auf Freigabe: Entsperre das Telefon und bestätige die Abfrage „USB-Debugging zulassen?“.",
-  ph_offline: "Offline: Zieh das Kabel ab und steck es wieder ein.",
-  ph_state: "Status: {state}",
-  ph_noapp: "Die Bageo-App ist auf diesem Telefon nicht installiert.",
-  ph_link_ok: "USB-Verbindung steht und die App ist installiert",
-  ph_link_bad: "Die USB-Verbindung ist noch nicht eingerichtet. Warte ein paar Sekunden.",
-  usb_off: "Der USB-Helfer ist ausgeschaltet",
-  usb_off_d: "Telefone verbinden sich über das Netzwerk mit Bageo.",
-  usb_noadb: "adb wurde nicht gefunden",
-  usb_noadb_d: "Telefone am USB können nicht automatisch eingerichtet werden. Installiere die Android platform-tools oder setze ADB_BIN.",
-  usb_error: "USB-Problem",
-  usb_none: "Kein Telefon am USB gefunden",
+  ph_none: "Kein Telefon verbunden. Koppel das Telefon mit dem Bluetooth-Computer und halte es in der Nähe.",
   chk_title: "Ist alles bereit?",
   chk_key: "Gemini-API-Schlüssel",
   chk_key_bad: "Trage deinen Schlüssel ein, damit die KI sprechen kann.",
@@ -10848,7 +9976,6 @@ I18N["de"] = {
   err_unauthorized: "Das Passwort stimmt nicht.",
   err_not_found: "Nicht gefunden.",
   err_invalid_id: "Diese ID ist ungültig.",
-  err_sms_not_retryable: "Diese SMS kann nicht erneut gesendet werden: Der Termin ist noch nicht entschieden, oder die SMS ist schon raus.",
   err_invalid_serial: "Dieses Telefon ist ungültig.",
   err_no_calendar: "Dieser Anruf hat keinen Kalendervorschlag.",
   err_no_audio: "Für diesen Anruf gibt es keine solche Aufnahme.",
@@ -10890,8 +10017,6 @@ I18N["de"] = {
   cu_ip: "Handys, die keine .local-Adressen öffnen (manche ältere Android-Geräte):",
   // ---- phone mode (System view)
   ph_mode_normal: "Normales Telefon: Anrufe klingeln, die KI nimmt nicht ab",
-  ph_app: "App {v}",
-  ph_need_update: "Aktualisiere die Bageo-App auf diesem Telefon, um es von hier umzustellen",
   ph_to_normal: "Auf normales Telefon umstellen",
   ph_to_ai: "Wieder die KI annehmen lassen",
   ph_switching: "Wird umgestellt…",
@@ -10904,15 +10029,9 @@ I18N["de"] = {
   ph_last_seen: "Zuletzt verbunden: {time}",
   pm_err_in_call: "Das Telefon ist im Gespräch. Versuch es nach dem Auflegen erneut",
   pm_err_busy: "Das Telefon ist mit der vorigen Umstellung noch nicht fertig",
-  pm_err_no_root: "Das Bageo-Modul läuft auf dem Telefon nicht. Prüfe in Magisk oder KernelSU, ob Bageo Uplink aktiviert ist, und starte das Telefon neu",
   pm_err_save_failed: "Das Telefon konnte den Modus nicht speichern",
-  pm_err_dialer_failed: "Das Telefon konnte die Standard-Telefon-App nicht ändern",
-  pm_err_screening_failed: "Das Telefon konnte die Anruffilterung nicht ändern",
-  pm_err_dnd_failed: "Das Telefon konnte „Bitte nicht stören“ nicht ändern",
-  pm_err_volume_failed: "Das Telefon konnte den Klingelton nicht wieder einschalten",
   pm_err_invalid_mode: "Das Telefon kennt diesen Modus nicht",
   pm_err_offline: "Das Telefon ist nicht verbunden",
-  pm_err_unsupported: "Die App auf dem Telefon ist zu alt. Aktualisiere sie zuerst",
   pm_err_timeout: "Ergebnis noch nicht bestätigt. Lade die Seite gleich neu.",
   pm_err_network: "Bageo ist nicht erreichbar",
   pm_err_failed: "Auf dem Telefon ist ein unerwarteter Fehler aufgetreten",
@@ -11044,7 +10163,7 @@ I18N["de"] = {
   ct_tab_stall: "Hinhalteliste",
   ct_kind: "Liste",
   ct_kind_contact: "Kontakt",
-  ct_kind_whitelist: "Whitelist (Familie und Freunde; Anrufe können zu dir durchgestellt werden)",
+  ct_kind_whitelist: "Whitelist (Familie und Freunde; bei Dringendem wirst du benachrichtigt)",
   ct_kind_blacklist: "Sperrliste (wird abgewiesen, ohne KI)",
   ct_kind_stall: "Hinhalteliste (die KI hält den Anrufer von Anfang an hin)",
   ct_kind_help: "Wie Anrufe von dieser Nummer behandelt werden.",
@@ -11052,10 +10171,10 @@ I18N["de"] = {
   wl_desc: "Wähle, wer dich erreichen kann und wann. Das ersetzt keinen Notruf.",
   f_wl_mode: "Weiterleitung",
   wl_m_direct: "Nicht abnehmen: an dein Telefon weiterleiten",
-  wl_m_emergency: "KI nimmt ab, stellt bei Dringendem zu dir durch",
+  wl_m_emergency: "KI nimmt ab, benachrichtigt dich bei Dringendem",
   f_wl_num: "Deine eigene Telefonnummer",
   f_wl_num_ph: "z. B. +491701234567",
-  f_wl_num_h: "Die Nummer, die das Telefon bei Dringendem anruft.",
+  f_wl_num_h: "Die Nummer, an die Anrufe bei „Nicht abnehmen: an dein Telefon weiterleiten“ gehen.",
   f_ui_pw: "Konsolenpasswort",
   f_ui_pw_h: "Ist es gesetzt, fragt die Konsole beim Öffnen danach (einmal pro Browser). Nötig, um die Konsole auf dem Handy oder einem anderen Computer zu öffnen.",
   pw_setup_title: "Konsolenpasswort festlegen (optional)",
@@ -11085,15 +10204,6 @@ I18N["de"] = {
   n_ctl_h_matrix: "In diesem Chat kannst du Anrufe nachsehen, die KI jemanden anrufen lassen und Offenes erledigen. Sende „@dein Bot /help“ für die Befehle.",
   k_ai_errand: "KI-Anruf für dich",
   ev_ai_errand: "KI-Anruf in deinem Auftrag",
-  ev_whitelist_urgent_call_merged: "Dringend: du wurdest durchgestellt",
-  ev_whitelist_urgent_call_failed: "Dringend: du warst nicht erreichbar",
-  ev_whitelist_urgent_call_ai_ended: "Dringend: die KI ist ausgestiegen, während sie dich anrief",
-  urg_why_no_answer: "du bist nicht rangegangen",
-  urg_why_ended: "der Anruf zu dir wurde beendet",
-  urg_why_caller_left: "der Anrufer hat aufgelegt",
-  urg_why_bad_number: "deine Nummer ist ungültig",
-  urg_why_merge: "du konntest nicht zum Anrufer durchgestellt werden",
-  urg_why_phone: "das Telefon konnte den Anruf nicht aufbauen",
   er_err_empty_text: "Schreib, was du sagen möchtest.",
   er_err_text_too_long: "Das ist zu lang. Bitte kürzen.",
   er_err_question_closed: "Diese Frage wurde schon beantwortet oder ist abgelaufen.",
@@ -11125,58 +10235,16 @@ I18N["de"] = {
   bl_mode: "Wenn jemand von der Sperrliste anruft:",
   bl_voice_link: "Stimme der Ansage wählen",
   ct_bad_prefix: "Nur Nummern auf der Sperrliste dürfen mit * enden, mit mindestens 3 Ziffern davor, führende Nullen nicht mitgezählt.",
-  tab_sms: "SMS",
-  sms_count: "{n} Nachrichten",
-  sms_search_ph: "Absender oder Text suchen",
-  sms_clear: "Alle löschen",
-  sms_clear_t: "Alle SMS löschen?",
-  sms_clear_b: "Das lässt sich nicht rückgängig machen.",
-  sms_del: "Löschen",
-  sms_del_t: "Diese SMS löschen?",
-  sms_copy: "Kopieren",
-  sms_empty_t: "Noch keine SMS",
-  sms_empty_d: "Sobald die SMS-Weiterleitung läuft, erscheinen hier die SMS, die deine Telefone empfangen.",
-  sms_none_found: "Keine passende SMS.",
-  sms_unknown: "Unbekannter Absender",
   unit_days: "Tage",
-  sms_new: "Neue Nachricht",
-  sms_pick: "Wähl eine Unterhaltung oder tipp auf „Neue Nachricht“.",
-  sms_to: "An",
-  sms_to_ph: "Telefonnummer",
-  sms_from: "Von",
-  sms_input_ph: "SMS schreiben",
-  sms_send: "Senden",
-  sms_sending: "Wird gesendet …",
-  sms_sent: "Gesendet",
-  sms_failed: "Nicht gesendet",
-  sms_unsure: "Noch nicht bestätigt",
-  sms_retry: "Erneut senden",
-  sms_you: "Du: ",
-  sms_no_line: "Gerade kann kein Telefon SMS senden.",
-  sms_no_reply: "Diesem Absender kannst du nicht antworten.",
-  sms_del_thread: "Unterhaltung löschen",
-  sms_del_thread_t: "Alle Nachrichten mit {name} löschen?",
-  sms_back: "Zurück",
-  sms_earlier: "Ältere Nachrichten anzeigen",
-  sms_sim_n: "SIM {n}",
-  sms_err_offline: "Das Telefon ist nicht verbunden.",
-  sms_err_old_app: "Die App auf diesem Telefon ist zu alt, um SMS zu senden.",
-  sms_err_permission: "Die App darf keine SMS senden. Erlaub es auf dem Telefon.",
-  sms_err_no_service: "Das Telefon hat keinen Empfang.",
-  sms_err_generic: "Das Telefon konnte sie nicht senden.",
-  sms_err_number: "Prüf die Nummer und versuch es noch einmal.",
-  sms_err_sim_not_found: "Die gewählte SIM-Karte wurde nicht gefunden.",
   f_keep: "So viele Tage bleiben Daten gespeichert",
-  f_keep_h: "Ältere Anrufe und Aufnahmen, SMS, KI-Anrufe und offene Punkte werden automatisch gelöscht.",
+  f_keep_h: "Ältere Anrufe und Aufnahmen, KI-Anrufe und offene Punkte werden automatisch gelöscht.",
   f_phone_wifi: "Telefone auch per WLAN verbinden",
-  f_phone_wifi_h: "An: Ein Telefon, das einmal per USB angeschlossen war, bleibt nach dem Abziehen per WLAN verbunden. Aus: nur per USB.",
+  f_phone_wifi_h: "An: Der Bluetooth-Computer kann sich mit einem Kopplungscode über das Netzwerk verbinden. Aus: nur der Computer, auf dem Bageo läuft.",
   repair_btn: "Telefone neu koppeln",
   f_repair_h: "Nutze das, wenn ein Telefon verloren ging oder jemand anderes es benutzt hat.",
   repair_t: "Telefone neu koppeln?",
-  repair_b: "Telefone im WLAN werden getrennt. Schließ jedes noch einmal per USB an, damit es sich wieder verbindet.",
-  repair_done: "Telefone neu gekoppelt. Schließ jedes WLAN-Telefon einmal per USB an.",
-  ph_link_usb: "Per USB verbunden",
-  ph_link_wifi: "Per WLAN verbunden",
+  repair_b: "Verbundene Telefone werden getrennt. Verbinde jedes mit einem neuen Kopplungscode erneut.",
+  repair_done: "Neu gekoppelt. Verbinde jedes Telefon erneut mit einem neuen Kopplungscode.",
   g_backup: "Sicherung und Wiederherstellung",
   g_backup_d: "Sicherungen enthalten deine Schlüssel und Passwörter. Bewahre sie dort auf, wo nur du drankommst.",
   bk_schedule: "Automatische Sicherung",
@@ -11194,7 +10262,7 @@ I18N["de"] = {
   bk_import: "Einstellungen importieren",
   bk_keep: "Automatische Sicherungen behalten",
   bk_unit_copies: "Sicherungen",
-  bk_calls: "Anrufprotokoll, Aufnahmen und SMS mitsichern",
+  bk_calls: "Anrufprotokoll und Aufnahmen mitsichern",
   bk_calls_h: "Die Dateien werden viel größer.",
   bk_files: "Sicherungsdateien",
   bk_files_empty: "Noch keine Sicherungen.",
@@ -11217,7 +10285,6 @@ I18N["de"] = {
   bk_item_phones: "SIM-Kartendaten",
   bk_item_errands: "KI-Anrufe",
   bk_item_calls: "Anrufprotokoll und Aufnahmen",
-  bk_item_sms: "SMS",
   bk_item_tasks: "Zu erledigen",
   bk_item_n: "{name}: {n}",
   bk_dlg_title: "Aus dieser Sicherung wiederherstellen?",
@@ -11284,14 +10351,12 @@ I18N["de"] = {
   bk_del_b: "Einmal gelöscht, lässt sie sich nicht zurückholen.",
   bk_done_delete: "Sicherung gelöscht.",
   bk_del_need_password: "Zum Löschen öffne die Konsole auf dem Computer, auf dem Bageo läuft, oder lege zuerst ein Konsolen-Passwort fest.",
-  f_wl_mode_h_direct: "Dieses Telefon nimmt nicht ab: Dein Mobilfunkanbieter leitet den Anruf an deine Nummer weiter, die KI bleibt stumm. Stelle das Telefon zuerst auf „Normales Telefon“ und wähle darauf **67*deine Nummer#, um die Rufumleitung bei Besetzt einzuschalten – sonst landen Anrufer auf der Mailbox.",
-  f_wl_mode_h_emergency: "Die KI nimmt zuerst ab; ist es dringend, bittet sie den Anrufer zu warten und ruft dich an. Sobald du abnimmst, sprichst du direkt mit ihm. Nimmst du nicht ab, sagt die KI, dass du zurückrufst. Ohne deine Nummer bekommst du nur eine Benachrichtigung.",
+  f_wl_mode_h_direct: "Bageo weist den Anruf am Telefon ab, dein Mobilfunkanbieter leitet ihn an deine Nummer weiter, die KI bleibt stumm. Wähle zuerst am Telefon **67*deine Nummer#, um die Rufumleitung bei Besetzt einzuschalten – sonst landen Anrufer auf der Mailbox.",
+  f_wl_mode_h_emergency: "Die KI nimmt zuerst ab. Ist es dringend, bekommst du eine Benachrichtigung und die KI sagt dem Anrufer, dass du zurückrufst.",
   wl_call_terms_title: "Bitte vor dem Einschalten lesen",
-  wl_call_terms_1: "Die KI kann sich irren: Bei etwas wirklich Dringendem ruft sie dich womöglich nicht an, oder sie ruft an, obwohl es nicht dringend ist.",
+  wl_call_terms_1: "Die KI kann sich irren: Sie übersieht vielleicht etwas wirklich Dringendes oder hält etwas Unwichtiges für dringend.",
   wl_call_terms_2: "Das ersetzt keinen Notruf. Bei Lebensgefahr soll der Anrufer direkt die örtliche Notrufnummer wählen.",
-  wl_call_terms_3: "Der Anruf bei dir wird über die SIM-Karte dieses Telefons geführt. Dein Anbieter berechnet ihn wie gewohnt; internationale Anrufe oder Roaming können mehr kosten.",
-  wl_call_terms_4: "Nach dem Durchstellen wird das Gespräch gemäß deinen Einstellungen aufgezeichnet. Ob und wie du die Beteiligten über die Aufzeichnung informierst, musst du nach dem Recht vor Ort selbst klären.",
-  wl_call_terms_5: "Der Anruf bei dir kommt möglicherweise nicht zustande. Du nutzt die Funktion auf eigenes Risiko; Bageo und die Entwickler haften nicht für Schäden.",
+  wl_call_terms_3: "Weiterleitung und Benachrichtigung kommen möglicherweise nicht an. Du nutzt das auf eigenes Risiko; Bageo und seine Entwickler haften nicht für Schäden.",
   wl_call_terms_ok: "Verstanden, einschalten",
   wl_call_terms_cancel: "Abbrechen",
   f_wl_who: "Wer weitergeleitet werden kann",
@@ -11301,10 +10366,10 @@ I18N["de"] = {
   f_wl_who_others_h: "Gilt auch für unterdrückte Nummern. Sagt ein Fremder, es sei dringend, kann das Betrug sein – schalte es nur ein, wenn du es brauchst.",
   f_wl_who_h: "Personen auf der „Sperrliste“ und der „Hinhalteliste“ werden nie weitergeleitet.",
   wl_enable: "Weiterleitung einschalten",
-  ippair_title: "Telefon per IP-Adresse koppeln",
-  ippair_h: "Nutze das, wenn Bageo in Docker oder auf einem anderen Computer läuft und du das Telefon nicht anschließen kannst.",
+  ippair_title: "Per IP-Adresse verbinden",
+  ippair_h: "Nutze das, wenn Bageo auf einem anderen Computer oder in Docker läuft. Gib Adresse und Code auf dem Bluetooth-Computer ein.",
   ippair_btn: "Kopplungscode holen",
-  ippair_step: "Tippe in der Bageo-App auf dem Telefon auf „Per IP-Adresse verbinden“ und gib ein:",
+  ippair_step: "Führe auf dem Bluetooth-Computer „bageo-bluetooth link“ aus mit:",
   ippair_addr: "Adresse",
   ippair_code: "Kopplungscode",
   ippair_valid: "10 Minuten gültig",
@@ -11356,8 +10421,8 @@ I18N["pt"] = {
   setup_title: "Boas-vindas! Três passos e seu telefone atende sozinho",
   setup_1_t: "O básico",
   setup_1_d: "Adicione sua chave de API do Gemini e seu nome.",
-  setup_2_t: "Telefone",
-  setup_2_d: "Conecte por USB o celular com o app instalado e espere ele aparecer como pronto. Depois você pode tirar o cabo: ele passa sozinho para o Wi-Fi.",
+  setup_2_t: "Conecte o celular",
+  setup_2_d: "Em um computador Linux com Bluetooth, execute bluetooth/install.sh e pareie o celular. Clique para ver os passos.",
   setup_3_t: "Notificações",
   setup_3_d: "Escolha para onde vão os resumos das chamadas, por exemplo Telegram ou Discord.",
   live_active: "Chamada em andamento",
@@ -11381,7 +10446,7 @@ I18N["pt"] = {
   load_more: "Mostrar mais",
   list_count: "Mostrando {a} de {b}",
   empty_title: "Nenhuma chamada ainda",
-  empty_body: "Conecte seu telefone e ligue para o número dele. A chamada aparece aqui com um resumo e a gravação.",
+  empty_body: "Ligue para o número do seu telefone. A chamada aparece aqui com um resumo e a gravação.",
   empty_filtered: "Nenhuma chamada corresponde",
   empty_clear: "Limpar filtros",
   hidden_number: "Número oculto",
@@ -11415,29 +10480,12 @@ I18N["pt"] = {
   d_appt_booked: "Marcado na ligação",
   d_appt_confirmed: "Aceito",
   d_appt_declined: "Recusado",
-  d_appt_sms_sent: "SMS enviado",
   ap_panel: "Pendências",
   ap_confirm: "Aceitar",
   ap_decline: "Recusar",
   ap_open_call: "Ver a ligação",
-  ap_working: "Processando… (até cerca de 90 segundos quando um SMS é enviado)",
+  ap_working: "Processando…",
   ap_already: "Já foi resolvido",
-  d_appt_sms_failed: "SMS não enviado ({code})",
-  d_appt_sms_none: "número não recebe SMS",
-  ap_retry_sms: "Reenviar o SMS",
-  ap_sms_from: "Enviar de",
-  ap_sms_from_call: "{phone} (atendeu a ligação)",
-  sms_c_offline: "o telefone não está conectado",
-  sms_c_old_app: "o app do telefone é antigo demais",
-  sms_c_timeout: "o telefone não respondeu",
-  sms_c_busy: "esse SMS já está sendo enviado",
-  sms_c_no_permission: "o app não tem permissão para enviar SMS",
-  sms_c_no_service: "sem sinal de celular",
-  sms_c_radio_off: "o rádio do telefone está desligado (modo avião)",
-  sms_c_generic_failure: "a operadora não aceitou o SMS",
-  sms_c_exception: "o app do telefone teve um erro",
-  sms_c_bad_request: "o número ou o texto não foi aceito",
-  sms_c_sim_not_found: "o chip SIM escolhido não foi encontrado",
   d_cal_allday: "Dia inteiro",
   cal_add: "Adicionar à agenda",
   cal_change: "Escolher outra agenda",
@@ -11458,17 +10506,11 @@ I18N["pt"] = {
   ap_k_what: "O quê",
   ap_k_when: "Quando",
   ap_reply: "Avisar por",
-  ap_reply_sms: "SMS",
   ap_reply_call: "Ligação da IA",
   ap_reply_none: "Não avisar",
   ap_reply_cant: "(não para este número)",
   ap_res_yes: "Aceito",
   ap_res_no: "Recusado",
-  ap_res_yes_sent: "Aceito, e quem ligou recebeu um SMS",
-  ap_res_no_sent: "Recusado, e quem ligou recebeu um SMS",
-  ap_res_sms_sent_short: "Quem ligou recebeu um SMS",
-  ap_res_sms_failed: "O SMS não saiu: {why}",
-  ap_res_sms_none: "Esse número não recebe SMS; ligue de volta você mesmo",
   ap_res_none: "Quem ligou não foi avisado",
   ap_res_hidden: "Número oculto: não dá para avisar",
   ap_call_dialing: "A IA está ligando de volta…",
@@ -11643,7 +10685,7 @@ I18N["pt"] = {
   f_notify_lang_h: "O idioma das notificações e dos resumos que você lê. Não muda o idioma em que a IA fala com quem liga.",
   nl_same: "O mesmo idioma da IA",
   f_simlang: "Idioma principal de cada SIM",
-  f_simlang_h: "Só para telefone com SIM de outro país: as ligações recebidas nesse SIM começam no idioma escolhido aqui. Requer o app do telefone 1.0 ou mais recente.",
+  f_simlang_h: "Só para telefone com SIM de outro país: as ligações recebidas nesse SIM começam no idioma escolhido aqui.",
   sl_country: "País do SIM",
   sl_lang: "Idioma principal",
   sl_pick: "Escolha um país",
@@ -11676,7 +10718,7 @@ I18N["pt"] = {
   pv_playing: "Tocando: {what}",
   pv_failed: "A prévia falhou: {msg}",
   f_enabled: "A IA atende as chamadas",
-  f_enabled_h: "Desligado: as ligações são atendidas e encerradas na hora. Para o telefone tocar normalmente, mude para telefone normal na página Sistema ou no app.",
+  f_enabled_h: "Desligado: as ligações são atendidas e encerradas na hora. Para o telefone tocar normalmente, mude para telefone normal na página Sistema.",
   vc_informative: "informativa",
   vc_upbeat: "animada",
   vc_excitable: "empolgada",
@@ -11880,12 +10922,9 @@ I18N["pt"] = {
   f_appt_mode_h: "Quando alguém quer marcar um horário, a IA não aceita na hora: diz que vai confirmar e retornar. Depois você toca em Aceitar ou Recusar em “Pendências”, na página Chamadas, ou na notificação.",
   appt_off: "Desligado",
   appt_confirm: "Perguntar antes",
-  f_appt_sms: "Avisar por SMS",
-  f_appt_sms_h: "Depois que você decide, o telefone que atendeu a ligação envia um SMS para a pessoa (só para celulares). Desligado: a IA liga de volta.",
   f_appt_reply: "Resposta padrão",
-  f_appt_reply_h: "Automática: SMS para celular, retorno da IA para fixo. Números ocultos e números que não aceitam retorno (exterior, gratuitos e parecidos) não recebem resposta.",
+  f_appt_reply_h: "Automática: a IA retorna a ligação quando dá. Números ocultos e números que não aceitam retorno (exterior, gratuitos e parecidos) não recebem resposta.",
   ar_auto: "Automática (pelo número)",
-  ar_sms: "Sempre SMS",
   ar_call: "Sempre ligação da IA",
   // ---- settings: advanced
   f_think: "Nível de raciocínio",
@@ -11897,24 +10936,11 @@ I18N["pt"] = {
   sys_phones: "Telefones",
   sys_updated: "Atualizado às {time}",
   sys_connected: "Conectado ao Bageo",
-  sys_usb: "Conectados por USB",
   sys_calls_now: "Chamadas em andamento: {n}",
   ph_ready: "Pronto para receber chamadas",
   ph_incall: "Em chamada",
   ph_seen: "Já apareceu antes; não está conectado agora",
-  ph_none: "Conecte o telefone com um cabo USB de dados, ative a depuração USB e abra o app.",
-  ph_unauth: "Aguardando permissão: desbloqueie o telefone e aceite o aviso “Permitir a depuração USB?”.",
-  ph_offline: "Offline: desconecte o cabo e conecte de novo.",
-  ph_state: "Estado: {state}",
-  ph_noapp: "O app Bageo não está instalado neste telefone.",
-  ph_link_ok: "A conexão USB está funcionando e o app está instalado",
-  ph_link_bad: "A conexão USB ainda não está pronta. Aguarde alguns segundos.",
-  usb_off: "O assistente de USB está desligado",
-  usb_off_d: "Os telefones conectam-se ao Bageo pela rede.",
-  usb_noadb: "O adb não foi encontrado",
-  usb_noadb_d: "Os telefones conectados por USB não podem ser configurados automaticamente. Instale as platform-tools do Android ou defina ADB_BIN.",
-  usb_error: "Problema no USB",
-  usb_none: "Nenhum telefone encontrado no USB",
+  ph_none: "Nenhum celular conectado. Pareie o celular com o computador Bluetooth e deixe-o por perto.",
   chk_title: "Está tudo pronto?",
   chk_key: "Chave de API do Gemini",
   chk_key_bad: "Adicione sua chave para que a IA possa falar.",
@@ -12062,7 +11088,6 @@ I18N["pt"] = {
   err_unauthorized: "A senha não está correta.",
   err_not_found: "Não encontrado.",
   err_invalid_id: "Esse ID não é válido.",
-  err_sms_not_retryable: "Este SMS não pode ser reenviado: o compromisso ainda não foi decidido ou o SMS já foi enviado.",
   err_invalid_serial: "Esse telefone não é válido.",
   err_no_calendar: "Esta chamada não tem sugestão de agenda.",
   err_no_audio: "Esta chamada não tem gravação desse tipo.",
@@ -12104,8 +11129,6 @@ I18N["pt"] = {
   cu_ip: "Celulares que não abrem endereços .local (alguns Android antigos):",
   // ---- phone mode (System view)
   ph_mode_normal: "Telefone normal: as chamadas tocam e a IA não atende",
-  ph_app: "App {v}",
-  ph_need_update: "Atualize o app Bageo deste telefone para trocar daqui",
   ph_to_normal: "Mudar para telefone normal",
   ph_to_ai: "Voltar a IA para atender",
   ph_switching: "Alternando…",
@@ -12118,15 +11141,9 @@ I18N["pt"] = {
   ph_last_seen: "Última conexão: {time}",
   pm_err_in_call: "o telefone está em chamada. Tente de novo quando terminar",
   pm_err_busy: "o telefone ainda está terminando a troca anterior",
-  pm_err_no_root: "o módulo do Bageo não está em execução no telefone. Confira no Magisk ou no KernelSU se o Bageo Uplink está ativado e reinicie o telefone",
   pm_err_save_failed: "o telefone não conseguiu salvar o modo",
-  pm_err_dialer_failed: "o telefone não conseguiu trocar o app de telefone padrão",
-  pm_err_screening_failed: "o telefone não conseguiu alterar a triagem de chamadas",
-  pm_err_dnd_failed: "o telefone não conseguiu alterar o Não perturbe",
-  pm_err_volume_failed: "o telefone não conseguiu religar o toque",
   pm_err_invalid_mode: "o telefone não reconhece este modo",
   pm_err_offline: "o telefone não está conectado",
-  pm_err_unsupported: "o app do telefone é muito antigo. Atualize primeiro",
   pm_err_timeout: "Resultado ainda não confirmado. Atualize a página daqui a pouco.",
   pm_err_network: "não foi possível conectar ao Bageo",
   pm_err_failed: "algo deu errado no telefone",
@@ -12258,7 +11275,7 @@ I18N["pt"] = {
   ct_tab_stall: "Manter falando",
   ct_kind: "Lista",
   ct_kind_contact: "Contato",
-  ct_kind_whitelist: "Lista branca (família e amigos; a ligação pode ser passada para você)",
+  ct_kind_whitelist: "Lista branca (família e amigos; você recebe um aviso se for urgente)",
   ct_kind_blacklist: "Lista de bloqueio (recusadas, sem IA)",
   ct_kind_stall: "Lista para manter falando (a IA faz a pessoa perder tempo desde o início)",
   ct_kind_help: "Como as ligações deste número são tratadas.",
@@ -12266,10 +11283,10 @@ I18N["pt"] = {
   wl_desc: "Escolha quem pode falar com você e quando. Isto não substitui os serviços de emergência.",
   f_wl_mode: "Transferência",
   wl_m_direct: "Não atender: passar para o seu celular",
-  wl_m_emergency: "A IA atende e passa a ligação para você se for urgente",
+  wl_m_emergency: "A IA atende e avisa você se for urgente",
   f_wl_num: "Seu próprio número de celular",
   f_wl_num_ph: "ex.: 11987654321",
-  f_wl_num_h: "O número para o qual o celular liga quando for urgente.",
+  f_wl_num_h: "O número para o qual as ligações vão com “Não atender: passar para o seu celular”.",
   f_ui_pw: "Senha do console",
   f_ui_pw_h: "Depois de definida, o console pede a senha ao abrir (uma vez por navegador). Necessária para abrir o console no celular ou em outro computador.",
   pw_setup_title: "Definir uma senha do console (opcional)",
@@ -12299,15 +11316,6 @@ I18N["pt"] = {
   n_ctl_h_matrix: "Neste chat você pode consultar chamadas, pedir para a IA ligar para alguém e resolver pendências. Envie “@seu bot /help” para ver os comandos.",
   k_ai_errand: "Ligação feita pela IA",
   ev_ai_errand: "Ligação feita pela IA a seu pedido",
-  ev_whitelist_urgent_call_merged: "Urgente: a ligação foi passada para você",
-  ev_whitelist_urgent_call_failed: "Urgente: não foi possível falar com você",
-  ev_whitelist_urgent_call_ai_ended: "Urgente: a IA saiu enquanto ligava para você",
-  urg_why_no_answer: "você não atendeu",
-  urg_why_ended: "a ligação para você foi encerrada",
-  urg_why_caller_left: "quem ligou desligou",
-  urg_why_bad_number: "seu número não é válido",
-  urg_why_merge: "não foi possível passar a ligação para você",
-  urg_why_phone: "o celular não conseguiu fazer a ligação",
   er_err_empty_text: "Escreva o que você quer dizer.",
   er_err_text_too_long: "Ficou longo demais. Encurte.",
   er_err_question_closed: "Essa pergunta já foi respondida ou expirou.",
@@ -12339,58 +11347,16 @@ I18N["pt"] = {
   bl_mode: "Quando alguém da Lista de bloqueio ligar:",
   bl_voice_link: "Escolher a voz do aviso",
   ct_bad_prefix: "Só números da Lista de bloqueio podem terminar com *, com pelo menos 3 dígitos antes, sem contar os zeros iniciais.",
-  tab_sms: "SMS",
-  sms_count: "{n} mensagens",
-  sms_search_ph: "Buscar remetente ou texto",
-  sms_clear: "Apagar tudo",
-  sms_clear_t: "Apagar todos os SMS?",
-  sms_clear_b: "Não dá para desfazer.",
-  sms_del: "Apagar",
-  sms_del_t: "Apagar este SMS?",
-  sms_copy: "Copiar",
-  sms_empty_t: "Ainda não há SMS",
-  sms_empty_d: "Quando o encaminhamento de SMS estiver funcionando, os SMS que seus telefones receberem aparecerão aqui.",
-  sms_none_found: "Nenhum SMS corresponde.",
-  sms_unknown: "Remetente desconhecido",
   unit_days: "dias",
-  sms_new: "Nova mensagem",
-  sms_pick: "Escolha uma conversa ou toque em “Nova mensagem”.",
-  sms_to: "Para",
-  sms_to_ph: "Número de telefone",
-  sms_from: "De",
-  sms_input_ph: "Escreva um SMS",
-  sms_send: "Enviar",
-  sms_sending: "Enviando…",
-  sms_sent: "Enviado",
-  sms_failed: "Não enviado",
-  sms_unsure: "Ainda não confirmado",
-  sms_retry: "Tentar de novo",
-  sms_you: "Você: ",
-  sms_no_line: "Agora nenhum telefone pode enviar SMS.",
-  sms_no_reply: "Não é possível responder a este remetente.",
-  sms_del_thread: "Apagar conversa",
-  sms_del_thread_t: "Apagar todas as mensagens com {name}?",
-  sms_back: "Voltar",
-  sms_earlier: "Ver mensagens anteriores",
-  sms_sim_n: "SIM {n}",
-  sms_err_offline: "O telefone não está conectado.",
-  sms_err_old_app: "O app deste telefone é antigo demais para enviar SMS.",
-  sms_err_permission: "O app do telefone não tem permissão para enviar SMS. Permita no telefone.",
-  sms_err_no_service: "O telefone está sem sinal.",
-  sms_err_generic: "O telefone não conseguiu enviar.",
-  sms_err_number: "Confira o número e tente novamente.",
-  sms_err_sim_not_found: "O chip SIM escolhido não foi encontrado.",
   f_keep: "Dias para guardar os registros",
-  f_keep_h: "Chamadas e gravações, SMS, ligações IA e pendências mais antigas são apagadas automaticamente.",
+  f_keep_h: "Chamadas e gravações, ligações IA e pendências mais antigas são apagadas automaticamente.",
   f_phone_wifi: "Conectar celulares também por Wi-Fi",
-  f_phone_wifi_h: "Ligado: um celular conectado uma vez por USB continua funcionando por Wi-Fi sem o cabo. Desligado: só por USB.",
+  f_phone_wifi_h: "Ligado: o computador Bluetooth pode se conectar pela rede com um código de pareamento. Desligado: só o computador que roda o Bageo.",
   repair_btn: "Parear celulares de novo",
   f_repair_h: "Use se um celular foi perdido ou usado por outra pessoa.",
   repair_t: "Parear os celulares de novo?",
-  repair_b: "Os celulares no Wi-Fi são desconectados. Conecte cada um por USB mais uma vez para ele voltar a se conectar.",
-  repair_done: "Celulares pareados de novo. Conecte por USB uma vez cada celular que usava Wi-Fi.",
-  ph_link_usb: "Conectado por USB",
-  ph_link_wifi: "Conectado por Wi-Fi",
+  repair_b: "Os celulares conectados são desconectados. Conecte cada um de novo com um novo código de pareamento.",
+  repair_done: "Pareados de novo. Conecte cada celular de novo com um novo código de pareamento.",
   g_backup: "Backup e restauração",
   g_backup_d: "Os backups contêm suas chaves e senhas. Guarde-os num lugar a que só você tenha acesso.",
   bk_schedule: "Backup automático",
@@ -12408,7 +11374,7 @@ I18N["pt"] = {
   bk_import: "Importar configurações",
   bk_keep: "Backups automáticos a manter",
   bk_unit_copies: "backups",
-  bk_calls: "Incluir registro de chamadas, gravações e SMS",
+  bk_calls: "Incluir registro de chamadas e gravações",
   bk_calls_h: "Os arquivos ficam bem maiores.",
   bk_files: "Arquivos de backup",
   bk_files_empty: "Ainda não há backups.",
@@ -12431,7 +11397,6 @@ I18N["pt"] = {
   bk_item_phones: "Dados dos chips SIM",
   bk_item_errands: "Ligações IA",
   bk_item_calls: "Registro de chamadas e gravações",
-  bk_item_sms: "SMS",
   bk_item_tasks: "Pendências",
   bk_item_n: "{name}: {n}",
   bk_dlg_title: "Restaurar a partir deste backup?",
@@ -12498,14 +11463,12 @@ I18N["pt"] = {
   bk_del_b: "Depois de excluído, não dá para recuperar.",
   bk_done_delete: "Backup excluído.",
   bk_del_need_password: "Para excluir, abra o console no computador onde o Bageo está ou defina antes uma senha para o console.",
-  f_wl_mode_h_direct: "Este celular não atende: sua operadora desvia a chamada para o seu número e a IA fica em silêncio. Primeiro mude o celular para “Telefone normal” e disque nele **67*seu número# para ativar o desvio quando ocupado; se não, quem liga cai na caixa postal.",
-  f_wl_mode_h_emergency: "A IA atende primeiro; se for urgente, pede a quem liga que aguarde e liga para você, e quando você atender, fala direto com a pessoa. Se você não atender, a IA diz que você vai retornar. Sem o seu número, você só recebe um aviso.",
+  f_wl_mode_h_direct: "O Bageo recusa a chamada no celular, sua operadora a desvia para o seu número e a IA fica em silêncio. Primeiro disque no celular **67*seu número# para ativar o desvio quando ocupado; se não, quem liga cai na caixa postal.",
+  f_wl_mode_h_emergency: "A IA atende primeiro. Se for urgente, você recebe um aviso e a IA diz a quem liga que você vai retornar.",
   wl_call_terms_title: "Leia antes de ativar",
-  wl_call_terms_1: "A IA pode errar: pode não ligar para você num caso realmente urgente, ou ligar quando não é urgente.",
+  wl_call_terms_1: "A IA pode errar: pode deixar passar algo realmente urgente ou tratar como urgente o que não é.",
   wl_call_terms_2: "Isto não substitui os serviços de emergência. Se houver risco de vida, quem liga deve discar direto para o número de emergência local.",
-  wl_call_terms_3: "A ligação para você sai do chip (SIM) deste celular. A operadora cobra normalmente; ligações internacionais ou em roaming podem custar mais.",
-  wl_call_terms_4: "Depois que a ligação é passada para você, ela é gravada conforme as suas configurações. Avisar ou não as pessoas de que a ligação é gravada depende da lei local, e cumpri-la é responsabilidade sua.",
-  wl_call_terms_5: "A ligação para você pode não completar. Você usa por sua conta e risco; o Bageo e seus desenvolvedores não respondem por nenhuma perda.",
+  wl_call_terms_3: "O desvio ou o aviso pode não chegar. Você usa por sua conta e risco; o Bageo e seus desenvolvedores não respondem por nenhuma perda.",
   wl_call_terms_ok: "Entendi, ativar",
   wl_call_terms_cancel: "Cancelar",
   f_wl_who: "Quem pode ser transferido",
@@ -12515,10 +11478,10 @@ I18N["pt"] = {
   f_wl_who_others_h: "Inclui números ocultos. Um desconhecido dizendo que é urgente pode ser golpe; ative só se precisar.",
   f_wl_who_h: "Quem está na “Lista de bloqueio” ou em “Manter falando” nunca é transferido.",
   wl_enable: "Ativar o encaminhamento",
-  ippair_title: "Parear um celular pelo endereço IP",
-  ippair_h: "Use quando o Bageo roda no Docker ou em outro computador e não dá para ligar o celular por USB.",
+  ippair_title: "Conectar por endereço IP",
+  ippair_h: "Use quando o Bageo roda em outro computador ou no Docker. Digite o endereço e o código no computador Bluetooth.",
   ippair_btn: "Gerar código de pareamento",
-  ippair_step: "No app Bageo do celular, toque em “Conectar por endereço IP” e digite:",
+  ippair_step: "No computador Bluetooth, execute “bageo-bluetooth link” com:",
   ippair_addr: "Endereço",
   ippair_code: "Código de pareamento",
   ippair_valid: "Válido por 10 minutos",
@@ -12861,7 +11824,6 @@ $("netRetry").addEventListener("click", () => {
   loadDevices();
   if (!S) loadSettings();
   if (view === "system") loadSystem();
-  if (view === "sms") loadSms();
 });
 
 // ---------------------------------------------------------------- theme + language switchers
@@ -12901,7 +11863,6 @@ function setLang(l) {
   renderErrands();
   renderContacts();
   renderImport();
-  renderSms();
   if (view === "system") renderSystem();
 }
 (function fillLangSel() {
@@ -12932,7 +11893,7 @@ async function followNotifyLang(l) {
 }
 
 // ---------------------------------------------------------------- views / routing
-const VIEWS = ["calls", "sms", "errands", "contacts", "settings", "system"];
+const VIEWS = ["calls", "errands", "contacts", "settings", "system"];
 let view = "calls";
 let pendingJump = "";
 function setTitle() {
@@ -12950,7 +11911,6 @@ function showView(name) {
   if (name === "system") loadSystem();
   if (name === "contacts") loadContacts();
   if (name === "errands") showErrands();
-  if (name === "sms") showSms();
   if (changed) window.scrollTo(0, 0);
 }
 function setHash(hash, replace) {
@@ -12959,15 +11919,6 @@ function setHash(hash, replace) {
   else location.hash = hash;
 }
 function route() {
-  // A text conversation: everything after "sms/" is the number (it may hold a "/").
-  const raw = location.hash.slice(1);
-  if (raw === "sms" || raw.startsWith("sms/")) {
-    let arg = raw.slice(4);
-    try { arg = decodeURIComponent(arg); } catch (_) { /* keep raw */ }
-    showView("sms");
-    smsApplyRoute(arg.trim());
-    return;
-  }
   let hash = location.hash.slice(1);
   try { hash = decodeURIComponent(hash); } catch (_) { /* keep raw */ }
   const m = hash.match(/^call=([A-Za-z0-9_-]{1,128})$/);
@@ -13156,23 +12107,14 @@ function callKind(c) {
   if (has("gemini_unmute_after_greet") || has("ai_segment_start") || has("ai_segment_end") || c.ai_audio_path) return { k: "ai", icon: "bot", tag: "accent", label: "k_ai" };
   return { k: "", icon: "phone", tag: "", label: "k_ended" };
 }
-// Why the AI could not bring the owner into a call (whitelist_urgent_call_failed:<reason>).
-const URGENT_WHY = { call_ended: "caller_left", leg_ended: "ended", bad_number: "bad_number", merge_failed: "merge", merge_timeout: "merge", unhold_failed: "merge", no_result: "merge", no_answer: "no_answer" };
-function urgentWhy(reason) {
-  const code = String(reason || "").trim().toLowerCase();
-  return t("urg_why_" + (/^noanswer/.test(code) ? "no_answer" : URGENT_WHY[code] || "phone"));
-}
-// A call's event codes in words. The agent records a failed urgent call twice
-// (plain and with the reason): the reason one is shown; an errand's ai_callback is left out.
+// A call's event codes in words (an errand's ai_callback is left out).
 function eventTags(events) {
   const list = events || [];
   const errand = list.includes("ai_errand");
-  const withWhy = list.some((e) => /^whitelist_urgent_call_failed:/.test(e));
   const out = [];
   for (const e of list) {
-    if ((errand && e === "ai_callback") || (withWhy && e === "whitelist_urgent_call_failed")) continue;
-    const m = /^whitelist_urgent_call_failed:(.+)$/.exec(e);
-    out.push({ code: e, text: m ? t("ev_whitelist_urgent_call_failed") + " · " + urgentWhy(m[1]) : tCode("ev_", e) });
+    if (errand && e === "ai_callback") continue;
+    out.push({ code: e, text: tCode("ev_", e) });
   }
   return out;
 }
@@ -13742,522 +12684,6 @@ $("btnBlock").addEventListener("click", async () => {
     contactsChanged();
   } catch (e) { if (e.status !== 401) toast(t("save_failed", { msg: contactErrText(e) }), true); }
 });
-
-// ---------------------------------------------------------------- text messages (SMS)
-// Conversations, one per number, like a phone's messages app: what the phones
-// received (the SMS forwarder hands them over) and the replies sent from here.
-const SMS_PAGE = 50;
-const SMS_MAX_PAGE = 200; // the most one request returns
-const SMS_SEEN = "pca.smsSeen"; // conversation key → when it was last looked at (ms)
-const SMS_GROUP_MS = 5 * 60 * 1000; // bubbles this close together share one time line
-const sms = {
-  threads: [], total: 0, lines: [], q: "", state: "idle", error: "", seq: 0,
-  open: null, // null: the list only; {isNew: true}: a new message; {number}: one conversation
-  convo: null, // the agent's answer for the open conversation
-  msgs: [], more: false, cseq: 0,
-  pending: [], // texts on their way, shown until the agent's answer replaces them
-  sending: 0,
-  pick: {}, // conversation key → the line picked for it (this page only)
-};
-let smsTicks = 0;
-
-// ---- read and unread
-function smsSeen() {
-  try {
-    const v = JSON.parse(store.get(SMS_SEEN) || "null");
-    return v && typeof v === "object" ? v : null;
-  } catch (_) { return null; }
-}
-const smsSaveSeen = (seen) => store.set(SMS_SEEN, JSON.stringify(seen));
-const smsUnread = (th, seen) => !!seen && Number(th.last_in_at || 0) > Number(seen[th.key] || 0);
-function smsMarkSeen(key, at) {
-  const seen = smsSeen();
-  if (!seen) return; // the first list marks everything as read
-  if (Number(seen[key] || 0) >= Number(at || 0)) return;
-  // The time of the newest message seen (the phone's clock, like last_in_at).
-  seen[key] = Number(at) || 0;
-  smsSaveSeen(seen);
-}
-function smsDot() {
-  if (sms.state !== "ok" || sms.q) return; // a search shows only part of the list
-  const seen = smsSeen();
-  $("navSms").hidden = !sms.threads.some((th) => smsUnread(th, seen));
-}
-
-// ---- the list of conversations
-async function loadSmsThreads() {
-  const seq = ++sms.seq;
-  const q = $("smsQ").value.trim();
-  if (sms.state !== "ok") { sms.state = "loading"; if (view === "sms") smsRenderThreads(); }
-  try {
-    const d = await api("/sms/threads" + (q ? "?q=" + encodeURIComponent(q) : ""));
-    if (seq !== sms.seq) return;
-    sms.threads = Array.isArray(d.threads) ? d.threads : [];
-    sms.lines = Array.isArray(d.lines) ? d.lines : [];
-    sms.total = Number(d.total) || 0;
-    sms.q = q;
-    sms.state = "ok";
-    if (!q) {
-      let seen = smsSeen();
-      if (!seen) {
-        // The first time: what is there already counts as read.
-        seen = {};
-        for (const th of sms.threads) seen[th.key] = Number(th.last_in_at) || 0;
-        smsSaveSeen(seen);
-      } else {
-        const keys = new Set(sms.threads.map((th) => th.key));
-        const gone = Object.keys(seen).filter((k) => !keys.has(k));
-        if (gone.length) { for (const k of gone) delete seen[k]; smsSaveSeen(seen); }
-      }
-    }
-    // The conversation in front is read.
-    const cur = sms.convo && view === "sms" && visible() ? sms.threads.find((th) => th.key === sms.convo.key) : null;
-    if (cur) smsMarkSeen(cur.key, cur.last_in_at);
-  } catch (e) {
-    if (seq !== sms.seq || sms.state === "ok") return; // keep what is shown
-    sms.state = "error";
-    sms.error = e.message;
-  }
-  smsDot();
-  if (view === "sms") { smsRenderThreads(); smsRenderComposer(); }
-}
-// The time of a conversation's newest message: only the time for today.
-function smsListTime(ms) {
-  const d = new Date(Number(ms) || 0);
-  if (!Number(ms) || isNaN(d)) return "";
-  // The list keeps it short: the time today, "yesterday", then only the date.
-  const now = new Date();
-  const days = Math.round((dayStart(now) - dayStart(d)) / 86400000);
-  if (days === 0) return fmtClockTime(d);
-  if (days === 1) return relDay(-1);
-  const opt = { month: "numeric", day: "numeric" };
-  if (d.getFullYear() !== now.getFullYear()) opt.year = "numeric";
-  return new Intl.DateTimeFormat(loc(), opt).format(d);
-}
-function smsDayLabel(d) {
-  if (isNaN(d)) return "";
-  const now = new Date();
-  const days = Math.round((dayStart(now) - dayStart(d)) / 86400000);
-  if (days === 0 || days === 1) return relDay(-days);
-  const opt = { weekday: "short", month: "short", day: "numeric" };
-  if (d.getFullYear() !== now.getFullYear()) opt.year = "numeric";
-  return new Intl.DateTimeFormat(loc(), opt).format(d);
-}
-function smsPersonIcon() {
-  const ns = "http://www.w3.org/2000/svg";
-  const el = (tag, attrs) => {
-    const e = document.createElementNS(ns, tag);
-    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-    return e;
-  };
-  const svg = el("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", "stroke-width": "1.8", "stroke-linecap": "round", "aria-hidden": "true" });
-  svg.append(el("circle", { cx: "12", cy: "8.5", r: "3.6" }), el("path", { d: "M5 19.5c1.3-3.4 4-5 7-5s5.7 1.6 7 5" }));
-  return svg;
-}
-// A contact's first letter, else a person.
-function smsAvatar(name) {
-  const first = Array.from(String(name || "").trim())[0];
-  const av = h("span", { class: "av", attr: { "aria-hidden": "true" } });
-  if (first) av.textContent = first.toLocaleUpperCase(loc());
-  else av.append(smsPersonIcon());
-  return av;
-}
-const smsOneLine = (s) => String(s || "").replace(/\s+/g, " ").trim();
-const smsWhoOf = (o) => String(o.name || "").trim() || String(o.number || "").trim() || t("sms_unknown");
-function smsRenderThreads() {
-  const box = clear($("smsThreads"));
-  const ok = sms.state === "ok";
-  $("smsMeta").textContent = ok && sms.total ? t("sms_count", { n: sms.total }) : "";
-  $("smsClear").hidden = !(ok && sms.total);
-  if (sms.state === "idle" || sms.state === "loading") {
-    for (let i = 0; i < 3; i++) box.append(h("div", { class: "skel" }));
-    return;
-  }
-  if (sms.state === "error") {
-    box.append(h("div", { class: "th-empty" },
-      h("b", { text: t("err_load", { msg: sms.error }) }),
-      h("button", { type: "button", class: "btn sm", style: "margin-top:8px", onclick: () => loadSmsThreads(), text: t("retry") })));
-    return;
-  }
-  if (!sms.threads.length) {
-    box.append(sms.total
-      ? h("div", { class: "th-empty", text: t("sms_none_found") })
-      : h("div", { class: "th-empty" }, h("b", { text: t("sms_empty_t") }), t("sms_empty_d")));
-    return;
-  }
-  const seen = smsSeen();
-  const cur = sms.open && !sms.open.isNew && sms.convo ? sms.convo.key : "";
-  for (const th of sms.threads) {
-    const unread = th.key !== cur && smsUnread(th, seen);
-    const prev = (th.last_dir === "out" ? t("sms_you") : "") + smsOneLine(th.last_text);
-    box.append(h("button", {
-      type: "button", class: "th" + (unread ? " unread" : ""),
-      attr: th.key === cur ? { "aria-current": "true" } : null,
-      onclick: () => setHash("sms/" + encodeURIComponent(th.key)),
-    },
-      smsAvatar(th.name),
-      h("span", { style: "display:block;min-width:0" },
-        h("div", { class: "th-top" }, h("span", { class: "name", text: smsWhoOf(th) }), h("span", { class: "time", text: smsListTime(th.last_at) })),
-        h("div", { class: "prev" }, h("span", { text: prev }), unread ? h("i", { class: "new" }) : null))));
-  }
-}
-
-// ---- lines (a phone and its SIM)
-const smsLineValue = (l) => l.serial + "|" + (l.sub_id == null ? "" : l.sub_id);
-const smsSendLines = () => sms.lines.filter((l) => l.can_send);
-const smsLineOf = (serial, sub) => sms.lines.find((l) => l.serial === serial && (l.sub_id ?? null) === (sub ?? null)) || null;
-// "Pixel 9 · 0912 000 111", or "Pixel 9 · SIM 2" without a number.
-function smsLineLabel(serial, sub, number, device) {
-  const line = smsLineOf(serial, sub);
-  const dev = devName(serial) !== serial ? devName(serial) : String(device || (line && line.device) || serial || "");
-  const num = String(number || (line && line.number) || "").trim();
-  if (num) return dev ? dev + " · " + num : num;
-  const slot = line && line.slot != null ? Number(line.slot) : null;
-  return slot != null && dev ? dev + " · " + t("sms_sim_n", { n: slot + 1 }) : dev;
-}
-
-// ---- one conversation
-// What the address names: "" the list, "new" a new message, else a number.
-function smsApplyRoute(arg) {
-  const before = sms.open && !sms.open.isNew ? sms.open.number : sms.open ? "new" : "";
-  const same = before === arg;
-  if (!arg) sms.open = null;
-  else if (!same) sms.open = arg === "new" ? { isNew: true } : { number: arg };
-  if (!same) {
-    sms.convo = null;
-    sms.msgs = [];
-    sms.more = false;
-    sms.pending = [];
-    sms.cseq++;
-    $("smsText").value = "";
-    $("smsTo").value = "";
-    smsGrow();
-  }
-  smsRenderConvo(true, "bottom");
-  smsRenderThreads();
-  if (sms.open && !sms.open.isNew) smsLoadConvo({ scroll: same ? "" : "bottom" });
-  if (sms.open && sms.open.isNew && !same) setTimeout(() => $("smsTo").focus(), 0);
-}
-// Requests overlap (timer, after sending): only the answer to the latest is used.
-async function smsLoadConvo(o) {
-  const op = sms.open;
-  if (!op || op.isNew) return;
-  const older = !!(o && o.older);
-  const seq = ++sms.cseq;
-  const p = new URLSearchParams({ number: op.number });
-  if (older && sms.msgs.length) {
-    p.set("before", String(sms.msgs[0].id));
-    p.set("limit", String(SMS_PAGE));
-  } else {
-    p.set("limit", String(Math.min(SMS_MAX_PAGE, Math.max(SMS_PAGE, sms.msgs.length))));
-  }
-  try {
-    const d = await api("/sms/thread?" + p.toString());
-    if (seq !== sms.cseq || sms.open !== op) return;
-    const got = Array.isArray(d.messages) ? d.messages : [];
-    if (older) {
-      sms.msgs = got.concat(sms.msgs);
-      sms.more = !!d.has_more;
-    } else {
-      // Older messages shown beyond what one request carries stay as they are.
-      const head = got.length && d.has_more ? sms.msgs.filter((m) => m.id < got[0].id) : [];
-      sms.more = head.length ? sms.more : !!d.has_more;
-      sms.msgs = head.concat(got);
-    }
-    sms.convo = d;
-    if (view === "sms" && visible()) {
-      const newest = sms.msgs.reduce((a, m) => (m.dir === "in" ? Math.max(a, Number(m.at_ms) || 0) : a), 0);
-      smsMarkSeen(d.key, newest);
-      smsDot();
-    }
-    smsRenderConvo(false, older ? "keep" : o && o.scroll);
-    smsRenderThreads();
-  } catch (e) {
-    if (seq !== sms.cseq || e.status === 401) return;
-    if (e.status === 404) {
-      sms.convo = null;
-      sms.msgs = [];
-      setHash("sms");
-      loadSmsThreads();
-      return;
-    }
-    if (!(o && o.quiet) && !sms.convo) toast(t("err_load", { msg: e.message }), true);
-  }
-}
-function smsSelectingIn(el) {
-  const s = window.getSelection ? window.getSelection() : null;
-  return !!s && !s.isCollapsed && el.contains(s.anchorNode);
-}
-function smsRenderConvo(force, scroll) {
-  const op = sms.open;
-  $("smsChat").classList.toggle("open", !!op);
-  $("smsPick").hidden = !!op;
-  $("smsHead").hidden = !op;
-  $("smsMsgs").hidden = !op;
-  $("smsForm").hidden = !op;
-  if (!op) return;
-  const c = sms.convo;
-  $("smsWho").hidden = !!op.isNew;
-  $("smsToRow").hidden = !op.isNew;
-  $("smsDelThread").hidden = !!op.isNew || !c || !sms.msgs.length;
-  const number = c ? String(c.number || "").trim() : op.isNew ? "" : op.number;
-  const name = c ? String(c.name || "").trim() : "";
-  $("smsName").textContent = name || number || t("sms_unknown");
-  $("smsNum").textContent = name ? number : "";
-  $("smsNum").hidden = !name || !number;
-  smsRenderMsgs(force, scroll);
-  smsRenderComposer();
-}
-const SMS_ERR = {
-  offline: "sms_err_offline", unsupported: "sms_err_old_app", no_permission: "sms_err_permission",
-  no_service: "sms_err_no_service", radio_off: "sms_err_no_service", bad_number: "sms_err_number",
-  sim_not_found: "sms_err_sim_not_found",
-};
-const smsErrText = (code) => t(SMS_ERR[code] || "sms_err_generic");
-function smsFailedText(code) {
-  const why = smsErrText(code).replace(/[。．.!！]\s*$/, "");
-  return /^(zh|ja)/.test(lang) ? t("sms_failed") + "（" + why + "）" : t("sms_failed") + " (" + why + ")";
-}
-// The line under the last bubble of a run: time · line, or how sending went.
-function smsMeta(m, lastOut) {
-  const out = m.dir === "out";
-  const meta = h("div", { class: "meta " + (out ? "out" : "in") });
-  if (out && m.status === "sending") { meta.textContent = t("sms_sending"); return meta; }
-  if (out && m.status === "failed") {
-    meta.append(h("span", { class: "bad", text: smsFailedText(m.error) }),
-      h("button", { type: "button", class: "link", text: t("sms_retry"), onclick: () => smsRetry(m) }));
-    return meta;
-  }
-  const at = new Date(Number(m.at_ms) || 0);
-  const parts = [isNaN(at) ? "" : fmtClockTime(at), smsLineLabel(m.serial, m.sub_id, out ? m.from : m.to, m.device)];
-  if (out && m.status === "timeout") parts.push(t("sms_unsure"));
-  else if (out && m.status === "sent" && lastOut) parts.push(t("sms_sent"));
-  meta.textContent = parts.filter(Boolean).join(" · ");
-  return meta;
-}
-function smsRenderMsgs(force, scroll) {
-  const box = $("smsMsgs");
-  if (!force && smsSelectingIn(box)) return; // a redraw would drop the selection
-  const top = box.scrollTop;
-  const fromBottom = box.scrollHeight - box.scrollTop - box.clientHeight;
-  const fromEnd = box.scrollHeight - box.scrollTop;
-  clear(box);
-  if (sms.more && sms.msgs.length) {
-    box.append(h("button", { type: "button", class: "btn xs ghost earlier", text: t("sms_earlier"), onclick: () => smsLoadConvo({ older: true }) }));
-  }
-  // A text the agent already lists as "sending" is not shown twice.
-  const pending = sms.pending.filter((p) => !sms.msgs.some((m) => m.dir === "out" && m.status === "sending" && m.text === p.text));
-  const shown = sms.msgs.concat(pending);
-  let lastOut = null;
-  for (const m of shown) if (m.dir === "out") lastOut = m;
-  let prevDay = null;
-  shown.forEach((m, i) => {
-    const at = new Date(Number(m.at_ms) || 0);
-    const day = dayStart(at);
-    if (day !== prevDay) { box.append(h("div", { class: "day", text: smsDayLabel(at) })); prevDay = day; }
-    const out = m.dir === "out";
-    const next = shown[i + 1];
-    const flagged = out && !!m.status && m.status !== "sent";
-    const last = flagged || !next || next.dir !== m.dir || Number(next.at_ms) - Number(m.at_ms) > SMS_GROUP_MS
-      || dayStart(new Date(Number(next.at_ms) || 0)) !== day;
-    const cls = "b " + (out ? "out" : "in") + (last ? " last" : "")
-      + (out && m.status === "sending" ? " sending" : "") + (out && m.status === "failed" ? " failed" : "");
-    const acts = m.local ? null : h("div", { class: "acts" },
-      h("button", { type: "button", class: "btn xs", text: t("sms_copy"), onclick: () => copyWithToast(String(m.text || "")) }),
-      h("button", { type: "button", class: "btn xs danger", text: t("sms_del"), onclick: () => smsDeleteMessage(m) }));
-    box.append(h("div", { class: cls }, h("div", { class: "bub", text: String(m.text || "") }), acts));
-    if (last) box.append(smsMeta(m, m === lastOut));
-  });
-  // Opened, sent, or already near the end: stay at the end. Earlier ones
-  // added: keep the same message in view. Otherwise: where the owner was.
-  if (scroll === "bottom" || fromBottom <= 80) box.scrollTop = box.scrollHeight;
-  else if (scroll === "keep") box.scrollTop = box.scrollHeight - fromEnd;
-  else box.scrollTop = top;
-}
-
-// ---- writing
-function smsGrow() {
-  const ta = $("smsText");
-  ta.style.height = "auto";
-  const want = ta.scrollHeight + 2;
-  ta.style.height = Math.max(40, Math.min(want, 150)) + "px";
-  // A scroll bar only once the box stops growing.
-  ta.style.overflowY = want > 150 ? "auto" : "hidden";
-}
-const smsPickKey = () => (sms.open && !sms.open.isNew ? (sms.convo ? sms.convo.key : sms.open.number) : "");
-function smsRenderComposer() {
-  const op = sms.open;
-  if (!op) return;
-  const c = sms.convo;
-  const form = $("smsForm");
-  const canReply = !!op.isNew || !c || !!c.can_reply;
-  form.querySelector(".from").hidden = !canReply;
-  form.querySelector(".crow").hidden = !canReply;
-  const note = $("smsNote");
-  if (!canReply) {
-    note.textContent = t("sms_no_reply");
-    note.hidden = false;
-    $("smsCount").hidden = true;
-    return;
-  }
-  const lines = smsSendLines();
-  const sel = $("smsFrom");
-  const values = lines.map(smsLineValue);
-  const picked = sms.pick[smsPickKey()];
-  const reply = c && c.reply ? smsLineValue(c.reply) : "";
-  const want = values.includes(picked) ? picked : values.includes(reply) ? reply : values[0] || "";
-  const labels = lines.map((l) => smsLineLabel(l.serial, l.sub_id, l.number, l.device));
-  const same = sel.options.length === lines.length && [...sel.options].every((o, i) => o.value === values[i] && o.textContent === labels[i]);
-  if (!same) {
-    clear(sel);
-    lines.forEach((l, i) => sel.append(h("option", { value: values[i], text: labels[i] })));
-  }
-  if (sel.value !== want) sel.value = want;
-  sel.disabled = !lines.length;
-  note.textContent = lines.length ? "" : t("sms_no_line");
-  note.hidden = !!lines.length;
-  smsUpdateSend();
-}
-function smsUpdateSend() {
-  const op = sms.open;
-  const n = $("smsText").value.length;
-  $("smsCount").textContent = n + "/500";
-  $("smsCount").hidden = n <= 400;
-  const noTo = !!(op && op.isNew) && !$("smsTo").value.trim();
-  $("smsSend").disabled = sms.sending > 0 || !smsSendLines().length || noTo;
-}
-async function smsSubmit() {
-  const op = sms.open;
-  if (!op || sms.sending > 0) return;
-  const text = $("smsText").value.trim();
-  const to = op.isNew ? $("smsTo").value.trim() : String((sms.convo && sms.convo.number) || op.number).trim();
-  const line = smsSendLines().find((l) => smsLineValue(l) === $("smsFrom").value);
-  if (!text || !to || !line) return;
-  const temp = {
-    id: 0, local: true, dir: "out", status: "sending", text, at_ms: Date.now(),
-    serial: line.serial, sub_id: line.sub_id ?? null, from: line.number || "", to, device: line.device || "",
-  };
-  sms.pending.push(temp);
-  sms.sending++;
-  $("smsText").value = "";
-  smsGrow();
-  smsRenderConvo(true, "bottom");
-  try {
-    const d = await api("/sms/send", jsonBody("POST", { to, text, serial: line.serial, sub_id: line.sub_id ?? null }));
-    sms.pending = sms.pending.filter((p) => p !== temp);
-    const m = d.message;
-    if (op.isNew && m && m.to) {
-      if (sms.open === op) setHash("sms/" + encodeURIComponent(m.to), true);
-    } else if (m && sms.open === op) {
-      const i = sms.msgs.findIndex((x) => x.id === m.id);
-      if (i >= 0) sms.msgs[i] = m; else sms.msgs.push(m);
-      smsRenderConvo(true, "bottom");
-      smsLoadConvo();
-    }
-    loadSmsThreads();
-  } catch (e) {
-    sms.pending = sms.pending.filter((p) => p !== temp);
-    if (sms.open === op && !$("smsText").value) { $("smsText").value = text; smsGrow(); }
-    if (e.status !== 401) toast(e.data && e.data.code === "bad_number" ? t("sms_err_number") : e.message, true);
-    if (sms.open === op) smsRenderConvo(true);
-  } finally {
-    sms.sending--;
-    smsUpdateSend();
-  }
-}
-async function smsRetry(m) {
-  const op = sms.open;
-  m.status = "sending";
-  m.error = "";
-  smsRenderConvo(true);
-  try {
-    const d = await api("/sms/" + encodeURIComponent(m.id) + "/retry", jsonBody("POST", {}));
-    if (d.message) Object.assign(m, d.message);
-  } catch (e) {
-    if (e.status !== 401) toast(e.message, true);
-  }
-  if (sms.open === op) { smsRenderConvo(true); smsLoadConvo(); }
-  loadSmsThreads();
-}
-async function smsDeleteMessage(m) {
-  const yes = await ask({ title: t("sms_del_t"), ok: t("sms_del"), danger: true });
-  if (!yes) return;
-  try {
-    await api("/sms/" + encodeURIComponent(m.id), jsonBody("DELETE", {}));
-  } catch (e) {
-    if (e.status === 401) return;
-    // Already gone (deleted elsewhere, or too old by now): the page just catches up.
-    if (e.status !== 404) { toast(e.message, true); return; }
-  }
-  sms.msgs = sms.msgs.filter((x) => x.id !== m.id);
-  smsRenderConvo(true);
-  smsLoadConvo();
-  loadSmsThreads();
-}
-async function smsDeleteThread() {
-  const c = sms.convo;
-  if (!c) return;
-  const yes = await ask({ title: t("sms_del_thread_t", { name: smsWhoOf(c) }), ok: t("sms_del_thread"), danger: true });
-  if (!yes) return;
-  try {
-    await api("/sms/thread?number=" + encodeURIComponent(c.key), jsonBody("DELETE", {}));
-  } catch (e) {
-    if (e.status !== 401) toast(e.message, true);
-    return;
-  }
-  setHash("sms");
-  loadSmsThreads();
-}
-async function clearSms() {
-  const yes = await ask({ title: t("sms_clear_t"), body: t("sms_clear_b"), ok: t("sms_clear"), danger: true });
-  if (!yes) return;
-  $("smsClear").disabled = true;
-  try {
-    await api("/sms/clear", jsonBody("POST", {}));
-    $("smsQ").value = "";
-    setHash("sms");
-    await loadSmsThreads();
-  } catch (e) {
-    if (e.status !== 401) toast(e.message, true);
-  } finally {
-    $("smsClear").disabled = false;
-  }
-}
-
-// ---- the view
-function showSms() {
-  smsTicks = 0;
-  loadSmsThreads();
-}
-function loadSms(o) {
-  loadSmsThreads();
-  smsLoadConvo(o);
-}
-function renderSms() {
-  smsRenderThreads();
-  smsRenderConvo(true);
-}
-// Every second while the SMS view is in front (the page timer skips hidden tabs).
-function smsTick() {
-  smsTicks++;
-  if (smsTicks % 10 === 0) loadSms({ quiet: true });
-}
-let smsQTimer = 0;
-$("smsQ").addEventListener("input", () => { clearTimeout(smsQTimer); smsQTimer = setTimeout(() => loadSmsThreads(), 300); });
-$("smsNew").addEventListener("click", () => setHash("sms/new"));
-$("smsBack").addEventListener("click", () => setHash("sms"));
-$("smsDelThread").addEventListener("click", smsDeleteThread);
-$("smsClear").addEventListener("click", clearSms);
-$("smsForm").addEventListener("submit", (e) => { e.preventDefault(); smsSubmit(); });
-$("smsText").addEventListener("keydown", (e) => {
-  // Enter sends, Shift+Enter starts a new line; not while an input method is choosing characters.
-  if (e.key !== "Enter" || e.shiftKey || e.isComposing || e.keyCode === 229) return;
-  e.preventDefault();
-  smsSubmit();
-});
-$("smsText").addEventListener("input", () => { smsGrow(); smsUpdateSend(); });
-$("smsTo").addEventListener("input", smsUpdateSend);
-$("smsFrom").addEventListener("change", () => { sms.pick[smsPickKey()] = $("smsFrom").value; });
 
 // ---------------------------------------------------------------- contacts
 // Caller ID → {id, name} for the calls on the list (the agent matches a number
@@ -15231,7 +13657,7 @@ $("btnSave").addEventListener("click", saveSettings);
 $("btnDiscard").addEventListener("click", populate);
 window.addEventListener("beforeunload", (e) => { if (dirtyCount() > 0) { e.preventDefault(); e.returnValue = ""; } });
 $("btnUseThisUrl").addEventListener("click", () => { $("f-public_url").value = location.origin; updateDirty(); });
-// "Pair phones again": new pairing; phones on Wi-Fi must be plugged in by USB once more.
+// "Pair phones again": new pairing; each phone connects again with a new pairing code.
 $("btnRepairPhones").addEventListener("click", async () => {
   const yes = await ask({ title: t("repair_t"), body: t("repair_b"), ok: t("repair_btn"), danger: true });
   if (!yes) return;
@@ -15243,7 +13669,7 @@ $("btnRepairPhones").addEventListener("click", async () => {
   }
   loadSystem();
 });
-// "Get a pairing code": a phone that cannot be plugged in pairs by IP address.
+// "Get a pairing code": the Bluetooth computer connects by IP address and code.
 // The address shown is the one this page was opened at; for localhost or a
 // .local name, the LAN address Bageo found (none inside Docker).
 let ipPairTimer = 0;
@@ -15277,9 +13703,9 @@ $("btnIpPair").addEventListener("click", async () => {
 });
 
 // ----- backup & restore
-const BK_ORDER = ["settings", "keys", "contacts", "numbers", "phones", "errands", "calls", "sms", "tasks"];
+const BK_ORDER = ["settings", "keys", "contacts", "numbers", "phones", "errands", "calls", "tasks"];
 const BK_EXPORT_ON = new Set(["settings", "keys", "contacts", "numbers", "phones", "errands"]);
-const BK_BIG = new Set(["calls", "sms", "tasks"]);
+const BK_BIG = new Set(["calls", "tasks"]);
 const BK_MAX_IMPORT = 200 * 1024 * 1024;
 let bk = null, bkBusy = false, bkPhase = "", bkAll = false, bkNote = "", bkFail = "", bkTimer = 0;
 const bkHas = (key) => I18N[lang][key] != null || I18N.en[key] != null;
@@ -16157,7 +14583,6 @@ function renderSystem() {
   if (sysError && !devices) {
     box.append(sysItem("bad", t("err_load", { msg: sysError }), []));
   } else if (devices) {
-    const usb = devices.usb || {};
     const connected = devices.connected || [];
     const busy = new Map(live.calls.map((c) => [c.serial, c]));
     const phoneInfo = new Map((devices.phones || []).map((p) => [p.serial, p]));
@@ -16181,25 +14606,6 @@ function renderSystem() {
         text: t("ph_forget"), onclick: () => forgetPhone(s, name),
       });
       box.append(sysItem("", name, lines, act));
-    }
-    if (usb.enabled) {
-      box.append(h("h3", { text: t("sys_usb") }));
-      if (!usb.adb_found) box.append(sysItem("warn", t("usb_noadb"), [t("usb_noadb_d")]));
-      if (usb.error) box.append(sysItem("bad", t("usb_error"), [usb.error]));
-      const phones = usb.phones || [];
-      if (usb.adb_found && !phones.length) box.append(sysItem("", t("usb_none"), [t("ph_none")]));
-      for (const p of phones) {
-        let level = "ok", lines = [];
-        if (p.state === "unauthorized") { level = "warn"; lines = [t("ph_unauth")]; }
-        else if (p.state === "offline") { level = "warn"; lines = [t("ph_offline")]; }
-        else if (p.state !== "device") { level = "warn"; lines = [t("ph_state", { state: p.state || "?" })]; }
-        else if (p.app_installed === false) { level = "bad"; lines = [t("ph_noapp")]; }
-        else if (!p.reverse) { level = "warn"; lines = [t("ph_link_bad")]; }
-        else lines = [t("ph_link_ok")];
-        if (p.model) lines.push(p.serial);
-        box.append(sysItem(level, p.model || p.serial, lines));
-      }
-      if (usb.adb_path) box.append(h("p", { class: "help mono", text: "adb: " + usb.adb_path }));
     }
   }
 
@@ -16249,8 +14655,8 @@ function renderSystem() {
 }
 $("btnSysRefresh").addEventListener("click", loadSystem);
 
-// One connected phone: its name, app version, what it does with calls now, and the
-// switch between "the AI answers" and "normal phone" (apps that report their mode).
+// One connected phone: its name, what it does with calls now, and the
+// switch between "the AI answers" and "normal phone".
 function phoneItem(s, call, ph) {
   const normal = !!ph && ph.mode === "normal";
   const inCall = !!call || !!(ph && ph.in_call);
@@ -16262,9 +14668,6 @@ function phoneItem(s, call, ph) {
     lines.push(incParts.join(" · "));
   } else if (inCall) lines.push(t("ph_incall"));
   else lines.push(normal ? t("ph_mode_normal") : t("ph_ready"));
-  if (ph && ph.app_version) lines.push(t("ph_app", { v: ph.app_version }));
-  if (ph && ph.link) lines.push(t(ph.link === "wifi" ? "ph_link_wifi" : "ph_link_usb"));
-  if (ph && !ph.supports_mode) lines.push(t("ph_need_update"));
   if (modeErr[s] === "timeout") lines.push(t("pm_err_timeout"));
   else if (modeErr[s]) lines.push(t("ph_mode_fail", { why: modeErrText(modeErr[s]) }));
   if (devName(s) !== s) lines.push(s);
@@ -16322,7 +14725,7 @@ let apptResult = null;
 // Appointments decided on this page: kept in "To do" with what became of them
 // until closed.
 const apptShown = new Set();
-// The way to tell each caller the owner picked here (task id → sms / call / none).
+// The way to tell each caller the owner picked here (task id → call / none).
 const apptReplyPick = new Map();
 // Times as the agent's notifications and cards write them (locale.rs ap_dt_fmt /
 // ap_end_fmt / ap_weekdays), in this page's language.
@@ -16409,15 +14812,10 @@ function callState(tk, a) {
 // accepted or declined, and how the caller was told, or why not.
 function apptOutcome(tk, a) {
   const yes = a.status !== "declined";
-  const reply = a.reply || (a.sms ? "sms" : "");
+  const reply = a.reply || "";
   const head = a.status === "booked" ? t("d_appt_booked") : t(yes ? "ap_res_yes" : "ap_res_no");
-  if (reply === "sms" && a.sms === "sent") {
-    return { text: a.status === "booked" ? head + "\n" + t("ap_res_sms_sent_short") : t(yes ? "ap_res_yes_sent" : "ap_res_no_sent"), bad: false };
-  }
   let how = "", bad = false;
-  if (reply === "sms" && a.sms === "no_number") { how = t("ap_res_sms_none"); bad = true; }
-  else if (reply === "sms" && a.sms) { how = t("ap_res_sms_failed", { why: tCode("sms_c_", a.sms) }); bad = true; }
-  else if (reply === "call") {
+  if (reply === "call") {
     const s = callState(tk, a);
     how = t("ap_call_" + s);
     bad = !["queued", "dialing", "connected", "answered", "done"].includes(s);
@@ -16428,27 +14826,25 @@ function apptOutcome(tk, a) {
 function replyPick(tk) {
   const r = tk.reply || {};
   const pick = apptReplyPick.get(tk.id) || r.default || "none";
-  return (pick === "sms" && !r.sms) || (pick === "call" && !r.call) ? "none" : pick;
+  return pick === "call" && !r.call ? "none" : pick;
 }
 // While it waits: how to tell the caller, then Accept / Decline.
 function apptActions(tk, busy) {
   const r = tk.reply || {};
   const opt = (v, ok) => h("option", { value: v, disabled: !ok, text: t("ap_reply_" + v) + (ok ? "" : " " + t("ap_reply_cant")) });
   const sel = h("select", { "aria-label": t("ap_reply"), title: t("ap_reply"), disabled: busy, onchange: (e) => apptReplyPick.set(tk.id, e.target.value) },
-    opt("sms", !!r.sms), opt("call", !!r.call), opt("none", true));
+    opt("call", !!r.call), opt("none", true));
   sel.value = replyPick(tk);
   return h("div", { class: "btns appt-act" },
     h("span", { class: "small muted", text: t("ap_reply") }), sel,
     h("button", { type: "button", class: "btn sm primary", disabled: busy, onclick: () => decideAppt(tk.id, true), text: t("ap_confirm") }),
     h("button", { type: "button", class: "btn sm", disabled: busy, onclick: () => decideAppt(tk.id, false), text: t("ap_decline") }));
 }
-// Decided: what became of it, "Add to calendar" once accepted, and "send the
-// text again" when it did not go out.
+// Decided: what became of it, and "Add to calendar" once accepted.
 function apptDone(tk, a, st, busy) {
   const o = apptOutcome(tk, a);
   const btns = h("div", { class: "btns" });
   if (st === "confirmed" || st === "booked") btns.append(calButton(tk.calendar_links, `/tasks/${encodeURIComponent(tk.id)}/event.ics`));
-  if (smsRetryable(st, a.sms)) btns.append(smsRetryRow(tk, busy));
   return h("div", { class: "appt-done" },
     h("p", { class: "appt-msg" + (o.bad ? " bad" : ""), role: "status", text: o.text }),
     btns.childElementCount ? btns : null);
@@ -16476,24 +14872,6 @@ function apptBlock(callId, ap, named) {
   if (st !== "pending" && tk) box.append(apptDone(tk, cur, st, busy));
   box.append(...apptStatus(tk, busy));
   return box;
-}
-// The agent's rule (appointments.rs sms_retryable): a decided appointment whose
-// text did not go out — not to a number that takes no texts, which would only fail again.
-const smsRetryable = (st, sms) => st !== "pending" && !!sms && !["sent", "no_number"].includes(sms);
-// "Send the text again": by default from the phone that took the call
-// (`sms_route`), or from another connected phone.
-function smsRetryRow(tk, busy) {
-  const route = tk.sms_route || null;
-  const from = (route && route.serial) || tk.serial;
-  const phone = (route && route.label) || devName(from);
-  const sel = h("select", { "aria-label": t("ap_sms_from"), title: t("ap_sms_from") },
-    h("option", { value: "", text: t("ap_sms_from_call", { phone }) }));
-  for (const s of (devices && devices.connected) || []) {
-    // Phone ids compare in any case (a device label's key may differ from the connected id).
-    if (String(s).toLowerCase() !== String(from).toLowerCase()) sel.append(h("option", { value: s, text: devName(s) }));
-  }
-  return h("div", { class: "btns appt-retry" }, sel,
-    h("button", { type: "button", class: "btn sm", disabled: busy, onclick: () => retrySms(tk.id, sel.value), text: t("ap_retry_sms") }));
 }
 // Requests overlap (list refresh, timer, after a decision): only the answer to
 // the latest one is used, so an older list never brings a decided one back.
@@ -16572,26 +14950,6 @@ async function decideAppt(id, confirm) {
   renderAppts();
   if (detail.call) renderDetail();
   refreshCalls({ keep: true });
-  if (detail.id) loadDetail(detail.id);
-}
-// The text of a decided appointment, sent again (from `serial`, empty = the
-// phone that took the call); what became of it shows once it is reloaded.
-async function retrySms(id, serial) {
-  if (apptBusy.has(id)) return;
-  apptBusy.add(id);
-  apptResult = null;
-  renderAppts();
-  if (detail.call) renderDetail();
-  try {
-    await api("/appointments/" + encodeURIComponent(id) + "/retry-sms", jsonBody("POST", serial ? { serial } : {}));
-  } catch (e) {
-    apptResult = { id, text: e.message };
-  } finally {
-    apptBusy.delete(id);
-  }
-  await loadAppts();
-  renderAppts();
-  if (detail.call) renderDetail();
   if (detail.id) loadDetail(detail.id);
 }
 $("apptResultClose").addEventListener("click", () => { apptResult = null; renderAppts(); if (detail.call) renderDetail(); });
@@ -17501,16 +15859,12 @@ setInterval(() => {
   if (ticks % 30 === 0 && view === "calls") loadAppts();
   if (ticks % 8 === 0 && view === "system" && !(document.activeElement && document.activeElement.closest("#sysPhones .sim-in"))) loadSystem();
   if (view === "errands") errandTick();
-  if (view === "sms") smsTick();
-  // Elsewhere: the dot on the SMS tab follows new texts every half minute.
-  else if (ticks % 30 === 2) loadSmsThreads();
 }, 1000);
 document.addEventListener("visibilitychange", () => {
   if (!visible()) return;
   pollLive();
   refreshCalls({ keep: true });
   if (view === "errands") loadErrands();
-  if (view === "sms") loadSms();
 });
 
 // ---------------------------------------------------------------- first-time password prompt

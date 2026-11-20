@@ -20,8 +20,6 @@ pub struct Config {
     pub autostart: bool,
     /// Show a desktop notification when a call comes in.
     pub notify_calls: bool,
-    /// Show a desktop notification when a text message arrives.
-    pub notify_sms: bool,
     /// Show a desktop notification when the summary of a finished call is ready.
     /// On by default, also for settings files written before this existed.
     pub notify_summary: bool,
@@ -38,7 +36,6 @@ impl Default for Config {
             address: String::new(),
             autostart: false,
             notify_calls: false,
-            notify_sms: false,
             notify_summary: true,
             opened_console: false,
             agent_path: String::new(),
@@ -103,7 +100,7 @@ mod tests {
         let c: Config = serde_json::from_str(r#"{"address":"http://192.168.1.20:8787/"}"#).unwrap();
         assert_eq!(c.address, "http://192.168.1.20:8787/");
         assert!(!c.autostart);
-        assert!(!c.notify_calls && !c.notify_sms);
+        assert!(!c.notify_calls);
     }
 
     #[test]
@@ -111,9 +108,10 @@ mod tests {
         let c: Config = serde_json::from_str(r#"{"address": "", "autostart": true}"#).unwrap();
         assert!(c.autostart);
         assert!(!c.notify_calls);
-        assert!(!c.notify_sms);
+        // A file from a version with text-message notices still loads; that switch is gone.
         let c: Config = serde_json::from_str(r#"{"notify_calls": true, "notify_sms": true}"#).unwrap();
-        assert!(c.notify_calls && c.notify_sms);
+        assert!(c.notify_calls);
+        assert!(!serde_json::to_string(&c).unwrap().contains("notify_sms"));
     }
 
     #[test]
@@ -134,7 +132,7 @@ mod tests {
         assert!(c.notify_summary);
         let old = r#"{"address": "", "autostart": true, "notify_calls": true, "notify_sms": false}"#;
         let c: Config = serde_json::from_str(old).unwrap();
-        assert!(c.notify_summary && c.notify_calls && !c.notify_sms);
+        assert!(c.notify_summary && c.notify_calls);
         let c: Config = serde_json::from_str(r#"{"notify_summary": false}"#).unwrap();
         assert!(!c.notify_summary);
     }

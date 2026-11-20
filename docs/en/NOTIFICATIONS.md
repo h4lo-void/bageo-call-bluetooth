@@ -33,7 +33,7 @@ Home Assistant, email and your own webhook.
 - With *Send notifications* at the top switched off, call messages and Telegram
   appointment cards stop. Your channels stay.
 - Messages that scripts send through the API (see
-  [below](#sending-your-own-messages)), such as forwarded texts, still go out.
+  [below](#sending-your-own-messages)), still go out.
 - Messages are written in the *Language of notifications and summaries*
   (default: *Same as the AI's language*), whatever language the call was in.
 - Long messages are cut to fit each service (for example 1,000 characters on
@@ -97,13 +97,12 @@ You can receive these messages:
 | AI errand call: <name or number> | An AI errand you started has ended. The message has the result, details, your decision when one is needed, the next step, the time agreed and a link to the *Errands* page. | `ai_errand` |
 | Appointment to confirm | A caller set a time with the AI. Telegram receives a card with buttons; every other channel receives signed one-tap **Accept / Decline** buttons or links (see [Appointments](#appointments)). | `appointment_pending` / `summary` |
 | Call forwarded to your phone | Someone ticked under *Who can be forwarded* called while *Transfer* is *Don't answer: send to your phone*. The phone declined the call so your carrier forwards it to you, and you get an instant alert. | `whitelist_direct_transfer` |
-| Urgent call alert | Someone ticked under *Who can be forwarded* called, the AI answered and the caller said it was urgent; you are alerted at once. With *AI answers, puts you through if urgent* and your number filled in, the phone also calls you. | `whitelist_urgent_transfer` |
+| Urgent call alert | Someone ticked under *Who can be forwarded* called, the AI answered and the caller said it was urgent; you are alerted at once, and the AI tells the caller you will call back. | `whitelist_urgent_transfer` |
 | Test notification | You pressed **Send test**. | `test` |
 | Chat command reply | Reply to a command sent to `POST /calls/api/control/inbound` with `"reply": true`. | `control_reply` |
-| New SMS | A text message passed on by the optional [SMS forwarder](../../tools/sms_forward/README.md). | `event` |
 | Automatic backup failed | A scheduled backup failed to write or check. | `event` |
 
-A number that keeps calling does not flood you. For each number, Bageo sends at most two *Incoming call*, *Blocked number called* or *Missed while on another call* messages a minute, and a minute later one *Repeated calls from one number* message tells you how many more came. Urgent call alerts, appointments, call summaries, AI errands and call-backs, voicemail, outgoing calls and SMS are never held back.
+A number that keeps calling does not flood you. For each number, Bageo sends at most two *Incoming call*, *Blocked number called* or *Missed while on another call* messages a minute, and a minute later one *Repeated calls from one number* message tells you how many more came. Urgent call alerts, appointments, call summaries, AI errands and call-backs, voicemail and outgoing calls are never held back.
 
 A call-waiting message:
 ```text
@@ -143,7 +142,7 @@ Appointment to confirm: Sat, Nov 14, 3:00 PM–4:00 PM House viewing — confirm
 
 1. Open the *Calls* page and find *To do* at the top, or open the call's
    details.
-2. Pick how the caller hears your answer: **Text**, **AI call-back** or **Don't
+2. Pick how the caller hears your answer: **AI call-back** or **Don't
    tell them**.
 3. Press **Accept** or **Decline**.
 
@@ -170,18 +169,15 @@ Time: Sat, Nov 14, 3:00 PM–4:00 PM
 What: House viewing
 Name: Mr Chen
 Phone: Pixel 8
-Text to caller: sent when you tap Accept or Decline
+Call-back: the AI calls them back once you tap Accept or Decline
 Confirm on the web: http://bageo.local/calls/#call=…
 [Accept] [Decline]
 ```
 
-The *Text to caller* line follows *Default reply* for this number. It can also
+The *Call-back* line follows *Default reply* for this number. It can also
 read:
 
-- "Reply: the AI calls them back once you tap Accept or Decline" (a landline,
-  or texts turned off).
-- "won't be sent ("Text the caller" is off in Settings)".
-- "can't text this number, so call them back yourself".
+- "can't call this number back, so call them back yourself".
 - "hidden number: the caller can't be told".
 
 A tap uses *Default reply*; to choose another way, decide in the web console.
@@ -191,19 +187,13 @@ After a tap the bot answers with what happened:
 ```text
 Appointment accepted
 Sat, Nov 14, 3:00 PM–4:00 PM House viewing
-Text sent to 0912345678
+The AI is calling 0912345678 back
 Add it to your calendar: https://calendar.google.com/calendar/render?action=TEMPLATE&…
 ```
 
 Other answers:
 
 - "Appointment declined"
-- "The AI is calling 0912345678 back"
-- "Text not sent: the phone is not connected", "the phone app is too old to
-  send texts" or "error code no_service"
-
-When a text did not go out, the appointment in the console gets **Send the text
-again**, from the same phone or another connected one.
 
 **Add to calendar works with any calendar.** The link in the bot's answer, in
 notifications and in the console opens the calendar you picked the first time
@@ -815,9 +805,6 @@ POST /calls/api/notify/send        {"title": "Garage", "body": "Door left open"}
 - `body` is required; `title` defaults to "Bageo".
 - The answer is `{"ok": true}` when at least one channel took the message.
 - These messages go out even with *Send notifications* off.
-
-The optional [SMS forwarder](../../tools/sms_forward/README.md) uses this route
-to pass on the phone's text messages.
 
 ## Set through the environment instead
 

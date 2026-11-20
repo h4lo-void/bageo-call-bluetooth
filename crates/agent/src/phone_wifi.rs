@@ -3,14 +3,14 @@
 // SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call>
 // See LICENSE, LICENSING.md (AGPL-3.0 Section 7 additional terms), and COMMERCIAL_LICENSE.md.
 
-//! Phones over Wi-Fi: the pairing key and the addresses a phone is given.
+//! Phones over the network: the pairing key and the addresses given out.
 //!
-//! A phone plugged in by USB reaches the agent through `adb reverse` (it
-//! connects to loopback). On that connection the agent hands it, in
-//! `agent_info`, the Wi-Fi addresses of the agent with a random pairing key
-//! (`ws://192.168.1.20:8788/ws?token=<key>`). Unplugged, the phone connects
-//! there. The Wi-Fi entry (a listener that only serves `/ws`, started in
-//! `main`) lets in nobody without that key or `DEVICE_TOKEN`.
+//! The Bluetooth program on this computer reaches the agent on loopback. On
+//! such a connection the agent hands it, in `agent_info`, the network
+//! addresses of the agent with a random pairing key
+//! (`ws://192.168.1.20:8788/ws?token=<key>`). The network entry (a listener
+//! that only serves `/ws`, started in `main`) lets in nobody without that key
+//! or `DEVICE_TOKEN`.
 //!
 //! The key is made the first time it is needed, kept in [`KEY_FILE`] in the
 //! call data folder (mode 600 on Unix) so it survives a restart, and replaced by
@@ -18,12 +18,12 @@
 //! every phone connected over Wi-Fi. It is never shown in the console,
 //! `/health`, logs or chat replies.
 //!
-//! A phone that cannot be plugged in (the agent runs in Docker or on another
-//! computer) gets the key with a pairing code instead ([`PairCodes`]): the
-//! console makes a 6-digit code, the owner types it with the agent's address
-//! in the app, and the app trades it once for the key
-//! (`POST /api/phone-pairing/claim`). It then connects to the address typed,
-//! on `/ws` with the key.
+//! A Bluetooth computer that is not this one (the agent runs in Docker or on
+//! another computer) gets the key with a pairing code ([`PairCodes`]): the
+//! console makes a 6-digit code, the owner gives it with the agent's address
+//! to `bageo-bluetooth link`, which trades it once for the key
+//! (`POST /api/phone-pairing/claim`). It then connects to that address, on
+//! `/ws` with the key.
 
 use std::net::Ipv4Addr;
 use std::path::{Path, PathBuf};
@@ -202,12 +202,12 @@ impl Pairing {
         self.kick.subscribe()
     }
 
-    /// Notify plugged-in USB phones to push updated `agent_info`.
+    /// Notify the phones connected on this computer to push updated `agent_info`.
     pub fn notify_refresh(&self) {
         self.refresh.send_modify(|n| *n = n.wrapping_add(1));
     }
 
-    /// Changes when plugged-in USB phones should receive updated `agent_info`.
+    /// Changes when the phones connected on this computer should receive updated `agent_info`.
     pub fn refreshed(&self) -> watch::Receiver<u64> {
         self.refresh.subscribe()
     }
@@ -435,7 +435,7 @@ mod tests {
         let refreshed = restarted.refreshed();
         restarted.renew().unwrap();
         assert!(kicked.has_changed().unwrap(), "the phones on Wi-Fi are dropped");
-        assert!(refreshed.has_changed().unwrap(), "USB phones receive the new pairing");
+        assert!(refreshed.has_changed().unwrap(), "phones on this computer receive the new pairing");
         let renewed = restarted.key();
         assert_ne!(renewed, key);
         assert!(!restarted.accepts(Some(&key)), "the old key stops working");

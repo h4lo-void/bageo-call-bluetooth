@@ -7,7 +7,7 @@ Bageo 网页控制台做的每件事，都是通过你自己电脑上的一个�
 - 把手机在“AI 接听”和一般手机之间切换。
 - 让 AI 替你打电话。
 
-这一页涵盖 Bageo 1.6 控制台和手机会用到的每一条路由，也包括已 root 的 Android 手机使用的 WebSocket 协议。
+这一页涵盖 Bageo 1.6 控制台和手机会用到的每一条路由，也包括蓝牙程序使用的 WebSocket 协议。
 
 | | |
 |---|---|
@@ -65,7 +65,7 @@ curl -s -H "Authorization: Bearer $CALLS_UI_TOKEN" \
 | 400 | 请求有误：不是 JSON、没带 `Content-Type: application/json`、id 或值不对。 | `bad_request`、`invalid_id`、`missing_field`、`invalid_contact`、AI 代打的代码 |
 | 401 | 缺少密码或密码错误。 | `unauthorized` |
 | 404 | 找不到这通电话、待处理事项、联系人、代打，或找不到文件。 | `not_found`、`task_not_found`、`contact_not_found`、`no_audio`、`no_calendar` |
-| 409 | 这个修改跟已保存的数据冲突。 | `contact_exists`、`sms_not_retryable`、`call_in_progress`、`device_online`、`device_in_call` |
+| 409 | 这个修改跟已保存的数据冲突。 | `contact_exists`、`call_in_progress`、`device_online`、`device_in_call` |
 | 413／415 | 导入的文件太大／格式不认识。 | `file_too_large`、`too_many_rows`、`unsupported_file` |
 | 500 | Bageo 保存或读取自己的文件失败。 | `save_failed`、`contacts_save_failed`、`import_failed` |
 | 502 | 外部服务失败（通知渠道、Gemini）。 | `auth_failed`、`network_error`、`ai_failed`、`preview_failed` |
@@ -74,14 +74,12 @@ curl -s -H "Authorization: Bearer $CALLS_UI_TOKEN" \
 
 控制台没有登录 Cookie，但你局域网里某台电脑的浏览器打开别的网页时，那个网页仍可能偷偷向它发请求。
 
-所以凡是会拨电话、发短信、做决定或修改已保存数据的路由，一律要求 `Content-Type: application/json`，缺少就返回 HTTP 400 `bad_request`。别的网站要发这个请求头必须先经过 CORS 预检，而 Bageo 从不响应预检。适用的路由：
+所以凡是会拨电话、做决定或修改已保存数据的路由，一律要求 `Content-Type: application/json`，缺少就返回 HTTP 400 `bad_request`。别的网站要发这个请求头必须先经过 CORS 预检，而 Bageo 从不响应预检。适用的路由：
 
 - `POST /calls/api/initial-password` 和 `POST /calls/api/phone-pairing/renew`；
 - `POST /calls/api/call/{id}/scam-feedback`；
 - `POST /calls/api/tasks/{id}/confirm` 和 `…/ignore`；
-- `POST /calls/api/appointments/{id}/retry-sms`；
 - `POST /calls/api/calls/clear`；
-- `POST /calls/api/sms/send`、`…/retry`、`…/clear` 和 `DELETE /calls/api/sms/thread`；
 - `POST /calls/api/devices/{serial}/mode` 和 `PUT /calls/api/devices/{serial}/sim-number`；
 - `POST /calls/api/contacts`、`PUT /calls/api/contacts/{id}`、`POST /calls/api/contacts/batch`、`POST /calls/api/contacts/block`（`POST /calls/api/contacts/import` 则改为要带 `X-Filename` 请求头）；
 - `POST /calls/api/errands`、`…/{id}/cancel`、`…/{id}/retry`、`…/{id}/say`；
@@ -137,7 +135,7 @@ curl -s -H "Authorization: Bearer $CALLS_UI_TOKEN" \
 | `scam` | 判定是推销或诈骗时才有：`{kind, typology, confidence, source, released}`。各字段见下方。 |
 | `scam_feedback` | 你在通话页的标记：`scam`、`sales` 或 `safe`。 |
 | `summary` | 写好后的摘要文字。 |
-| `appointment` | 对方跟 AI 约了时间时：通话结束那一刻的预约（见[日程预约与待处理事项](#日程预约与任务)）。之后的变化（你的决定、短信和回拨结果）更新到 `notes.appointment`。 |
+| `appointment` | 对方跟 AI 约了时间时：通话结束那一刻的预约（见[日程预约与待处理事项](#日程预约与任务)）。之后的变化（你的决定和回拨结果）更新到 `notes.appointment`。 |
 | `sim_country`、`sim_sub_id` | 这通电话是哪张 SIM 卡接的（手机有上报时）。 |
 | `audio_path`、`remote_audio_path`、`tts_audio_path`、`voicemail_path` | 有哪些录音文件（数据文件夹里的路径）。 |
 
@@ -225,13 +223,12 @@ curl -s -H "Authorization: Bearer $CALLS_UI_TOKEN" \
 | `summary_provider` | `gemini`（默认）／`custom`。`custom` 使用 `summary_api_base`、`summary_model`（填了地址就必填）和 `summary_api_key`（那家服务的密钥）。旧版的值和旧的设置名称会在设置加载时转换一次。 |
 | `calendar_app` | `google`、`outlook`、`office365`、`apple`、`yahoo`、`ics` 或空（还没选）。其他值存为空。 |
 | `appointment_mode` | `off`（默认）／`confirm`。旧的 `auto` 视为 `confirm`。 |
-| `appointment_sms` | `true`／`false`：要不要发短信告诉对方你的决定。 |
-| `appointment_reply` | `auto`（默认）、`sms` 或 `call`。 |
+| `appointment_reply` | `auto`（默认）或 `call`。 |
 | `reject_numbers` | 旧版的黑名单写法，`PUT` 仍然接受：`{number, reason}` 的列表。号码会加进黑名单（普通联系人改成黑名单；白名单、陪聊名单上的保持原样），不保存进设置。读回来的是旧版保存的列表，`reject_numbers_moved` 为 `true` 后就不再生效。 |
 | `reject_mode` | 黑名单来电怎么拒接：`decline`（默认：响铃时直接拒接）或 `announce`（接起来播放语音）。 |
-| `whitelist_mode` | `off`（默认：照常由 AI 接听）、`direct`（直接挂断触发运营商遇忙转移并推送通知）或 `emergency`（AI 接听并在对方有急事时告知 `whitelist_forward_number` 并发送通知）。只对 `transfer_whitelist`、`transfer_contacts`、`transfer_others` 允许的来电生效。 |
-| `whitelist_forward_number` | 直接转接或有急事转接时使用的真实电话号码。 |
-| `transfer_whitelist`、`transfer_contacts`、`transfer_others` | 哪些人可以转：白名单（默认 `true`）、其他联系人（默认 `false`）、不在联系人里的号码，包括未显示号码（默认 `false`）。黑名单和陪聊名单永远不转。不在联系人里的号码 30 分钟内最多拨给主人一次；判定为推销或诈骗的来电不发急事通知、不拨号。 |
+| `whitelist_mode` | `off`（默认：照常由 AI 接听）、`direct`（直接挂断触发运营商遇忙转移并推送通知）或 `emergency`（AI 先接听，对方有急事时马上通知你，并告诉对方你会尽快回电）。只对 `transfer_whitelist`、`transfer_contacts`、`transfer_others` 允许的来电生效。 |
+| `whitelist_forward_number` | 你自己的电话号码，转接的通知里会显示。 |
+| `transfer_whitelist`、`transfer_contacts`、`transfer_others` | 哪些人可以转：白名单（默认 `true`）、其他联系人（默认 `false`）、不在联系人里的号码，包括未显示号码（默认 `false`）。黑名单和陪聊名单永远不转。不在联系人里的号码 30 分钟内最多通知主人一次；判定为推销或诈骗的来电不发急事通知。 |
 | `ui_password` | 外部访问网页控制台与 API 的密码（读取时掩码；`"ui_password_clear": true` 可清空）。 |
 | `country_code` | 只有数字（`86`、`1`）。控制台不显示；这里有值时优先于 `COUNTRY_CODE`。 |
 | `gemini_thinking_level` | `low`（默认）／`medium`／`high`，只对 thinking 模型有效。 |
@@ -255,16 +252,8 @@ curl -s -X PUT "http://127.0.0.1:8787/calls/api/settings" \
 | 方法与路径 | 内容 |
 |---|---|
 | `POST /calls/api/notify/test` | 把测试消息发到那一个渠道（已保存的机密按 `id` 补上）。请求体 `{"channel": {kind, url, token, target, id?}}`。响应见下方。 |
-| `POST /calls/api/notify/send` | 请求体 `{"title": "...", "body": "..."}`。把你的消息发到每一个已启用的渠道。可另外带 `"kind": "sms"` 与短信的字段：Bageo 会把短信存进控制台的“短信”页，桌面状态小程序也用它显示短信通知。规则见下方。 |
+| `POST /calls/api/notify/send` | 请求体 `{"title": "...", "body": "..."}`。把你的消息发到每一个已启用的渠道。规则见下方。 |
 | `GET /calls/api/notify/recent?after=<id>` | 由旧到新列出发过 `notify/send` 的消息：`{ok, last_id, events: [{id, at_ms, kind, title, from, text}]}`。`events` 只放 `id` 大于 `after` 的；没带 `after` 或不是数字时 `events` 是空的，`last_id` 让客户端知道从哪里开始。只留最近 50 条，只放在内存里，重启就清空。 |
-| `GET /calls/api/sms?q=&before=<id>&limit=<n>` | 由新到旧列出存下来的短信：`{ok, total, retention_days, has_more, messages: [{id, at_ms, dir, from, from_name, to, text, serial, device, status}]}`。`q` 搜索发件人、联系人名称与内容；`before` 只列比这个 `id` 旧的；`limit` 是 1 到 200（默认 50）。`total` 是全部短信的数目，不受搜索影响。超过“记录保留几天”的短信会删掉，最多留 5000 条。 |
-| `DELETE /calls/api/sms/{id}` | 删除一条短信：`{ok: true}`，找不到返回 HTTP 404 `not_found`。 |
-| `POST /calls/api/sms/clear` | 删除全部短信：`{ok: true, removed: N}`。 |
-| `GET /calls/api/sms/threads?q=` | 由新到旧列出对话，一个号码一条：`{ok, total, retention_days, threads: [{key, number, name, last_at, last_text, last_dir, last_status, count, last_in_at, can_reply}], lines: [{serial, sub_id, device, number, carrier, slot, can_send}]}`。`0912…` 与 `+886912…` 算同一条对话（号码按收到它的那张 SIM 卡的国家判读）。`q` 搜索名称、号码与每一条内容。发件人是“BankInfo”这种名称时 `can_reply` 是 false。`lines` 是可以用来发短信的 SIM 卡；`can_send` 表示那台手机连着、App 也能发短信。 |
-| `GET /calls/api/sms/thread?number=<号码或 key>&before=<id>&limit=<n>` | 由旧到新列出一条对话：`{ok, key, number, name, can_reply, has_more, reply, messages: [{id, at_ms, dir, from, to, text, serial, sub_id, device, status, error}]}`。`dir` 是 `in` 或 `out`；发出的短信 `status` 是 `sending`、`sent`、`failed`（`error` 是手机返回的代码）或 `timeout`。`reply`（`{serial, sub_id}` 或 `null`）是回复默认用的号码：收到最近一条短信的那台手机与 SIM 卡，不能用时改用第一个能发的。还没有对话的号码返回空的对话。 |
-| `POST /calls/api/sms/send` | 请求体 `{"to", "text", "serial", "sub_id"}`（`lines` 其中一条；`text` 1 到 500 个字）。让那台手机发出，最多等 30 秒它的回复：`{ok, message}`，发出才是 `ok`。HTTP 400 `bad_number`、`bad_line` 或 `bad_text`。这条短信会留在对话里，不会发到通知渠道。 |
-| `POST /calls/api/sms/{id}/retry` | 用同一个号码重发 `failed` 或 `timeout` 的短信，响应同 `send`。其他短信返回 HTTP 409 `not_retryable`。 |
-| `DELETE /calls/api/sms/thread?number=<号码或 key>` | 删除一条对话：`{ok: true, removed: N}`。 |
 | `GET /calls/api/quick-action` · `POST /calls/api/quick-action` | 32 种通知渠道内附的单次签名互动按钮路由（`?act=confirm\|ignore\|block\|stall\|white&target=<id或号码>&sig=<hmac>`）。打开链接（`GET`）只会先显示确认页，点页面上的按钮（`POST`）才会执行；链接 7 天后失效。通过 HMAC-SHA256 验证，不用登录控制台，支持全部 9 种语言。 |
 | `POST /calls/api/control/inbound` | 跨平台通用指令 Webhook，用聊天指令控制 Bageo。请求体例如 `{"text": "记录 5", "channel_id": "line", "sender_id": "owner", "reply": false, "token": "..."}`（也兼容 `user`／`channel`）。 |
 | `GET /calls/api/auth-status` · `POST /calls/api/initial-password` | 查询是否已设密码与是否显示首次设置密码弹窗（`{ok, password_set, authenticated, prompt_initial, language}`），以及首次创建或跳过密码（`{"password": "..."}` 或 `{"skip": true}`，仅在尚未设置任何密码／Token 时可用）。 |
@@ -280,8 +269,6 @@ curl -s -X PUT "http://127.0.0.1:8787/calls/api/settings" \
 
 - `title` 为空就用“Bageo”；`body` 为空返回 HTTP 400 `empty_body`。
 - 只要有一个渠道接受就返回 `{ok: true}`。
-- 短信可另外带 `"kind": "sms"`、`"from"`（发件人）、`"text"`（短信内容）、`"to"`（收件号码）、`"serial"` 与 `"device"`（手机）、`"received_ms"`（收到的时间，Unix 毫秒）、`"ref"`（你自己给这条短信的标识）、`"sub_id"`（收到它的 SIM 卡）。Bageo 会把它存进控制台的“短信”页，同一个 `ref` 只存一次；桌面状态小程序用它显示短信通知。旧的请求照常运作。
-- [短信转发工具](../../tools/sms_forward/README.md)（英文）就是用这条路由。
 
 `POST /calls/api/control/inbound` 的规则：
 
@@ -319,7 +306,7 @@ curl -s -X PUT "http://127.0.0.1:8787/calls/api/settings" \
   "start": "2026-11-14T15:00", "end": "2026-11-14T16:00",
   "title": "看房", "caller_name": "陈先生",
   "mode": "confirm", "status": "confirmed",
-  "reply": "sms", "sms": "sent", "call_lang": "zh-CN",
+  "reply": "call", "call_lang": "zh-CN",
   "tag": "6f1c2a9e-3b7d-4e0a-9c55-2d8f1b7e4a10",
   "tg_card": {"chat_id": "123456789", "message_id": 42}
 }
@@ -330,20 +317,11 @@ curl -s -X PUT "http://127.0.0.1:8787/calls/api/settings" \
 | `start`、`end` | 当地时间（`TZ`）。对方只是顺口提的备选时间不会覆盖谈好的时间；同一通电话另外约的第二件事会成为另一条待处理事项。 |
 | `title`、`caller_name` | 约的是什么事、对方怎么自称（对方自己的说法）。 |
 | `status` | `pending`（等你决定）、`confirmed`、`declined`；`booked` 只出现在旧版的记录里。 |
-| `reply` | 怎么告诉对方：`sms`、`call` 或 `none`。 |
-| `sms` | `sent`，或短信没发出的原因。代码见下方。 |
+| `reply` | 怎么告诉对方：`call` 或 `none`。 |
 | `call` | AI 回拨的进度，或没拨出的原因。代码见下方。 |
 | `call_lang` | 那通电话说的语言（`zh-CN`、`en`…）。AI 回拨就说这个语言，等对方接起来出声后才说你的回复，只说一次。没有这个字段的旧记录按设置 `language`。 |
 | `tg_card` | 发给这条预约的 Telegram 卡片 `{chat_id, message_id}`；你在别处决定后，用来去掉卡片上的按钮。 |
 | `tag` | 这条预约固定的 id。 |
-
-`sms` 的值：
-
-- `sent`：已发出。
-- 没发出的原因：`offline`（手机没连接）、`old_app`（App 不能发短信）、`timeout`、`busy`（同一条短信正在发）、`no_number`（收不到短信的号码）。
-- 手机返回的代码：`no_permission`、`bad_request`、`no_service`、`radio_off`、`generic_failure`、`exception`。
-
-网页和 Telegram 回复会把这些写成白话。
 
 `call` 的值：
 
@@ -358,15 +336,13 @@ curl -s -X PUT "http://127.0.0.1:8787/calls/api/settings" \
 |---|---|
 | `GET /calls/api/tasks` | 待处理事项，最新的在前（最多 200 条）：`{ok, tasks}`。内容见下方。 |
 | `GET /calls/api/tasks/{id}/event.ics` | 预约的 iCalendar 文件（Apple 日历和其他 App）。用控制台密码或链接里的 `?k=<HMAC 密钥>` 打开；这条待处理事项没有预约时返回 HTTP 404 `no_calendar`。 |
-| `POST /calls/api/tasks/{id}/confirm` | **同意**，跟在网页或 Telegram 卡片上点一样。请求体：空的、`{}` 或 `{"reply": "sms" \| "call" \| "none"}`。响应 `{ok, task, message}`。 |
+| `POST /calls/api/tasks/{id}/confirm` | **同意**，跟在网页或 Telegram 卡片上点一样。请求体：空的、`{}` 或 `{"reply": "call" \| "none"}`。响应 `{ok, task, message}`。 |
 | `POST /calls/api/tasks/{id}/ignore` | **不同意**：用同样的方式告诉对方，礼貌婉拒。请求体、响应和规则同 `…/confirm`。 |
-| `POST /calls/api/appointments/{id}/retry-sms` | 已决定的预约短信没发出时再发一次。请求体：空的、`{}` 或 `{"serial": "<手机>"}`。响应 `{ok, sms, message}`。 |
 
 `GET /calls/api/tasks` 的内容：
 
 - 预约的待处理事项另外带 `calendar_links`（`{google, outlook, office365, yahoo}`）。
-- `reply` = `{sms, call, default}`：这位来电者能不能收短信、能不能回拨，以及“默认回复方式”会选哪个。
-- `sms_route` = `{serial, label}`：你没另选手机时短信从哪部发（接这通电话的手机）；`label` 是它在 `device_labels` 里的名称，没有就是 id。
+- `reply` = `{call, default}`：这位来电者能不能回拨，以及“默认回复方式”会选哪个。
 - 来电者是联系人时还有 `contact_name`。
 - 网页上的“待处理事项”列的就是 `appointment.status` 为 `pending` 的项目。
 
@@ -375,20 +351,13 @@ curl -s -X PUT "http://127.0.0.1:8787/calls/api/settings" \
 - 没带 `reply` 时按“默认回复方式”；选了这位来电者用不了的方式就不通知。
 - `message` 是用白话写的结果，跟 Telegram Bot 回的同一段，附上你选的 `calendar_app` 的“添加到日历”链接。
 - 还没选 `calendar_app` 时，附的是这通电话在网页里的页面，在那里点“添加到日历”选一家；没有控制台地址就不附。
-- 发短信最多可能等 90 秒；回拨交给手机拨出（在 `appointment.call` 看进度）。
-
-`POST /calls/api/appointments/{id}/retry-sms` 的内容：
-
-- `serial` 可以换另一部已连接的手机；没带就是接这通电话的那部。
-- 发出去了 `ok` 才是 true，`sms` 是新的代码。
-- 还在等、已经发出或本来就不能发（`no_number`）时，返回 HTTP 409 `sms_not_retryable`（附当前的 `sms`）。
-- 其他错误：404 `task_not_found`；400 `invalid_serial`／`bad_request`。
+- 回拨交给手机拨出（在 `appointment.call` 看进度）。
 
 决定的规则：
 
 - **只有第一次决定算数。** 第二次同意或不同意，包括第一次还在处理时发来的、或在 Telegram 卡片上点的，都会返回“已经处理过了”，什么都不改。
 - 这条预约发过 Telegram 卡片时，卡片上的按钮会被去掉，并把 `message` 发到那个聊天里（尽力而为；不论成功与否，决定都有效）。
-- 短信和回拨都从接到那通电话的 SIM 卡（`sub_id`）发出。短信只写时间和星期几，不写约的是什么事。
+- 回拨从接到那通电话的手机拨出，只说时间和星期几，不说约的是什么事。
 - 推销和诈骗电话不会留下预约；事后才判定为这类电话的，预约会被去掉。
 
 ```bash
@@ -434,11 +403,9 @@ AI 代打就是 AI 替你打出去的电话。给它一个号码（或一位联�
 **用哪部手机、哪张卡。**
 
 - 电话从一部已连接、在 AI 模式、而且有该号码所属国家 SIM 卡的手机拨出。
-- Bageo 从手机控制连接 `hello`／`status` 上报的 `sims` 列表学会每部手机有哪些 SIM（subscription id、国家、运营商与号码；旧版 App 则来自 `incoming` 和 media `hello` 里的 `sim_sub_id`、`sim_country`）。
-- 这些记在 `phone_sims.json`。
-- Bageo 从没听说过 SIM 的手机不接代打（`sim_unknown`）：重新连接那部手机（旧版 App 则先打一通电话给它）。
-- 手机收到的是 E.164 格式的号码和要用的 SIM（`sub_id`）。
-- 那通电话自己的 media `hello` 显示用的是另一张 SIM、或没上报时，Bageo 会在 AI 开口前挂断（`failed`、`call_code` `wrong_sim`，会通知你），并把那张卡从这部手机的记录里去掉，等之后有来电上报它再加回来。
+- Bageo 从你为手机保存的号码（`PUT /calls/api/devices/{serial}/sim-number`）或蓝牙电脑上的 `SIM_COUNTRY` 知道 SIM 卡所属国家，保存在 `phone_sims.json`。
+- Bageo 不知道 SIM 卡所属国家的手机不接代打（`sim_unknown`）。
+- 手机收到的是 E.164 格式的号码。
 
 **排队与上限。**
 
@@ -492,7 +459,7 @@ AI 代打就是 AI 替你打出去的电话。给它一个号码（或一位联�
 | `result` | `null` 或 `{outcome, summary, details, follow_up, options, event, unconfirmed}`。字段见下方。 |
 | `history` | 之前几次的尝试，`[{attempt, status, result, record_id, ended_at, questions}]`。 |
 
-`call_code` 的值：`dialing`、`queued`、`answered`、`no_answer`、`failed`、`phone_busy`、`number_busy`、`no_phone`、`send_failed`、`keypad_menu`、`carrier_message`、`wrong_sim`、`agent_restarted`、`cancelled`、`redial_wait`、`voicemail`。
+`call_code` 的值：`dialing`、`queued`、`answered`、`no_answer`、`failed`、`phone_busy`、`number_busy`、`no_phone`、`send_failed`、`keypad_menu`、`carrier_message`、`agent_restarted`、`cancelled`、`redial_wait`、`voicemail`。
 
 `questions` 里的 `answered_by`：`owner`（你回答了）、`timeout`（你在看但没来得及回答）、`absent`（没人在看）；还在等时是 `null`。
 
@@ -550,7 +517,7 @@ AI 代打就是 AI 替你打出去的电话。给它一个号码（或一位联�
 | `no_task` | 新建、补问 | `task` 为空。 |
 | `task_too_long` | 新建、补问 | `task` 超过 1,000 字。 |
 | `no_phone` | 新建、再打 | 没有已连接、处于 AI 模式的手机（或指定的 `serial` 不是这样的手机）。 |
-| `sim_unknown` | 新建、再打 | 没有合适的手机，而且至少有一部的 SIM Bageo 还不知道：先给它打一通。 |
+| `sim_unknown` | 新建、再打 | 没有合适的手机，而且至少有一部的 SIM 卡所属国家 Bageo 还不知道：到“系统 → 手机”填号码，或设置 `SIM_COUNTRY`。 |
 | `no_sim_for_country` | 新建、再打 | 没有手机有该号码所属国家的 SIM。 |
 | `not_found` | 新建 | `contact_id` 或 `follow_up_of` 不存在（这里返回 400）。 |
 | `busy` | 再打、删除 | 这条还在拨号或通话中。 |
@@ -654,13 +621,13 @@ Content-Type: application/json
 
 十二个路由用来备份和还原 Bageo 自己的数据，对应控制台设置里的“备份与还原”（见[设置参考](SETTINGS.md#备份与还原)）。任何数据都不会发送到你的电脑以外。它们遵循控制台的密码规则，每个 `POST` 也要遵循上面的 `Content-Type: application/json` 规则（`import` 跟 `contacts/import` 一样，body 是文件本身，另外带 `X-Filename` 标头）。`GET …/download/{ticket}` 只要下载码，下载网址里不会出现任何密码。
 
-四个设置用 `PUT /calls/api/settings` 保存：`backup_schedule`（`off`、`daily`、默认的 `weekly`，或 `monthly`）、`backup_dir`（留空：数据文件夹下面的 `backups`；否则要填绝对路径，Bageo 会建好文件夹并试写一个文件，写不进去就返回 HTTP 400 `backup_dir_unwritable`）、`backup_keep`（1 到 100，默认 10，只算自动备份）、`backup_include_calls`（默认 `false`；`true` 时自动和手动备份也会放进通话记录、录音、短信和待处理事项）。另外两个是加密：`backup_encrypt`（默认 `false`；`true` 时手动、自动和 `before_import` 备份都加密）、`backup_password`（至少 8 个字符，否则 HTTP 400 `backup_password_short`；不会返回，只返回 `backup_password_set`；`backup_password_clear: true` 会删掉）。没有密码却开 `backup_encrypt`，或加密开着时删掉密码，返回 HTTP 400 `backup_password_missing`。密码跟其他设置一起存在这台电脑，自动备份才用得到；加密保护的是放到别处的那份，例如移动硬盘、云端或网络文件夹。它属于 `keys`。
+四个设置用 `PUT /calls/api/settings` 保存：`backup_schedule`（`off`、`daily`、默认的 `weekly`，或 `monthly`）、`backup_dir`（留空：数据文件夹下面的 `backups`；否则要填绝对路径，Bageo 会建好文件夹并试写一个文件，写不进去就返回 HTTP 400 `backup_dir_unwritable`）、`backup_keep`（1 到 100，默认 10，只算自动备份）、`backup_include_calls`（默认 `false`；`true` 时自动和手动备份也会放进通话记录、录音和待处理事项）。另外两个是加密：`backup_encrypt`（默认 `false`；`true` 时手动、自动和 `before_import` 备份都加密）、`backup_password`（至少 8 个字符，否则 HTTP 400 `backup_password_short`；不会返回，只返回 `backup_password_set`；`backup_password_clear: true` 会删掉）。没有密码却开 `backup_encrypt`，或加密开着时删掉密码，返回 HTTP 400 `backup_password_missing`。密码跟其他设置一起存在这台电脑，自动备份才用得到；加密保护的是放到别处的那份，例如移动硬盘、云端或网络文件夹。它属于 `keys`。
 
 | 方法与路径 | 内容 |
 |---|---|
 | `GET /calls/api/backup` | 当前状态：`{dir, default_dir, dir_ok, can_open_folder, can_download, running, last, next_at, backups}`。 |
 | `POST /calls/api/backup/run` | Body `{}`。马上做一份手动备份：`{entry}`，是 `backups` 里的一条。已经有备份在跑：HTTP 409 `busy`。失败：HTTP 500 `dir_unwritable`、`disk_full` 或 `io`。 |
-| `POST /calls/api/backup/export` | Body `{items, password}`。做一个文件，内容是 `items` 指定的项目：`settings`、`keys`、`contacts`、`numbers`、`phones`、`errands`、`calls`、`sms`、`tasks`。没带 `items` 就是 `settings`、`keys`、`contacts`、`numbers`、`phones`、`errands`。有不认识的 id 或列表是空的：HTTP 400 `bad_items`。有 `password`（至少 8 个字符，否则 HTTP 400 `backup_password_short`）就加密成 `.bageo`，没有就是 zip。返回 `{ticket, name}`，再用 `GET …/download/{ticket}` 下载。含 `calls` 时文件可能很大。含 `keys` 又没设控制台密码时，只有在 Bageo 所在的这台电脑用 `localhost` 打开才行，否则 HTTP 403 `need_password`。 |
+| `POST /calls/api/backup/export` | Body `{items, password}`。做一个文件，内容是 `items` 指定的项目：`settings`、`keys`、`contacts`、`numbers`、`phones`、`errands`、`calls`、`tasks`。没带 `items` 就是 `settings`、`keys`、`contacts`、`numbers`、`phones`、`errands`。有不认识的 id 或列表是空的：HTTP 400 `bad_items`。有 `password`（至少 8 个字符，否则 HTTP 400 `backup_password_short`）就加密成 `.bageo`，没有就是 zip。返回 `{ticket, name}`，再用 `GET …/download/{ticket}` 下载。含 `calls` 时文件可能很大。含 `keys` 又没设控制台密码时，只有在 Bageo 所在的这台电脑用 `localhost` 打开才行，否则 HTTP 403 `need_password`。 |
 | `POST /calls/api/backup/file-ticket` | Body `{name}`。拿备份文件夹里某个文件的下载码：`{ticket, name}`。`name` 必须是文件夹里真的有的备份文件名（否则 HTTP 404 `not_found`）。备份文件里有密钥：没设控制台密码时，规则跟含 `keys` 的导出一样（HTTP 403 `need_password`）。 |
 | `GET /calls/api/backup/download/{ticket}` | 下载某个下载码的文件。下载码是 256 位的随机数，2 分钟内有效、只能用一次，之后返回 HTTP 404 `not_found`。导出的文件发完或下载码过期就删掉。 |
 | `POST /calls/api/backup/import` | Body 是文件本身（最大 200 MB），文件名 URL 编码后放 `X-Filename`。可以是备份 zip、加密的备份（`.bageo`），或旧版单独的 `settings.json`。**不会还原任何东西**：文件暂存 15 分钟，返回预览。加密的文件只返回 `{token, source_name, encrypted: true, needs_password: true}`，没有 `items`，要先用 `unlock` 解开。最多 3 份预览等着：再来一份就丢掉最旧的（它的 token 之后返回 `expired`）。同时最多 2 个上传在跑，再多返回 HTTP 409 `busy`。 |
@@ -674,16 +641,16 @@ Content-Type: application/json
 细节：
 
 - `GET /calls/api/backup`：`dir` 是正在用的文件夹，`default_dir` 是默认文件夹，`dir_ok` 是写不写得进去，`can_open_folder` 是 `open-folder` 能不能用，`can_download` 是在这里能不能下载含密钥的文件，`running` 是不是正在备份，`next_at` 是下一次自动备份的时间（RFC 3339，或 `null`）。`last` 是最近一次自动或手动备份的 `{at, ok, name, size, error}`，没有就是 `null`。`backups` 是文件夹里的文件，新到旧，每条 `{name, at, size, kind, app_version, include_calls, encrypted}`；`kind` 是 `scheduled`、`manual`、`before_import` 或 `export`。加密的文件没有密码什么都读不到，所以 `app_version` 和 `include_calls` 是 `null`。
-- 备份文件是 zip。根目录的 `bageo-backup.json` 放 `{format: "bageo-backup", version: 1, app_version, created_at, kind, include_calls, items, files: [{path, size, sha256}]}`，`items` 是文件里真的有的项目 id。其他文件都在 `data/` 下面，路径是数据文件夹里的相对路径（`data/config/settings.json`）。不放的有：`backups` 文件夹本身、临时文件、调试文件、重新启动标记这类一次性的文件，以及缓存。自动、手动和 `before_import` 备份一律含 `settings`、`keys`、`contacts`、`numbers`、`phones`、`errands`，`backup_include_calls` 为 `true` 时再加 `calls`、`sms`、`tasks`。导出只放勾选的项目：选了 `settings` 没选 `keys`，`settings.json` 不含整组 `keys`；选了 `keys` 没选 `settings`，只放这一组和手机配对密钥（`phone-pairing.key`）。`keys` 是密钥、密码和连接：Gemini 和其他服务的密钥、通知和聊天机器人的令牌、控制台密码、MCP token，以及所有决定数据发到哪里、谁可以远程控制 Bageo 的设置（整个通知渠道，含发送对象和谁可以下指令；Telegram 聊天和远程控制；通知网关；发信账号；摘要服务；TRTC 桥接和端点；转接号码和急事要不要直接转过去；Bageo 可以回拨的号码；MCP 访问），再加上手机配对密钥。完整列表是 `crates/agent/src/settings_store.rs` 的 `CREDENTIAL_FIELDS` 和 `CONNECTION_FIELDS`。
+- 备份文件是 zip。根目录的 `bageo-backup.json` 放 `{format: "bageo-backup", version: 1, app_version, created_at, kind, include_calls, items, files: [{path, size, sha256}]}`，`items` 是文件里真的有的项目 id。其他文件都在 `data/` 下面，路径是数据文件夹里的相对路径（`data/config/settings.json`）。不放的有：`backups` 文件夹本身、临时文件、调试文件、重新启动标记这类一次性的文件，以及缓存。自动、手动和 `before_import` 备份一律含 `settings`、`keys`、`contacts`、`numbers`、`phones`、`errands`，`backup_include_calls` 为 `true` 时再加 `calls`、`tasks`。导出只放勾选的项目：选了 `settings` 没选 `keys`，`settings.json` 不含整组 `keys`；选了 `keys` 没选 `settings`，只放这一组和手机配对密钥（`phone-pairing.key`）。`keys` 是密钥、密码和连接：Gemini 和其他服务的密钥、通知和聊天机器人的令牌、控制台密码、MCP token，以及所有决定数据发到哪里、谁可以远程控制 Bageo 的设置（整个通知渠道，含发送对象和谁可以下指令；Telegram 聊天和远程控制；通知网关；发信账号；摘要服务；TRTC 桥接和端点；转接号码和急事要不要直接转过去；Bageo 可以回拨的号码；MCP 访问），再加上手机配对密钥。完整列表是 `crates/agent/src/settings_store.rs` 的 `CREDENTIAL_FIELDS` 和 `CONNECTION_FIELDS`。
 - 文件名用本机时间：`bageo-backup-YYYYMMDD-HHMMSS-auto.zip`、`…-manual.zip`、`…-before-import.zip`，导出的是 `bageo-export-YYYYMMDD-HHMMSS.zip`（`kind` 是 `export`，跟其他文件一起列出，Bageo 不会自动删）。加密的文件结尾是 `.bageo`，不是 `.zip`。
 - 加密的文件（`.bageo`）就是同一个 zip 加密后的样子，有密码就能用一般工具自己解开：
   - 文件头 62 字节（整数都是 little-endian）：`BAGEOENC`（8 字节）；格式版本 `1`（1）；密钥推导 `1` = Argon2id、版本 0x13（1）；内存 KiB（4，65536 = 64 MiB）；次数（4，3）；并行数（4，1）；salt（16，随机）；加密法 `1` = XChaCha20-Poly1305 的 STREAM 做法（1）；每块大小（4，1048576）；nonce 前缀（19，随机）。
   - 密钥：用 Argon2id 从密码（UTF-8，去掉前后空白）和 salt 算出 32 字节。
   - 接着是 zip 一块一块加密：每块是每块大小那么多字节（最后一块比较短，也可能是空的），用 XChaCha20-Poly1305 加密，后面接 16 字节的 tag。每块的 24 字节 nonce 是前缀、这块从 0 起算的编号（4 字节，big-endian）、再一个字节：最后一块是 1，其他是 0。整个文件头是每一块的 associated data。
   - 要求超过 256 MiB 内存、超过 4 次或超过 4 个并行数的文件，Bageo 直接拒绝；任何一块被改、被截断或少了，都返回 `damaged`（第一块的话是 `wrong_password`）。
-- 预览是 `{token, source_name, created_at, app_version, kind, items, has_calls, calls_count, changes_password, changes_connections, total_size, warnings, encrypted, needs_password}`。`items` 的每条是 `{id}` 或 `{id, count}`，列出文件里真的有的项目：`settings`、`keys`、`contacts`、`numbers`、`phones`、`errands`、`calls`、`sms`、`tasks`。旧版单独的设置文件有密钥或密码字段时，也会列出 `keys`。只有还原 `keys` 会换掉控制台密码（换成别的或变成没有）时，`changes_password` 才是 `true`；会改变通知发到哪里、转接号码或谁可以远程控制时，`changes_connections` 才是 `true`。两个都是拿这台现在的跟还原后的结果比（算法跟 `apply` 一样）。`total_size` 是可以还原的文件解开后的大小（字节）。`warnings` 可能有 `newer_version`、`plain_settings_file`（旧版单独的设置文件：只还原设置，有密钥的话一起还原）。预览不会去碰文件里写的备份文件夹。
-- `apply` 只还原勾选的 `items`。选 `settings` 没选 `keys`：换掉其他设置，这台电脑整组 `keys` 都保留。选了 `keys`：文件里有值的字段换掉这台的，文件里没有或空的字段保留这台的。只有从备份文件夹还原这台自己的 `before_import` 备份时，整组完全按文件（没有或空的字段一律清空或回到默认），所以能把导入带进来的密钥和连接全部拿掉；上传的文件一律不走这条。选 `keys` 没选 `settings`：只换这一组，文件里有手机配对密钥才换。文件里没有 `keys`，或没选 `keys`，这台的整组都不会变。`retention_days` 和 `backup_keep` 只会保持或变长：文件的值比较大才采用，文件没写就保留这台的。`backup_dir` 和 `public_url` 一律保持这台电脑的设置。还原的通话记录和待处理事项，只保留这次真的还原了的录音路径（`YYYY-MM-DD/<name>`），其他路径一律清空。解开之前 Bageo 会先确认硬盘空间够（不够返回 HTTP 500 `disk_full`）。`calls`、`sms`、`tasks` 是加进现有的，不会删掉任何东西。动手之前 Bageo 会先把现在的设置做成一份 `before_import` 备份（选的文件夹写不进去就放默认文件夹），文件名放在 `before_import`。`restart_needed` 表示有些变更要重新打开 Bageo 才会全部生效。
-- 预览路由的错误（HTTP 400）：`not_backup`、`damaged`、`too_new`（来自比较新的 Bageo）、`too_large`。上限看文件实际是什么，不看 manifest 怎么说：`calls`、`sms`、`tasks` 以外的项目每个文件解开最多 20 MB、合计 50 MB，通话记录合计最多 8 GB；解开后比压缩时大 200 倍以上的文件算 `damaged`。已经有 2 个上传在跑：HTTP 409 `busy`。`unlock` 密码不对返回 HTTP 400 `wrong_password`，错 5 次返回 `expired`。`apply` 在通话中返回 HTTP 409 `call_active`；`items` 是空的或有预览没列的 id，返回 HTTP 400 `bad_items`；token 超过 15 分钟或已经用过，返回 HTTP 400 `expired`。
+- 预览是 `{token, source_name, created_at, app_version, kind, items, has_calls, calls_count, changes_password, changes_connections, total_size, warnings, encrypted, needs_password}`。`items` 的每条是 `{id}` 或 `{id, count}`，列出文件里真的有的项目：`settings`、`keys`、`contacts`、`numbers`、`phones`、`errands`、`calls`、`tasks`。旧版单独的设置文件有密钥或密码字段时，也会列出 `keys`。只有还原 `keys` 会换掉控制台密码（换成别的或变成没有）时，`changes_password` 才是 `true`；会改变通知发到哪里、转接号码或谁可以远程控制时，`changes_connections` 才是 `true`。两个都是拿这台现在的跟还原后的结果比（算法跟 `apply` 一样）。`total_size` 是可以还原的文件解开后的大小（字节）。`warnings` 可能有 `newer_version`、`plain_settings_file`（旧版单独的设置文件：只还原设置，有密钥的话一起还原）。预览不会去碰文件里写的备份文件夹。
+- `apply` 只还原勾选的 `items`。选 `settings` 没选 `keys`：换掉其他设置，这台电脑整组 `keys` 都保留。选了 `keys`：文件里有值的字段换掉这台的，文件里没有或空的字段保留这台的。只有从备份文件夹还原这台自己的 `before_import` 备份时，整组完全按文件（没有或空的字段一律清空或回到默认），所以能把导入带进来的密钥和连接全部拿掉；上传的文件一律不走这条。选 `keys` 没选 `settings`：只换这一组，文件里有手机配对密钥才换。文件里没有 `keys`，或没选 `keys`，这台的整组都不会变。`retention_days` 和 `backup_keep` 只会保持或变长：文件的值比较大才采用，文件没写就保留这台的。`backup_dir` 和 `public_url` 一律保持这台电脑的设置。还原的通话记录和待处理事项，只保留这次真的还原了的录音路径（`YYYY-MM-DD/<name>`），其他路径一律清空。解开之前 Bageo 会先确认硬盘空间够（不够返回 HTTP 500 `disk_full`）。`calls`、`tasks` 是加进现有的，不会删掉任何东西。动手之前 Bageo 会先把现在的设置做成一份 `before_import` 备份（选的文件夹写不进去就放默认文件夹），文件名放在 `before_import`。`restart_needed` 表示有些变更要重新打开 Bageo 才会全部生效。
+- 预览路由的错误（HTTP 400）：`not_backup`、`damaged`、`too_new`（来自比较新的 Bageo）、`too_large`。上限看文件实际是什么，不看 manifest 怎么说：`calls`、`tasks` 以外的项目每个文件解开最多 20 MB、合计 50 MB，通话记录合计最多 8 GB；解开后比压缩时大 200 倍以上的文件算 `damaged`。已经有 2 个上传在跑：HTTP 409 `busy`。`unlock` 密码不对返回 HTTP 400 `wrong_password`，错 5 次返回 `expired`。`apply` 在通话中返回 HTTP 409 `call_active`；`items` 是空的或有预览没列的 id，返回 HTTP 400 `bad_items`；token 超过 15 分钟或已经用过，返回 HTTP 400 `expired`。
 
 ## 手机与健康状态
 
@@ -693,16 +660,15 @@ Content-Type: application/json
 | `POST /calls/api/devices/{serial}/mode` | 请求体 `{"mode": "ai" \| "normal"}`。让手机切换，最多等 15 秒等它回复。返回 `{ok, mode, error_code}`（400 时另附说明 `error`）。 |
 | `DELETE /calls/api/devices/{serial}` | 移除一台未连接的旧手机（同时清除手机列表、已存名称与 SIM 记录，保留过往通话记录）：`{ok, serial}`。手机仍在线或通话中返回 HTTP 409 `device_online`／`device_in_call`。 |
 | `PUT /calls/api/devices/{serial}/sim-number` | 请求体 `{"sub_id": <整数>, "number": "..."}`。设置（留空表示清除）这部手机某张 SIM 的号码，让来电与 AI 代打直接显示并按号码挑选：`{ok, serial, sims}`。 |
-| `POST /calls/api/phone-pairing/renew` | 更换 Wi-Fi 配对密钥（`phone-pairing.key`）并断开通过 Wi-Fi 连接的手机，每部手机重新插上 USB 一次即可获取新密钥：`{ok: true}`（失败返回 HTTP 500 `save_failed`）。密钥本身不会返回。 |
+| `POST /calls/api/phone-pairing/renew` | 更换配对密钥（`phone-pairing.key`）并断开通过网络连接的蓝牙电脑，每台都要用新的配对码重新连接：`{ok: true}`（失败返回 HTTP 500 `save_failed`）。密钥本身不会返回。 |
 | `GET /health` | 排查问题用的大型 JSON 对象：版本、语言、哪些东西已配置、已连接的手机、进行中的通话；不含密钥或密码。要带密码才拿得到（见下方说明最后一点）。 |
 | `GET /calls/api/health` | 控制台用，内容和 `/health` 的完整版相同。跟其他 `/calls/api/` 路由一样：设置了密码而没带返回 HTTP 401，没设密码就开放。 |
 
 `GET /calls/api/devices` 的内容：
 
-- 响应：`{ok, usb: {enabled, adb_found, adb_path, error, phones: [{serial, state, model, reverse, app_installed}]}, connected: [...], labels: {<phone id>: <名称>}, calls_in_progress, phones: [...]}`。
-- 最外层的 `phones` 是 Bageo 启动后在 control 连接上见过的每部手机：`{serial, connected, mode, supports_mode, model, app_version, in_call, last_seen_ms}`。
+- 响应：`{ok, connected: [...], labels: {<phone id>: <名称>}, calls_in_progress, phones: [...]}`。
+- 最外层的 `phones` 是 Bageo 启动后在 control 连接上见过的每部手机：`{serial, connected, mode, model, app_version, in_call, last_seen_ms}`。
 - `mode` 是 `ai`（AI 接听）或 `normal`（一般手机，见[手机设置](PHONE.md#普通手机模式)）。
-- 比这个功能旧的 App，`supports_mode` 是 false，永远是 `ai`。
 
 `GET /health` 的内容：
 
@@ -717,12 +683,10 @@ Content-Type: application/json
 | `error_code` | 含义 |
 |---|---|
 | `offline` | 手机没连上。 |
-| `unsupported` | App 比模式切换功能旧。 |
 | `in_call` | 有电话在响或通话中；结束后再试。 |
 | `busy` | 上一次切换还在进行。 |
-| `no_root` | Bageo 模块的 root 小助手没有接手：模块没有在运行。 |
-| `save_failed`、`dialer_failed`、`screening_failed`、`dnd_failed`、`volume_failed`、`failed` | 没成功的那一步。再切换一次会把每一步重做一遍。 |
-| `timeout` | 还没确认，不等于失败：切换本身可能让手机 App 重启，它重新连上后才回报。稍后再读一次 `GET /calls/api/devices`。 |
+| `save_failed`、`failed` | 没成功的那一步。再切一次会把每一步重做一遍。 |
+| `timeout` | 还没确认，不等于失败。稍后再读一次 `GET /calls/api/devices`。 |
 | `bad_request`／`invalid_mode` | HTTP 400：不是 JSON、没带 `Content-Type: application/json`、没有字符串 `mode`、serial 不是由字母数字、`-`、`_` 组成；或 `mode` 不认识。 |
 
 ```bash
@@ -734,19 +698,19 @@ curl -s -X POST "http://127.0.0.1:8787/calls/api/devices/pixel-12345/mode" \
 
 ## 手机这一端（WebSocket）
 
-手机通过 WebSocket 连接到 `/` 或 `/ws`（两者相同）。
+蓝牙程序通过 WebSocket 连接到 `/` 或 `/ws`（两者相同）。
 
-- 每部手机保持一条长期的 *control* 连接，每通电话另开一条 *media* 连接。
-- 两种连接都双向传送 JSON 文本帧和原始的 16 kHz 单声道 16 位小端序 PCM 二进制帧（手机每 60 ms 发一帧）。
-- 来自这台电脑本身的连接（USB 通道）不需 Token 一律接受；Wi-Fi 连接可连 `PHONE_WIFI_PORT`（默认 `8788`，仅提供 `/ws`）并带上 USB 配对时发放的 `phone-pairing.key` 或 `DEVICE_TOKEN`，或连到主端口并在设置了 `DEVICE_TOKEN` 时带上 `?token=<DEVICE_TOKEN>`。
+- 它服务的每部手机保持一条长期的 *control* 连接，每通电话另开一条 *media* 连接。
+- 两种连接都双向传送 JSON 文本帧和原始的 16 kHz 单声道 16 位小端序 PCM 二进制帧（每帧 60 ms）。
+- 来自这台电脑本身的连接不需 Token 一律接受；通过网络的连接可连 `PHONE_WIFI_PORT`（默认 `8788`，仅提供 `/ws`）并带上配对码换来的配对密钥或 `DEVICE_TOKEN`，或连到主端口并在设置了 `DEVICE_TOKEN` 时带上 `?token=<DEVICE_TOKEN>`。
 
-逐字段的完整消息列表在 [`android/README.md`](../../android/README.md#websocket-protocol)（英文）。任何会说这套协议的程序都能代替手机，所以要加上 SIP 或软电话前端，完全不用改动通话逻辑。双方都会忽略不认识的内容，所以旧 App、旧版 Bageo照样能用。
+完整消息列表就在下面。任何会说这套协议的程序都能代替蓝牙程序，所以要加上 SIP 或软电话前端，完全不用改动通话逻辑。双方都会忽略不认识的内容，所以旧程序、旧版 Bageo 照样能用。
 
 ### Control 连接
 
 | 方向 | 消息 | 含义 |
 |---|---|---|
-| 手机 → Bageo | `hello` | `serial`、`mode` = `CONTROL_IDLE`、`model`、`app_version`、`phone_mode`（`ai`／`normal`）、`in_call`、`supports_sms`、`supports_reject`、`sims`（`[{sub_id, country, slot?, carrier?, number?}]`，1.4 以上 App 会自动上报）。缺少字段的含义见下方。 |
+| 手机 → Bageo | `hello` | `serial`、`mode` = `CONTROL_IDLE`、`model`、`app_version`、`phone_mode`（`ai`／`normal`）、`in_call`、`supports_reject`、`sims`（`[{sub_id, country, slot?, carrier?, number?}]`）。缺少字段的含义见下方。 |
 | 手机 → Bageo | `ping` | 每 15 秒一次。 |
 | 手机 → Bageo | `status` | `{mode, in_call}`（SIM 变动时另含 `sims`）：模式、通话状态或 SIM 列表变了。 |
 | 手机 → Bageo | `incoming`、`incoming_cancel` | 有电话在响（`caller_id`，隐藏号码时为空字符串；`sim_country`；知道时带 `sim_sub_id`）／接起来之前就结束了。 |
@@ -754,52 +718,28 @@ curl -s -X POST "http://127.0.0.1:8787/calls/api/devices/pixel-12345/mode" \
 | Bageo → 手机 | `answer_plan` | `{delay_ms, prewarm, reject}`：响多久再接，或 `reject: true` 响铃中直接拒接（`reject_mode` 为 `decline` 的黑名单号码）。 |
 | 手机 → Bageo | `call_waiting_rejected` | `{serial, caller_id, sim_country, sim_sub_id}`：通话中又有第二通打进来，手机立刻拒接（AI 模式）。会留下通话记录并发出“通话中插播未接”通知。 |
 | Bageo → 手机／手机 → Bageo | `set_mode`／`set_mode_result` | `{mode, id}`／`{id, ok, mode, error}`：远程切换模式；`error` 用上面的代码。 |
-| Bageo → 手机 | `agent_info` | `{console_url}` 给 App 的“**打开网页控制台**”按钮用（`public_url` 或局域网地址）；通过受信任的 USB 通道时另附 `wifi: {urls: [...]}` 提供 Wi-Fi 配对地址（`ws://<局域网-IP>:<PHONE_WIFI_PORT>/ws?token=<key>`，开启局域网名称时另附 `ws://<名称>.local:<PHONE_WIFI_PORT>/ws?token=<key>`）。 |
-| Bageo → 手机 | `place_call` | `{number, call_id, task_id, sub_id}`：拨出电话（AI 回拨或 AI 代打），用 subscription id 为 `sub_id` 的 SIM 拨（找不到就用手机默认的）。忙线时见下方。 |
+| Bageo → 手机 | `agent_info` | `{console_url}`（`public_url` 或局域网地址）；来自这台电脑本身的连接另附 `wifi: {urls: [...]}`（`ws://<局域网-IP>:<PHONE_WIFI_PORT>/ws?token=<key>`，开启局域网名称时另附 `ws://<名称>.local:<PHONE_WIFI_PORT>/ws?token=<key>`）。 |
+| Bageo → 手机 | `place_call` | `{number, call_id, task_id, sub_id}`：拨出电话（AI 回拨或 AI 代打）。忙线时见下方。 |
 | 手机 → Bageo | `place_call_ack`、`place_call_failed`、`outbound_ready`、`call_end` | 拨出的电话已拨号／拨不出去／接通／结束。 |
-| Bageo → 手机 | `send_sms` | `{id, to, text, sub_id}`：给来电者发短信（日程预约）。字段限制见下方。 |
-| 手机 → Bageo | `send_sms_result` | `{id, ok, error}`，每一段都上报后才发。超时和重发的规则见下方。 |
-| 手机 → Bageo | `send_sms_delivered` | `{id, ok}`：运营商给出送达回执时才发（手机最多等一小时）。 |
 
 `hello` 缺少字段时：
 
 - 没有 `phone_mode`：比模式切换旧的 App（永远是 `ai`）。
-- 没有 `supports_sms`：不会让它发短信。
 - 没有 `supports_reject`：黑名单号码改成接起来播放语音。
 
 `place_call`：手机有电话在响或通话中时不拨，回复 `place_call_failed`，`reason` 为 `busy`。
-
-`send_sms` 的字段：
-
-- `id`：1–64 个字符。
-- `to`：只有数字，开头可以有 `+`。
-- `text`：最多 500 个字符。
-- `sub_id`：指定 SIM（手机上报的 `sim_sub_id`），没有就用默认的短信 SIM。
-- 已经发过的 id 再来一次，只会再回复一次结果，不会重复发送。
-
-`send_sms_result` 的规则：
-
-- 手机最多等 60 秒（超时回 `timeout`）；之后才收到回报，会再发一次真正的结果。
-- `error`：`no_permission`、`bad_request`、`no_service`、`radio_off`、`generic_failure`、`timeout`、`exception`。
-- Bageo 最多等 90 秒。
-- 重新连接后手机会把最近 20 个 id 的结果再发一次，Bageo 用 `id` 去掉重复的。
 
 ### Media 连接
 
 | 方向 | 消息 | 含义 |
 |---|---|---|
-| 手机 → Bageo | `hello` | `serial`、`caller_id`、`sample_rate`（16000）、`mode` = `SILENT_LOCAL`、`sim_country`、`sim_sub_id`、`model`、`app_version`。拨出电话的 SIM 比对见下方。 |
+| 手机 → Bageo | `hello` | `serial`、`caller_id`、`sample_rate`（16000）、`mode` = `SILENT_LOCAL`、`sim_country`、`model`、`app_version`。 |
 | 手机 → Bageo | `ringing`、`call_end` | 对方号码（之后才知道时会再发）／通话结束。 |
 | Bageo → 手机 | `tts_start`、`tts_end`、`hangup` | 接下来有声音／声音结束／挂断。 |
-| Bageo → 手机 | `add_call`、`add_call_abort` | `{id, number, merge, answer_timeout_ms}`／`{id}`：白名单急事转接时让手机拨给你并合并成三方通话（或取消并把来电者切回通话）。 |
-| 手机 → Bageo | `add_call_result` | `{id, status, reason?}`（`status` 为 `dialing`／`active`／`merged`／`failed`）：三方拨号与合并的进度或结果。 |
 | 双向 | 二进制 | 对方的声音（手机 → Bageo）和 AI 的声音（Bageo → 手机），格式同上。 |
 
 Bageo 怎么处理边界情况：
 
-- 拨出的电话：Bageo 会拿 media `hello` 的 `sim_sub_id` 比对它指定的 SIM（代打不符就是 `wrong_sim`）。
-- 短信结果在 Bageo 不再等待之后才到，照样会记录；手机之后用同一个 `id` 发来的真正结果会取代 `timeout`。同样的结果再来、或已有确定结果的短信收到不同结果，都不会改。
 - 黑名单号码只有在 `reject_mode` 为 `decline`、并且手机声明过 `supports_reject` 时才让手机拒接；否则接起来播放语音，通知会写清楚是哪一种。
-- AI 回拨和 AI 代打都带 `sub_id`，双卡手机会用正确的号码拨出。
 
 <!-- SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call> -->

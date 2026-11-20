@@ -22,8 +22,9 @@
 //! `before_import` backup is made first and put back when restoring fails
 //! half-way. Restoring `keys` takes that whole group from the file (so putting
 //! the `before_import` copy back undoes it); without `keys` the group here
-//! stays. How long records are kept never gets shorter. Call records, texts
-//! and to-do items are only added; the ones already here stay.
+//! stays. How long records are kept never gets shorter. Call records and
+//! to-do items are only added; the ones already here stay. Text messages in a
+//! backup from a version that kept them are left out.
 //!
 //! With `backup_encrypt` (or a password given to an export) the zip is sealed
 //! with a password into a `.bageo` file ([`crate::backup_crypt`]). Such a file
@@ -70,7 +71,7 @@ pub const IMPORT_MAX_BYTES: usize = 200 << 20;
 const SMALL_FILE_MAX_BYTES: u64 = 20 << 20;
 const SMALL_MAX_BYTES: u64 = 50 << 20;
 const SMALL_MAX_FILES: usize = 2_000;
-/// What the call records, texts and to-do items may unpack to.
+/// What the call records and to-do items may unpack to.
 const CALLS_MAX_BYTES: u64 = 8 << 30;
 const CALLS_MAX_FILES: usize = 500_000;
 /// A file that unpacks to more than this many times its packed size is refused
@@ -84,7 +85,7 @@ const UPLOADS_MAX: usize = 2;
 /// Room left on the disk after the call records are restored.
 const DISK_MARGIN_BYTES: u64 = 64 << 20;
 const MANIFEST_MAX_BYTES: u64 = 64 << 20;
-/// A JSON file read whole for the preview (the call list, the texts).
+/// A JSON file read whole for the preview (the call list).
 const COUNT_FILE_MAX_BYTES: u64 = 256 << 20;
 /// An older single settings.json.
 const PLAIN_MAX_BYTES: u64 = 16 << 20;
@@ -110,21 +111,28 @@ const U32_MAX: u64 = 0xFFFF_FFFF;
 const BIG_FILE: u64 = 0xF000_0000;
 
 /// The parts of a backup, in the order the preview lists them.
-pub const ITEMS: [&str; 9] = ["settings", "keys", "contacts", "numbers", "phones", "errands", "calls", "sms", "tasks"];
+pub const ITEMS: [&str; 8] = ["settings", "keys", "contacts", "numbers", "phones", "errands", "calls", "tasks"];
 /// What backups (manual, automatic, before an import) and an export without
 /// `items` hold; with `backup_include_calls` backups also hold [`CALL_ITEMS`].
 pub const DEFAULT_ITEMS: [&str; 6] = ["settings", "keys", "contacts", "numbers", "phones", "errands"];
 /// The parts that are only added to what is here.
-const CALL_ITEMS: [&str; 3] = ["calls", "sms", "tasks"];
+const CALL_ITEMS: [&str; 2] = ["calls", "tasks"];
+/// A part older versions had (text messages): named in a request, it is left
+/// out; its file in a backup belongs to no part ([`item_of`]).
+const GONE_ITEMS: [&str; 1] = ["sms"];
 /// The parts that are read again by their store once they are back in place.
 const STORE_ITEMS: [&str; 5] = ["keys", "contacts", "numbers", "phones", "errands"];
 
 /// `items` as the parts they name (in [`ITEMS`] order); None when the list is
-/// empty or names something else.
+/// empty or names something else. A part that is gone ([`GONE_ITEMS`]) is skipped.
 pub fn parse_items<S: AsRef<str>>(items: &[S]) -> Option<Vec<&'static str>> {
     let mut out: Vec<&'static str> = Vec::new();
     for i in items {
-        let id = ITEMS.iter().copied().find(|x| *x == i.as_ref().trim())?;
+        let name = i.as_ref().trim();
+        if GONE_ITEMS.contains(&name) {
+            continue;
+        }
+        let id = ITEMS.iter().copied().find(|x| *x == name)?;
         if !out.contains(&id) {
             out.push(id);
         }
@@ -236,7 +244,6 @@ pub fn item_of(rel: &str) -> Option<&'static str> {
         "phone-pairing.key" => return Some("keys"),
         "errands.json" => return Some("errands"),
         "index.json" => return Some("calls"),
-        "sms/messages.json" => return Some("sms"),
         _ => {}
     }
     let mut parts = rel.split('/');
@@ -290,7 +297,6 @@ struct Layout {
     config: PathBuf,
     calls: PathBuf,
     tasks: PathBuf,
-    sms: PathBuf,
     contacts: PathBuf,
     errands: PathBuf,
     sims: PathBuf,
@@ -303,7 +309,6 @@ impl Layout {
             config: state.settings_store.storage_path().parent().map(Path::to_path_buf).unwrap_or_else(|| data.join("config")),
             calls: state.store.root().to_path_buf(),
             tasks: state.task_store.root().to_path_buf(),
-            sms: state.sms.dir(),
             contacts: state.contacts.path().to_path_buf(),
             errands: state.errands.path().to_path_buf(),
             sims: state.errands.sims.path().map(Path::to_path_buf).unwrap_or_else(|| data.join("phone_sims.json")),
@@ -321,7 +326,6 @@ impl Layout {
             (_, "phone_sims.json") => self.sims.clone(),
             (_, "phone-pairing.key") => self.data.join(crate::phone_wifi::KEY_FILE),
             (_, "index.json") => self.calls.join("index.json"),
-            (_, "sms/messages.json") => self.sms.join("messages.json"),
             ("settings" | "numbers", _) => self.config.join(rest),
             ("tasks", _) => self.tasks.join(rest),
             ("calls", _) => self.calls.join(first).join(rest),
@@ -374,7 +378,6 @@ fn collect(lay: &Layout, settings_json: Option<Vec<u8>>, want: &[&str]) -> Vec<(
                 }
             }
         }
-        add(&mut out, "sms/messages.json".to_string());
         for name in names_in(&lay.tasks) {
             let rel = format!("tasks/{name}");
             if item_of(&rel) == Some("tasks") {
@@ -992,7 +995,7 @@ fn inspect_plain(mut f: File, len: u64) -> Result<Inspected, Bad> {
 fn counted(rel: &str) -> bool {
     matches!(
         rel,
-        "config/settings.json" | "contacts.json" | "config/scam_numbers.json" | "phone_sims.json" | "errands.json" | "index.json" | "sms/messages.json"
+        "config/settings.json" | "contacts.json" | "config/scam_numbers.json" | "phone_sims.json" | "errands.json" | "index.json"
     )
 }
 
@@ -1073,7 +1076,6 @@ fn inspect_zip(f: File) -> Result<Inspected, Bad> {
                     "phone_sims.json" => v.as_object().map(|m| m.len()),
                     "errands.json" => v.get("errands").and_then(Value::as_array).map(Vec::len),
                     "index.json" => v.get("calls").and_then(Value::as_array).map(Vec::len),
-                    "sms/messages.json" => v.get("messages").and_then(Value::as_array).map(Vec::len),
                     _ => None,
                 };
                 counts.insert(item, n);
@@ -2318,7 +2320,7 @@ pub(crate) async fn unlock(state: &CallsState, token: &str, password: &str) -> R
 
 /// Restore the parts `items` of what the preview `token` showed (each one the
 /// preview listed, else `bad_items`): refused during a call; a `before_import`
-/// backup first; call records, texts and to-do items are only added.
+/// backup first; call records and to-do items are only added.
 pub(crate) async fn apply<S: AsRef<str>>(state: &CallsState, token: &str, items: &[S]) -> Result<Value, ApiErr> {
     sweep_pending();
     let listed: Option<Vec<&'static str>> = pending()
@@ -2418,7 +2420,7 @@ async fn apply_pending(state: &CallsState, p: &Pending, ins: &Inspected, chosen:
     };
     if chosen.iter().any(|i| CALL_ITEMS.contains(i)) {
         match merge_records(state, &lay, &stage, &want).await {
-            Ok((calls, sms, tasks)) => info!("backup records added calls={calls} sms={sms} tasks={tasks}"),
+            Ok((calls, tasks)) => info!("backup records added calls={calls} tasks={tasks}"),
             Err(e) => {
                 warn!("backup: adding the call records failed ({}), the settings from before are put back", err_kind(&e));
                 undo(created).await;
@@ -2600,10 +2602,10 @@ async fn roll_back(state: &CallsState, lay: &Layout, before: &Path, created: &[P
     }
 }
 
-/// Call records with their recordings, texts and to-do items of the backup
-/// that are not here yet are added; how many of each.
-async fn merge_records(state: &CallsState, lay: &Layout, stage: &Path, want: &[Wanted]) -> anyhow::Result<(usize, usize, usize)> {
-    let (mut calls, mut sms, mut tasks) = (0, 0, 0);
+/// Call records with their recordings and to-do items of the backup that are
+/// not here yet are added; how many of each.
+async fn merge_records(state: &CallsState, lay: &Layout, stage: &Path, want: &[Wanted]) -> anyhow::Result<(usize, usize)> {
+    let (mut calls, mut tasks) = (0, 0);
     // The recordings this restore brings back: the only files a restored record may name.
     let restored: HashSet<&str> = want.iter().filter(|w| w.item == "calls" && w.rel != "index.json").map(|w| w.rel.as_str()).collect();
     // Recordings first, so the call list never points at a file that is not there.
@@ -2623,11 +2625,6 @@ async fn merge_records(state: &CallsState, lay: &Layout, stage: &Path, want: &[W
         }
         calls = state.store.merge_records(records).await;
     }
-    let texts = stage_path(stage, "sms/messages.json");
-    if want.iter().any(|w| w.rel == "sms/messages.json") && texts.is_file() {
-        let list = crate::sms_store::messages_from_json(&std::fs::read(&texts)?).context("texts of the backup")?;
-        sms = state.sms.merge(list);
-    }
     let mut list = Vec::new();
     for w in want.iter().filter(|w| w.item == "tasks" && w.rel != "tasks/index.json") {
         let bytes = std::fs::read(stage_path(stage, &w.rel))?;
@@ -2638,7 +2635,7 @@ async fn merge_records(state: &CallsState, lay: &Layout, stage: &Path, want: &[W
     if !list.is_empty() {
         tasks = state.task_store.merge(list).await?;
     }
-    Ok((calls, sms, tasks))
+    Ok((calls, tasks))
 }
 
 /// A file a restored record names stays only when it is `YYYY-MM-DD/<name>`
@@ -2713,7 +2710,7 @@ fn message(code: &str) -> &'static str {
         "not_found" => "no such backup file",
         "not_local" => "only on the computer Bageo runs on",
         "bad_request" => "bad request",
-        "bad_items" => "pick one or more of: settings, keys, contacts, numbers, phones, errands, calls, sms, tasks",
+        "bad_items" => "pick one or more of: settings, keys, contacts, numbers, phones, errands, calls, tasks",
         "wrong_password" => "this password does not open the backup",
         "backup_password_missing" => "set a backup password before turning on encryption",
         "backup_password_short" => "the password needs at least 8 characters",
@@ -3294,7 +3291,6 @@ mod tests {
             phones: PhoneDevices::new(),
             contacts: crate::contacts::ContactStore::open(root.join("contacts.json")),
             errands: crate::errands::ErrandStore::open(root.join("errands.json"), crate::errands::SimBook::open(root.join("phone_sims.json"))),
-            sms: crate::sms_store::SmsStore::open(root.join("sms"), crate::sms_store::now_ms(), 15),
         }
     }
 
@@ -3395,6 +3391,10 @@ mod tests {
         assert_eq!(parse_items::<&str>(&[]), None);
         assert_eq!(parse_items(&[""]), None);
         assert_eq!(parse_items(&["settings", "passwords"]), None);
+        // Text messages are gone: asking for them (an older console) is left out.
+        assert_eq!(parse_items(&["calls", "sms", "tasks"]), Some(vec!["calls", "tasks"]));
+        assert_eq!(parse_items(&["sms"]), None);
+        assert_eq!(item_of("sms/messages.json"), None);
     }
 
     #[tokio::test]
@@ -3723,18 +3723,9 @@ mod tests {
         std::fs::write(ra.join("2026-02-03").join("call-x.pcm"), b"still recording").unwrap();
         std::fs::write(rb.join("index.json"), json!({"calls": [call_json("call-b", "2026-02-04")]}).to_string()).unwrap();
         let a = state_at(&ra);
-        let now = crate::sms_store::now_ms();
-        let text = a.sms.push(now, 15, crate::sms_store::NewSms {
-            received_ms: now,
-            from: "+15555550111",
-            to: "+15555550122",
-            text: "Test message",
-            serial: "pixel-test-1",
-            device: "Test phone",
-            reference: "ref-test-1",
-            sub_id: None,
-        });
-        let crate::sms_store::Pushed::Stored(text_id) = text else { panic!("stored") };
+        // Texts an older version kept in the data folder never go into a backup.
+        std::fs::create_dir_all(ra.join("sms")).unwrap();
+        std::fs::write(ra.join("sms").join("messages.json"), br#"{"messages": []}"#).unwrap();
         let task = crate::tasks::draft_from_voicemail("call-a", "pixel-test-1", "+15555550100", "2026-02-03/call-a.wav", crate::tasks::ReplyMethod::None, None, false);
         let task = a.task_store.create(task).await.unwrap();
         a.settings_store.apply_patch(&json!({"backup_include_calls": true, "owner_name": "Calls Example"})).unwrap();
@@ -3748,14 +3739,16 @@ mod tests {
             assert_eq!(std::fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
         }
         let held = inspect(&path).unwrap();
-        assert_eq!(held.manifest.as_ref().unwrap().items, ["settings", "keys", "calls", "sms", "tasks"]);
+        assert_eq!(held.manifest.as_ref().unwrap().items, ["settings", "keys", "calls", "tasks"]);
+        assert!(held.files.iter().all(|w| !w.rel.starts_with("sms/")), "no texts in a backup");
         assert!(held.files.iter().all(|w| !w.rel.ends_with(".pcm")), "a call still being recorded stays out");
         assert!(held.files.iter().all(|w| !w.rel.starts_with("backups/")));
 
         let b = state_at(&rb);
         let preview = preview_upload(&b, &entry.name, Bytes::from(std::fs::read(&path).unwrap())).await.unwrap();
         assert_eq!((preview["has_calls"].as_bool(), preview["calls_count"].as_u64()), (Some(true), Some(3)));
-        // The call records alone: the settings here stay.
+        // The call records alone: the settings here stay. An older console
+        // still naming the texts is answered as if it had not.
         let done = apply(&b, preview["token"].as_str().unwrap(), &["calls", "sms", "tasks"]).await.unwrap();
         assert_eq!(done["ok"], true);
         assert_ne!(b.settings_store.snapshot().owner_name, "Calls Example");
@@ -3768,7 +3761,6 @@ mod tests {
             (None, None, None, None, Some("2026-02-03/call-a.wav"))
         );
         assert_eq!(std::fs::read(rb.join("2026-02-03").join("call-a.wav")).unwrap(), b"RIFF test recording");
-        assert!(b.sms.get(text_id).is_some());
         assert!(b.task_store.get(&task.id).await.is_some());
         let _ = std::fs::remove_dir_all(&ra);
         let _ = std::fs::remove_dir_all(&rb);
@@ -4021,7 +4013,7 @@ mod tests {
         std::fs::write(rb.join(&old_day).join("call-old.wav"), b"RIFF old recording").unwrap();
         let b = state_at(&rb);
         b.settings_store.apply_patch(&json!({"retention_days": 90, "backup_keep": 20})).unwrap();
-        let purge = |days: u32| crate::calls_http::purge_expired_records(&b.store, &b.task_store, &b.errands, &b.sms, days);
+        let purge = |days: u32| crate::calls_http::purge_expired_records(&b.store, &b.task_store, &b.errands, days);
         // The file says nothing, or a shorter time.
         let files: [&[u8]; 2] = [br#"{"owner_name": "Days Example"}"#, br#"{"owner_name": "Days Example", "retention_days": 7, "backup_keep": 2}"#];
         for body in files {

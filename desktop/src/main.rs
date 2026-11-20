@@ -32,7 +32,6 @@ struct ConfigView {
     has_password: bool,
     autostart: bool,
     notify_calls: bool,
-    notify_sms: bool,
     notify_summary: bool,
 }
 
@@ -49,7 +48,6 @@ fn get_config(state: State<'_, Shared>) -> ConfigView {
         has_password: lock(&state.password).is_some(),
         autostart: cfg.autostart,
         notify_calls: cfg.notify_calls,
-        notify_sms: cfg.notify_sms,
         notify_summary: cfg.notify_summary,
     }
 }
@@ -63,7 +61,6 @@ async fn save_config(
     clear_password: bool,
     autostart: bool,
     notify_calls: bool,
-    notify_sms: bool,
     notify_summary: bool,
 ) -> Result<(), String> {
     let address = address.trim();
@@ -88,7 +85,7 @@ async fn save_config(
         let old = lock(&state.config);
         (old.opened_console, old.agent_path.clone())
     };
-    let cfg = Config { address, autostart: autostart_on, notify_calls, notify_sms, notify_summary, opened_console, agent_path };
+    let cfg = Config { address, autostart: autostart_on, notify_calls, notify_summary, opened_console, agent_path };
     if config::save(&app, &cfg).is_err() {
         failed = failed.or(Some("config"));
     }
@@ -180,12 +177,6 @@ fn quit(app: AppHandle) {
     quit_app(&app);
 }
 
-/// Downloads the Android tools into the program folder. Progress shows in the snapshot's `adb` field.
-#[tauri::command]
-fn install_adb(app: AppHandle) {
-    tauri::async_runtime::spawn(local::install_adb(app));
-}
-
 #[tauri::command]
 fn fit(app: AppHandle, height: f64) {
     window::fit(&app, height);
@@ -209,7 +200,6 @@ fn main() {
             refresh,
             hide,
             quit,
-            install_adb,
             fit
         ])
         .setup(|app| {

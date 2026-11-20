@@ -20,13 +20,13 @@ not legal advice; check the rules where you and your callers live.
 | The summary and the caller's number | Sent to **every notification channel** you set up. | Those services, and everyone in those chats. |
 | Voice previews and the "not available" announcement | **Shipped with the program** and played from your computer. Details are below the table. | Nobody. |
 | Contacts | `contacts.json` in the data folder. How imports are read is below the table. | Google, for the files sent to Gemini. |
-| Text messages handed over by the SMS forwarder | `sms/messages.json` in the data folder, deleted after 15 days by default (*Days to keep records*). | Every notification channel you set up gets each text as well. |
-| AI errands | What you ask the AI to do (`errands.json`, the newest 500), the SIMs each phone has (`phone_sims.json`), and the call's record and recording in `data/calls/`. | Google and your summary service; the person called hears the AI. |
-| Appointment replies | A **text** from your phone to the caller with only the time (and your name), never what the appointment is about; or an **AI call-back**. | Your carrier and the caller. |
+| The call audio between the phone and the Bluetooth computer | Travels over Bluetooth (about 10 m), then to Bageo: on the same computer, or over your own network with a pairing code. Over the network this link is not encrypted. | Anyone on your network, if Bageo runs on another computer: use only a network you trust. |
+| AI errands | What you ask the AI to do (`errands.json`, the newest 500), the SIM country of each phone (`phone_sims.json`), and the call's record and recording in `data/calls/`. | Google and your summary service; the person called hears the AI. |
+| Appointment replies | An **AI call-back** from your phone to the caller that gives your answer once, never what the appointment is about. | Your carrier and the caller. |
 | Calendars | **No calendar account is connected.** *Add to calendar* opens a filled-in "new event" form of the calendar you chose, in your own browser, or downloads an `.ics` file from the console. | Only the calendar you open the link with. |
 | Backups | `data/calls/backups/` (or your chosen folder). Automatic and manual backups include keys, passwords and connections unless encrypted (`.bageo`) or excluded in an export. | Nobody; files stay on your computer. |
 | Logs | Call words are left out by default (`LOG_CALL_TEXT` off; only character counts), and caller numbers are masked. | Nobody on your computer unless you share the log. |
-| Bageo Status (Windows / macOS) | Talks only to your Bageo console address; stores the console password in the OS keychain; downloads `adb` from Google only if you press **Download**. | Nobody. |
+| Bageo Status (Windows / macOS) | Talks only to your Bageo console address; stores the console password in the OS keychain. | Nobody. |
 
 Details for some rows:
 
@@ -47,12 +47,11 @@ Details for some rows:
   to Gemini Live; afterwards the transcript goes to the summary model to write
   the result.
 - **Appointment replies**: the AI call-back's audio goes to Gemini Live like
-  any call. Both the text and the call go out from your own SIM and number.
+  any call. The call goes out from your own SIM and number.
 - **Calendar links**: a link in a notification carries a key that opens only
   that one file.
 
-Nothing else is contacted: no telemetry, no update check, no account. The
-start script downloads `adb` from Google only if you agree.
+Nothing else is contacted: no telemetry, no update check, no account.
 
 **Your callers did not choose any of this, and neither did the people the AI
 calls for you.** Their voices go to Google and their words to the services
@@ -144,7 +143,7 @@ into *Notes the AI may answer from* can be said to **any** caller, so put
 nothing secret there.
 
 Do not rely on Bageo for emergencies or for calls you cannot afford to miss.
-The AI can mishear, the internet can drop, the phone can lose its USB link.
+The AI can mishear, the internet can drop, the Bluetooth link can drop.
 
 When the AI cannot start, Bageo hangs up rather than leave the caller in
 silence, and says so in the notification.
@@ -154,9 +153,9 @@ silence, and says so in the notification.
 - By default (`AGENT_HOST` unset), Bageo listens on your network (`AGENT_PORT`
   and port 80 for `http://bageo.local/`), refuses other devices until you set
   a console password (in the console or `CALLS_UI_TOKEN`), checks the `Host`
-  header to block DNS rebinding, and rate-limits password guesses. Phones
-  paired once over USB connect over Wi-Fi on `PHONE_WIFI_PORT` (`8788`) with a
-  pairing key (disable with *Phones can also connect over Wi-Fi*).
+  header to block DNS rebinding, and rate-limits password guesses. A Bluetooth
+  computer on another machine connects on `PHONE_WIFI_PORT` (`8788`) with a
+  pairing code and key (disable with *Phones can also connect over Wi-Fi*).
 - Set `AGENT_HOST=127.0.0.1` to listen on this computer only. If you open
   everything with `AGENT_HOST=0.0.0.0`, set both `CALLS_UI_TOKEN` and
   `DEVICE_TOKEN`.
@@ -164,16 +163,12 @@ silence, and says so in the notification.
   keys' hints, change the prompt, or connect as a phone.
 - Never expose the port to the internet. The console has a single shared
   password, no user accounts, and speaks plain HTTP. Use a VPN instead.
-- Connections from the computer itself count as phones on USB and need no
+- Connections from the computer itself (a Bluetooth program next to Bageo) need no
   `DEVICE_TOKEN`.
 - A reverse proxy on the same computer makes every visitor look local: if you
   run one, do not let it forward `/` and `/ws` WebSocket upgrades to people
   you do not trust.
-- The root module gives the app far-reaching control over the phone's calls
-  and audio. Install only builds you trust: the releases of this repository or
-  your own build.
-- A rooted phone with an unlocked bootloader is easier to tamper with if it is
-  lost or stolen. Keep the AI phone at home; it holds your SIM.
+- Pair the Bluetooth computer only with your own phone and keep it in a safe place: while paired, it can answer and place calls on that phone.
 - Report security problems privately, see [SECURITY.md](../../SECURITY.md).
 
 ## Your SIM and your carrier
@@ -181,12 +176,12 @@ silence, and says so in the notification.
 Check your carrier's terms on automated answering. Calls are ordinary incoming
 calls on your line, and this software adds no charges of its own.
 
-Roaming and premium-rate rules apply as always, and the texts and calls the AI
+Roaming and premium-rate rules apply as always, and the calls the AI
 sends for you are billed by your plan like any other.
 
 ## Operator liability, disclaimer and licensing
 
-Bageo is self-hosted software provided "AS IS" without warranty of any kind. The author (**h4lo-void**) operates no servers or call relays, and the software sends no call audio, recordings, messages or keys back to the author. Whoever deploys Bageo is solely responsible for complying with local laws on call recording, AI disclosure, telemarketing and personal data, as well as hardware rooting and carrier or API charges.
+Bageo is self-hosted software provided "AS IS" without warranty of any kind. The author (**h4lo-void**) operates no servers or call relays, and the software sends no call audio, recordings, messages or keys back to the author. Whoever deploys Bageo is solely responsible for complying with local laws on call recording, AI disclosure, telemarketing and personal data, as well as carrier or API charges.
 
 Before running Bageo, read the [**Legal Disclaimer & Usage Notice (`LEGAL.md`)**](../../LEGAL.md), the [**Dual Licensing & Section 7 Terms (`LICENSING.md`)**](../../LICENSING.md) ([`AGPL-3.0-only`](../../LICENSE) / [**Commercial License (`COMMERCIAL_LICENSE.md`)**](../../COMMERCIAL_LICENSE.md)), and the AI-assisted internal review note [**`AUDIT_REPORT.md`**](../../AUDIT_REPORT.md) (for `v1.0`, not a third-party audit).
 

@@ -38,7 +38,7 @@ use tracing::{info, warn};
 use crate::calls_http::{CallsState, TokenQuery};
 use crate::locale::Lang;
 use crate::settings_store::RuntimeSettings;
-use crate::urgent_call::TransferWho;
+use crate::transfer::TransferWho;
 
 /// Most contacts kept.
 pub const MAX_CONTACTS: usize = 10_000;
@@ -1066,9 +1066,9 @@ impl ContactStore {
                     Ok(Some(_)) => n += 1,
                     Ok(None) => {
                         let name = b.contacts.iter().find(|c| c.phones.iter().any(|p| same_number(p, number, b.region.as_deref()))).map(|c| c.name.clone()).unwrap_or_default();
-                        kept.push(format!("{name} ({})", crate::urgent_call::masked(number)));
+                        kept.push(format!("{name} ({})", crate::transfer::masked(number)));
                     }
-                    Err(ContactError::Invalid(_)) => bad.push(crate::urgent_call::masked(number)),
+                    Err(ContactError::Invalid(_)) => bad.push(crate::transfer::masked(number)),
                     Err(e) => return Err(e),
                 }
             }
@@ -1610,23 +1610,22 @@ pub fn with_caller_block(prompt: &str, lang: Lang, block: &str) -> String {
 /// contacts. `sim_country`: the SIM the call came in on. `lang`: the language
 /// of the call's prompt (the setting's, or a SIM's own: setting `sim_languages`).
 /// `urgent`: the call may be forwarded under `whitelist_mode` emergency
-/// ([`crate::urgent_call::transfer_target`]): who the caller is and whether the
-/// phone will dial the owner. It gets the urgent part even when the number is
-/// not in the contacts.
+/// ([`crate::transfer::transfer_target`]): who the caller is. It gets the
+/// urgent part even when the number is not in the contacts.
 pub fn with_caller(
     prompt: &str,
     rt: &RuntimeSettings,
     caller_id: &str,
     sim_country: Option<&str>,
     lang: Lang,
-    urgent: Option<(TransferWho, bool)>,
+    urgent: Option<TransferWho>,
 ) -> String {
     let c = lookup(caller_id, sim_country);
     with_contact(prompt, rt, c.as_ref(), lang, urgent)
 }
 
 /// [`with_caller`] for the contact `c` the number belongs to (None: not in the contacts).
-fn with_contact(prompt: &str, rt: &RuntimeSettings, c: Option<&Contact>, lang: Lang, urgent: Option<(TransferWho, bool)>) -> String {
+fn with_contact(prompt: &str, rt: &RuntimeSettings, c: Option<&Contact>, lang: Lang, urgent: Option<TransferWho>) -> String {
     if c.is_some_and(|c| c.kind == "blacklist" || c.kind == "stall") {
         return prompt.to_string();
     }
@@ -1635,8 +1634,8 @@ fn with_contact(prompt: &str, rt: &RuntimeSettings, c: Option<&Contact>, lang: L
         info!(contact = c.id.as_str(), kind = c.kind.as_str(), "caller is in the contacts: the prompt says who it is");
         blk = caller_block(lang, rt.is_assistant_style(), &rt.owner_name, &c.name, &c.note);
     }
-    if let Some((who, will_call)) = urgent {
-        blk.push_str(&urgent_block(lang, rt.is_assistant_style(), &rt.owner_name, who, will_call));
+    if let Some(who) = urgent {
+        blk.push_str(&urgent_block(lang, rt.is_assistant_style(), &rt.owner_name, who));
     }
     if blk.is_empty() {
         return prompt.to_string();
@@ -1667,23 +1666,12 @@ fn urgent_intro(lang: Lang, assistant: bool, owner: &str, who: TransferWho) -> S
 }
 
 /// What the AI says when a caller who may be forwarded has something urgent
-/// (`whitelist_mode` emergency; `who`: [`crate::urgent_call::transfer_target`]). Without `will_call` Bageo does not put the
-/// call through: it alerts the owner, who calls back, and the AI says only
-/// that. With `will_call` (the owner's number is set) the phone dials the
-/// owner and merges the calls: the AI only asks the caller to hold on.
-pub fn urgent_block(lang: Lang, assistant: bool, owner: &str, who: TransferWho, will_call: bool) -> String {
+/// (`whitelist_mode` emergency; `who`: [`crate::transfer::transfer_target`]).
+/// Bageo does not put the call through: it alerts the owner, who calls back,
+/// and the AI says only that.
+pub fn urgent_block(lang: Lang, assistant: bool, owner: &str, who: TransferWho) -> String {
     let owner = crate::prompts::owner_label(lang, owner);
     let intro = urgent_intro(lang, assistant, &owner, who);
-    if will_call {
-        return match (lang, assistant) {
-            (Lang::ZhTw, false) => format!("\n【對方有急事】{intro}只有當他真的遇到當下的緊急狀況（例如送醫、車禍、火災、瓦斯外洩、走失、剛過世、被搶、受困、工作或家裡出大事）且需要你現在馬上處理時，先安撫他，再明確說「好，你等一下，先不要掛。」這句話用對方這通電話講的語言說（對方講英文就說英文），不要預設中文。說完就停，等系統接下來的指示（系統一聽到你叫他不要掛就會立刻撥號）。如果只是日常聊天、約吃飯、隨口提到以前的事或新聞、或說不急，就照一般對話自然聊，絕對不要叫他等或不要掛。不要說已經接通，也不要說要轉給誰。"),
-            (Lang::ZhTw, true) => format!("\n【對方有急事】{intro}只有當他真的遇到當下的緊急狀況（例如送醫、車禍、火災、瓦斯外洩、走失、剛過世、被搶、受困、工作或家裡出大事）且需要{owner}現在馬上處理時，先安撫他，再明確說「好，我現在幫你打給{owner}，請先不要掛。」這句話用對方這通電話講的語言說（對方講英文就說英文），不要預設中文。說完就停，等系統接下來的指示（系統一聽到你叫他不要掛就會立刻撥號）。如果只是日常聊天、約吃飯、隨口提到以前的事或新聞、或說不急，就照一般對話自然處理，絕對不要叫他等或不要掛。不要說已經接通，也不要說{owner}已經在線上。"),
-            (Lang::ZhCn, false) => format!("\n【对方有急事】{intro}只有当他真的遇到当下的紧急状况（例如送医、车祸、火灾、燃气泄漏、走失、刚过世、被抢、受困、工作或家里出大事）且需要你现在马上处理时，先安抚他，再明确说「好，你等一下，先不要挂。」这句话用对方这通电话讲的语言说（对方讲英文就说英文），不要默认中文。说完就停，等系统接下来的指示（系统一听到你叫他不要挂就会立刻拨号）。如果只是日常聊天、约吃饭、随口提到以前的事或新闻、或说不急，就照一般对话自然聊，绝对不要叫他等或不要挂。不要说已经接通，也不要说要转给谁。"),
-            (Lang::ZhCn, true) => format!("\n【对方有急事】{intro}只有当他真的遇到当下的紧急状况（例如送医、车祸、火灾、燃气泄漏、走失、刚过世、被抢、受困、工作或家里出大事）且需要{owner}现在马上处理时，先安抚他，再明确说「好，我现在帮你打给{owner}，请先不要挂。」这句话用对方这通电话讲的语言说（对方讲英文就说英文），不要默认中文。说完就停，等系统接下来的指示（系统一听到你叫他不要挂就会立刻拨号）。如果只是日常聊天、约吃饭、随口提到以前的事或新闻、或说不急，就照一般对话自然处理，绝对不要叫他等或不要挂。不要说已经接通，也不要说{owner}已经在线上。"),
-            (_, false) => format!("\n[Something urgent] {intro}Only when they are facing a real, present emergency right now (such as a hospital or ER visit, accident, fire, gas leak, missing person, recent death, robbery, being trapped, or a major crisis at home or work) and need you right away, calm them and say clearly: \"Okay, hold on a moment, don't hang up.\" Say it in the language the caller is speaking on this call (not necessarily English). Then stop and wait for the system's next instruction (as soon as you tell them not to hang up, the system dials). For ordinary chat, meal plans, past events, news, drills, or anything not urgent, just talk normally and never ask them to hold on or stay on the line. Do not say anyone is on the line or that you are putting them through."),
-            (_, true) => format!("\n[Something urgent] {intro}Only when they are facing a real, present emergency right now (such as a hospital or ER visit, accident, fire, gas leak, missing person, recent death, robbery, being trapped, or a major crisis at home or work) and need {owner} right away, calm them and say clearly: \"Okay, I'm calling {owner} for you now. Please don't hang up.\" Say it in the language the caller is speaking on this call (not necessarily English). Then stop and wait for the system's next instruction (as soon as you tell them not to hang up, the system dials). For ordinary chat, meal plans, past events, news, drills, or anything not urgent, just handle the call normally and never ask them to hold on or stay on the line. Do not say {owner} is on the line already."),
-        };
-    }
     match (lang, assistant) {
         (Lang::ZhTw, false) => format!("\n【對方有急事】{intro}只有當他真的遇到當下的緊急狀況且需要你現在馬上處理時，先安撫他，再明確說「好，我知道了，我馬上處理，等一下打給你。」如果只是日常聊天、約吃飯、隨口提到以前的事或新聞、或說不急，就照一般對話自然聊。不要說會把電話轉給誰，也不要說要通知誰。"),
         (Lang::ZhTw, true) => format!("\n【對方有急事】{intro}只有當他真的遇到當下的緊急狀況且需要馬上找{owner}時，先安撫他，再明確說「好，這很急，我現在馬上通知{owner}，請他立刻打給你。」如果只是日常聊天、約吃飯、隨口提到以前的事或新聞、或說不急，就照一般對話自然處理。不要說會把電話轉過去，也不要說{owner}會馬上接起來。"),
@@ -4093,7 +4081,7 @@ mod tests {
         let langs = [Lang::ZhTw, Lang::ZhCn, Lang::En, Lang::Ja, Lang::Ko, Lang::Es, Lang::Fr, Lang::De, Lang::Pt];
         for lang in langs {
             for (assistant, who) in [false, true].into_iter().flat_map(|a| ALL_WHO.map(move |w| (a, w))) {
-                let b = urgent_block(lang, assistant, "Sam", who, false);
+                let b = urgent_block(lang, assistant, "Sam", who);
                 // The line the AI is told to say, in 「…」 or "…".
                 let said = b
                     .split('「')
@@ -4105,29 +4093,6 @@ mod tests {
                     assert!(!said.to_lowercase().contains(word), "{lang:?} {assistant}: {said}");
                 }
                 assert!(said.contains("打給你") || said.contains("打给你") || said.contains("call you"), "{lang:?} {assistant}: {said}");
-            }
-        }
-    }
-
-    #[test]
-    fn with_the_urgent_call_on_the_ai_only_asks_the_caller_to_hold_on() {
-        let langs = [Lang::ZhTw, Lang::ZhCn, Lang::En, Lang::Ja, Lang::Ko, Lang::Es, Lang::Fr, Lang::De, Lang::Pt];
-        for lang in langs {
-            for (assistant, who) in [false, true].into_iter().flat_map(|a| ALL_WHO.map(move |w| (a, w))) {
-                let b = urgent_block(lang, assistant, "Sam", who, true);
-                let said = b
-                    .split('「')
-                    .nth(1)
-                    .and_then(|s| s.split('」').next())
-                    .or_else(|| b.split('"').nth(1))
-                    .unwrap_or_else(|| panic!("no line to say: {b}"));
-                assert!(
-                    said.contains("不要掛") || said.contains("不要挂") || said.contains("don't hang up"),
-                    "{lang:?} {assistant}: {said}"
-                );
-                for word in ["接通", "轉接", "转接", "put you through", "on the line", "connected"] {
-                    assert!(!said.to_lowercase().contains(word), "{lang:?} {assistant}: {said}");
-                }
             }
         }
     }
@@ -4187,8 +4152,8 @@ mod tests {
             kind: "whitelist".into(),
             updated_at: String::new(),
         };
-        let urgent = crate::urgent_call::transfer_who(&rt, Some(&amy.kind), false).map(|w| (w, false));
-        assert_eq!(urgent, Some((TransferWho::Whitelist, false)));
+        let urgent = crate::transfer::transfer_who(&rt, Some(&amy.kind), false);
+        assert_eq!(urgent, Some(TransferWho::Whitelist));
         let en = with_contact(&prompt, &rt, Some(&amy), Lang::En, urgent);
         assert!(en.contains("[Who is calling]") && en.contains("\"Amy\""), "{en}");
         assert!(!en.contains("【誰打來的】") && !en.contains("【對方有急事】") && en.contains("[Something urgent]"), "{en}");
@@ -4210,9 +4175,9 @@ mod tests {
         rt.owner_name = "Sam".into();
         rt.whitelist_mode = "emergency".into();
         // Off (the default): no urgent part for a number not in the contacts.
-        assert_eq!(crate::urgent_call::transfer_who(&rt, None, false), None);
+        assert_eq!(crate::transfer::transfer_who(&rt, None, false), None);
         rt.transfer_others = true;
-        let who = crate::urgent_call::transfer_who(&rt, None, false).expect("numbers not in the contacts are on");
+        let who = crate::transfer::transfer_who(&rt, None, false).expect("numbers not in the contacts are on");
         assert_eq!(who, TransferWho::Stranger);
         let langs = [Lang::ZhTw, Lang::ZhCn, Lang::En, Lang::Ja, Lang::Ko, Lang::Es, Lang::Fr, Lang::De, Lang::Pt];
         for lang in langs {
@@ -4229,24 +4194,23 @@ mod tests {
                     carrier_note: false,
                     auto_language: false,
                 });
-                for will_call in [false, true] {
-                    let with = with_contact(&prompt, &rt, None, lang, Some((who, will_call)));
-                    // The identity is the setting's (persona or AI assistant).
-                    let part = urgent_block(lang, rt.is_assistant_style(), "Sam", who, will_call);
-                    assert!(with.contains(part.trim_start()), "{lang:?} {assistant} {will_call}");
-                    let (head, stranger) = match lang {
-                        Lang::ZhTw => ("【對方有急事】", "不在聯絡人裡"),
-                        Lang::ZhCn => ("【对方有急事】", "不在通讯录里"),
-                        _ => ("[Something urgent]", "not in the contacts"),
-                    };
-                    assert!(with.contains(head) && with.contains(stranger), "{lang:?} {assistant} {will_call}: {with}");
-                    // No contact: no "who is calling" part, and the urgent part goes before the closing guard.
-                    assert!(!with.contains("[Who is calling]") && !with.contains("【誰打來的】"), "{lang:?}");
-                    let guard = crate::prompts::pack(lang).injection_guard.as_str();
-                    assert!(with.find(head).unwrap() < with.rfind(guard).unwrap(), "{lang:?}");
-                    let hold = part.contains("不要掛") || part.contains("不要挂") || part.contains("don't hang up");
-                    assert_eq!(hold, will_call, "{lang:?} {assistant} {will_call}");
-                }
+                let with = with_contact(&prompt, &rt, None, lang, Some(who));
+                // The identity is the setting's (persona or AI assistant).
+                let part = urgent_block(lang, rt.is_assistant_style(), "Sam", who);
+                assert!(with.contains(part.trim_start()), "{lang:?} {assistant}");
+                let (head, stranger) = match lang {
+                    Lang::ZhTw => ("【對方有急事】", "不在聯絡人裡"),
+                    Lang::ZhCn => ("【对方有急事】", "不在通讯录里"),
+                    _ => ("[Something urgent]", "not in the contacts"),
+                };
+                assert!(with.contains(head) && with.contains(stranger), "{lang:?} {assistant}: {with}");
+                // No contact: no "who is calling" part, and the urgent part goes before the closing guard.
+                assert!(!with.contains("[Who is calling]") && !with.contains("【誰打來的】"), "{lang:?}");
+                let guard = crate::prompts::pack(lang).injection_guard.as_str();
+                assert!(with.find(head).unwrap() < with.rfind(guard).unwrap(), "{lang:?}");
+                // Nobody is asked to hold on: the owner calls back.
+                let hold = part.contains("不要掛") || part.contains("不要挂") || part.contains("don't hang up");
+                assert!(!hold, "{lang:?} {assistant}");
                 // No urgent part asked for: the prompt stays as it is.
                 assert_eq!(with_contact(&prompt, &rt, None, lang, None), prompt);
             }

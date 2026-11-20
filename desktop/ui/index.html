@@ -102,7 +102,6 @@
       <div class="note" id="note" hidden>
         <div id="noteText"></div>
         <button type="button" class="btn" id="btnPw" data-i18n="enter_pw" hidden></button>
-        <button type="button" class="btn" id="btnAdb" hidden></button>
       </div>
     </div>
 
@@ -140,11 +139,6 @@
         <input type="checkbox" id="fNotifyCalls" />
         <span data-i18n="set_notify_calls"></span>
       </label>
-      <label class="check">
-        <input type="checkbox" id="fNotifySms" />
-        <span data-i18n="set_notify_sms"></span>
-      </label>
-      <span class="hint" id="smsHint" data-i18n="set_notify_sms_old" hidden></span>
       <label class="check">
         <input type="checkbox" id="fNotifySummary" />
         <span data-i18n="set_notify_summary"></span>
@@ -200,7 +194,6 @@
       case "offline": return t("r_offline");
       case "launching": return t("r_launching");
       case "launch_failed": return t("r_launch_failed");
-      case "need_adb": return t("r_need_adb");
       case "setup": return t("r_setup", { n: s.setup_todo });
       default: return t("r_starting");
     }
@@ -241,17 +234,11 @@
       list.append(li);
     }
     let note = "";
-    // Android tools, only when this program runs Bageo on this computer.
-    const adb = ["missing", "downloading", "failed"].includes(s.adb) ? s.adb : "";
     if (reached && s.locked) note = t(s.has_password ? "pw_wrong" : "locked");
-    else if (reached && adb) note = t(adb === "failed" ? "adb_failed" : "adb_need");
     else if (reached && !phones.length && !s.ready && !s.calls) note = t("no_phone_hint");
     $("noteText").textContent = note;
     $("note").hidden = !note;
     $("btnPw").hidden = !(reached && s.locked);
-    $("btnAdb").hidden = !(reached && adb && !s.locked);
-    $("btnAdb").textContent = t(adb === "downloading" ? "adb_getting" : "adb_get");
-    $("btnAdb").disabled = adb === "downloading";
     list.hidden = !phones.length;
     $("secPhones").hidden = !reached || (!phones.length && !note);
 
@@ -278,7 +265,7 @@
     $("viewMain").hidden = false;
   }
   async function showSettings() {
-    let cfg = { address: "", has_password: false, autostart: false, notify_calls: false, notify_sms: false, notify_summary: true };
+    let cfg = { address: "", has_password: false, autostart: false, notify_calls: false, notify_summary: true };
     try { cfg = await invoke("get_config"); } catch (_) { /* keep the empty form */ }
     hasPassword = !!cfg.has_password;
     clearPw = false;
@@ -288,18 +275,12 @@
     $("btnPwClear").hidden = !hasPassword;
     $("fAuto").checked = !!cfg.autostart;
     $("fNotifyCalls").checked = !!cfg.notify_calls;
-    $("fNotifySms").checked = !!cfg.notify_sms;
     $("fNotifySummary").checked = cfg.notify_summary !== false;
-    showSmsHint();
     setAddrHint(false);
     $("saveErr").hidden = true;
     $("viewMain").hidden = true;
     $("viewSet").hidden = false;
     (snap && snap.locked ? $("fPw") : $("fAddr")).focus();
-  }
-  // An older Bageo cannot tell this program about text messages.
-  function showSmsHint() {
-    $("smsHint").hidden = !($("fNotifySms").checked && snap && snap.sms_supported === false);
   }
   function setAddrHint(bad) {
     const el = $("addrHint");
@@ -318,7 +299,6 @@
   });
   $("btnSet").addEventListener("click", showSettings);
   $("btnPw").addEventListener("click", showSettings);
-  $("btnAdb").addEventListener("click", () => invoke("install_adb").catch(() => {}));
   $("btnQuit").addEventListener("click", () => invoke("quit"));
   $("btnCancel").addEventListener("click", showMain);
   $("btnPwClear").addEventListener("click", () => {
@@ -328,7 +308,6 @@
     $("btnPwClear").hidden = true;
   });
   $("fPw").addEventListener("input", () => { if ($("fPw").value) clearPw = false; });
-  $("fNotifySms").addEventListener("change", showSmsHint);
   $("viewSet").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const address = $("fAddr").value.trim();
@@ -338,7 +317,7 @@
     try {
       await invoke("save_config", {
         address, password, clear_password: clear, autostart: $("fAuto").checked,
-        notify_calls: $("fNotifyCalls").checked, notify_sms: $("fNotifySms").checked,
+        notify_calls: $("fNotifyCalls").checked,
         notify_summary: $("fNotifySummary").checked,
       });
     } catch (e) {

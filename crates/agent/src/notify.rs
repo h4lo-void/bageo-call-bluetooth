@@ -244,7 +244,7 @@ pub struct NotifyAction {
 /// What is sent.
 #[derive(Debug, Clone, Default)]
 pub struct Message {
-    /// `incoming` / `outgoing` / `blocked` / `repeat_calls` / `voicemail` / `summary` / `test` / `sms`.
+    /// `incoming` / `outgoing` / `blocked` / `repeat_calls` / `voicemail` / `summary` / `test`.
     pub event: String,
     pub title: String,
     /// Plain text; its first line is the headline.
@@ -1867,7 +1867,7 @@ async fn deliver_limited(
         Admit::Skip { first } => {
             info!(
                 "notify held back kind={kind} number={}: more than {REPEAT_MAX_SENT} in a minute",
-                crate::urgent_call::masked(caller_id)
+                crate::transfer::masked(caller_id)
             );
             if first {
                 let http = http.clone();

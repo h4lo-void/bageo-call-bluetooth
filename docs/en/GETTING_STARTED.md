@@ -2,15 +2,15 @@
 
 This guide takes you from a fresh download to an AI that answers your phone
 calls on your own number, and then to the first call the AI makes for you.
-Bageo is self-hosted: a rooted Android phone holds your SIM, one program on
-your computer streams each call to Gemini Live, and every recording and
-transcript stays in a folder on your disk. Plan for about an hour; most of it
-goes into preparing the phone.
+Bageo is self-hosted: your phone stays an ordinary phone, a Linux computer with
+Bluetooth answers its calls the way a car kit would, Bageo streams each call to
+Gemini Live, and every recording and transcript stays in a folder on your
+disk. Plan for about half an hour.
 
 1. [What you need](#1-what-you-need)
 2. [Install and start Bageo](#2-install-and-start-bageo)
 3. [Fill in the basics](#3-fill-in-the-basics)
-4. [Prepare the phone](#4-prepare-the-phone)
+4. [Connect the phone by Bluetooth](#4-connect-the-phone-by-bluetooth)
 5. [Make the first test call](#5-make-the-first-test-call)
 6. [Get notified](#6-get-notified)
 7. [Contacts, appointments and AI errands](#7-contacts-appointments-and-ai-errands)
@@ -20,30 +20,31 @@ goes into preparing the phone.
 
 | | |
 |---|---|
-| **A spare Android phone** | Rooted with Magisk or KernelSU, Android 10 or newer, with a SIM that receives calls. Tested on Google Pixel 7, 7a, 8 and 9 (see [which phones work](PHONE.md#which-phones)). Rooting is not covered here: follow a guide for your exact model, and remember that unlocking the bootloader wipes the phone. |
-| **A computer** | Windows 10/11, macOS (Apple Silicon or Intel) or Linux, switched on whenever calls should be answered, plus a USB cable to the phone. Docker works too, with the phone on Wi-Fi. |
+| **A phone** | An iPhone or an Android phone with a SIM that receives calls. No app and no root. |
+| **A computer for Bageo** | Windows 10/11, macOS (Apple Silicon or Intel) or Linux, switched on whenever calls should be answered. Docker works too. |
+| **A Linux computer with Bluetooth** | A Raspberry Pi, a mini PC or a home server near the phone (about 10 m), running Debian, Ubuntu or Raspberry Pi OS. It can be the same computer as Bageo's if that one runs Linux. See [Phone setup](PHONE.md). |
 | **A Gemini API key** | Create one at <https://aistudio.google.com/apikey> and copy it. It is the only key Bageo needs: live calls, summaries, the scam review and contact import all use it. Google bills per use; set a budget in your Google account if you want a ceiling. |
 
 ## 2. Install and start Bageo
 
-Bageo runs as one program on your computer. It talks to the phone and to
+Bageo runs as one program on your computer. It talks to the Bluetooth computer and to
 Gemini, keeps the call records and serves the web console. There is no
 database and no other service to install.
 
 ### From a release (easiest)
 
 1. Download the file for your system from the
-   [Releases](https://github.com/h4lo-void/bageo-call/releases) page:
+   [Releases](https://github.com/h4lo-void/bageo-call-bluetooth/releases) page:
 
    | System | File |
    |---|---|
-   | Windows | `bageo-call-<version>-windows-x64-setup.exe` |
-   | macOS, Apple chip | `bageo-call-<version>-macos-arm64.dmg` |
-   | macOS, Intel | `bageo-call-<version>-macos-x64.dmg` |
-   | Linux | `bageo-call-<version>-linux-x64.tar.gz` |
+   | Windows | `bageo-call-bluetooth-<version>-windows-x64-setup.exe` |
+   | macOS, Apple chip | `bageo-call-bluetooth-<version>-macos-arm64.dmg` |
+   | macOS, Intel | `bageo-call-bluetooth-<version>-macos-x64.dmg` |
+   | Linux | `bageo-call-bluetooth-<version>-linux-x64.tar.gz` |
 
    Bageo Status, the small icon that shows what Bageo is doing, comes with the
-   installer. There is nothing else to download.
+   installer. The Linux file also holds the Bluetooth program (step 4).
 2. Install and start it:
    - **Windows:** double-click the `setup.exe`. It needs no administrator
      rights and installs into `%LOCALAPPDATA%\Programs\Bageo`. Then click the
@@ -69,10 +70,7 @@ database and no other service to install.
    <http://bageo.local/> (on this computer <http://localhost:8787/> works too).
    The first time, Windows asks whether to allow Bageo on the network: choose
    *Private networks*.
-5. The USB link needs `adb` (Google's Android platform-tools). If it is
-   missing, click the icon and press "Download". It goes into a
-   `platform-tools` folder next to the program.
-6. For advanced use: if you want a `.env` file, put it in the install folder
+5. For advanced use: if you want a `.env` file, put it in the install folder
    (Windows) or in `~/Library/Application Support/Bageo/.env` (macOS). The
    Windows install folder also holds `start.cmd` and `start.ps1`, which start
    Bageo from the command line; the macOS app has no start script. To see the
@@ -80,7 +78,7 @@ database and no other service to install.
    `./start.sh --console` (Linux).
 
 On Linux, and with `-Console` on Windows, the start script does the same
-work in the terminal: it offers the `adb` download, opens the web console and
+work in the terminal: it opens the web console and
 puts a **Bageo Console** shortcut on the desktop (to skip the shortcut, start
 with `-NoShortcut` on Windows or `--no-shortcut`, or set
 `BAGEO_NO_SHORTCUT=1` in `.env`). Leave that terminal open: closing it stops
@@ -89,8 +87,8 @@ Bageo.
 ### From source
 
 ```text
-git clone https://github.com/h4lo-void/bageo-call.git
-cd bageo-call
+git clone https://github.com/h4lo-void/bageo-call-bluetooth.git
+cd bageo-call-bluetooth
 ./start.sh            # Windows: .\start.cmd
 ```
 
@@ -105,30 +103,26 @@ cp .env.example .env        # set CALLS_UI_TOKEN and DEVICE_TOKEN
 docker compose up -d --build
 ```
 
-To skip building, use the ready-made image `bageo/bageo-call` on Docker Hub
-(also `ghcr.io/h4lo-void/bageo-call`), for amd64 and arm64: in
-`docker-compose.yml` delete the `build: .` line, change `image:` to
-`bageo/bageo-call:latest`, then run `docker compose up -d`.
+This builds Bageo Bluetooth from this repository. (The ready-made
+`bageo/bageo-call` images are the Android edition, with features that do not
+work over Bluetooth.)
 
 In a container Bageo is reachable from your network, so two values in `.env`
 are required: `CALLS_UI_TOKEN` (the console password) and `DEVICE_TOKEN` (for
-the phone's connection).
+the Bluetooth computer's connection).
 
 - The console is at `http://<host>:8787/`; type the `CALLS_UI_TOKEN` value
   when it asks for the password.
-- Connect the phone by IP address, no USB needed:
+- Connect the Bluetooth computer by IP address:
   1. In the console open *System* and, under **Pair a phone by IP address**,
      click **Get a pairing code**.
-  2. In the Bageo app on the phone tap **Connect by IP address** and enter the
-     Docker host's IP (for example `192.168.1.20`) and the code. The code
-     works for 10 minutes.
+  2. On the Bluetooth computer run `sudo bageo-bluetooth link 192.168.1.20 123456`
+     with the Docker host's IP and the code, then
+     `sudo systemctl restart bageo-bluetooth`. The code works for 10 minutes.
 
-  The phone uses the same port as the console, so only port 8787 has to be
-  open. The host port can be another number (for example `9000:8787`): then
-  type the address with that port (`192.168.1.20:9000`). The phone and the
-  Docker host must be on the same network. More in
-  [Phone setup → Wi-Fi](PHONE.md#wi-fi). Connecting to
-  `ws://<host>:8787/ws?token=<DEVICE_TOKEN>` by hand still works too.
+  The Bluetooth computer uses the same port as the console, so only port 8787
+  has to be open. The two computers must be on the same network. More in
+  [Phone setup → Connect it to Bageo](PHONE.md#connect-it-to-bageo).
 - Set `PUBLIC_URL` in `.env` (for example `http://192.168.1.20:8787`) so the
   links in notifications open. `bageo.local` does not work inside a container.
 - The comments in `docker-compose.yml` cover the time zone.
@@ -139,7 +133,7 @@ Everything stays in the folder you started from (`/data/calls` in Docker; `~/Lib
 
 | Path | Contents |
 |---|---|
-| `data/calls/` | call records, recordings, transcripts, contacts, to-do items, errands, forwarded SMS (`sms/`), and backups (`backups/`) |
+| `data/calls/` | call records, recordings, transcripts, contacts, to-do items, errands, and backups (`backups/`) |
 | `data/calls/config/settings.json` | everything you set in the web console, **including your API keys** |
 | `.env` | optional start-up options (port, passwords); see [Settings reference](SETTINGS.md) |
 
@@ -172,35 +166,34 @@ you read 繁體中文).
 
 Save. The checklist on the *System* page shows anything still missing.
 
-## 4. Prepare the phone
+## 4. Connect the phone by Bluetooth
 
-The short version is below; details and rollback are in
-[Phone setup](PHONE.md).
+The short version is below; details are in [Phone setup](PHONE.md).
 
-1. Copy `bageo-phone-module-<version>.zip` from the release to the phone and
-   install it as a module in the Magisk or KernelSU app. Reboot.
-2. Open the **Bageo** app and work through **Setup steps** until every step
-   is done: permissions, default phone app, call screening, Do Not Disturb
-   access, battery exemption. The app itself needs no root access; the module
-   does that work.
-3. Turn on **USB debugging**: *Settings → About phone*, tap *Build number*
-   seven times, then *System → Developer options → USB debugging*.
-4. Plug the phone into the computer. On the phone, accept **"Allow USB
-   debugging?"** and tick *Always allow from this computer*.
+1. On the Linux computer with Bluetooth, install the Bluetooth program. From the
+   Linux download run `sudo ./bluetooth/install.sh`; from the source run
+   `sudo ./install.sh` inside the `bluetooth` folder.
+2. If Bageo runs on another computer or in Docker, link the two. In the console
+   open *System* and, under **Pair a phone by IP address**, click **Get a
+   pairing code**. Then, on the Bluetooth computer, run
+   `sudo bageo-bluetooth link <Bageo's IP address> <code>` and
+   `sudo systemctl restart bageo-bluetooth`. If Bageo runs on the Bluetooth
+   computer itself, skip this step.
+3. Pair the phone.
+   - **Android:** within 10 minutes after the install, open *Settings →
+     Bluetooth → Pair new device*, tap "Bageo HF", then tap Pair.
+   - **iPhone:** open *Settings → Bluetooth* and keep that screen open. On the
+     Bluetooth computer run `sudo bageo-bluetooth pair` to list the phones
+     nearby, then `sudo bageo-bluetooth pair <the phone's address>`, and tap
+     Pair on the iPhone.
 
-Within about 15 seconds Bageo sets up the USB link and starts the app's call
-service by itself. *System → Phones* in the web console lists the phone; once
-it shows *Ready for calls*, you are done.
+Within a few seconds *System → Phones* in the web console lists the phone. After
+the first pairing the phone reconnects by itself.
 
-After that you can unplug the cable: on the same network the phone switches to
-Wi-Fi by itself (see [Phone setup → Wi-Fi](PHONE.md#wi-fi)). On Windows, allow
-Bageo on private networks when the firewall asks.
-
-> From now on the phone is a call box: it does not ring out loud, its own
-> phone app is hidden, and its microphone and speaker stay muted during calls,
-> so nothing in the room is heard. That is by design. To use it as an ordinary
-> phone for a while, switch it to [normal phone mode](PHONE.md#normal-phone-mode)
-> under *System → Phones* or in the app, and switch back whenever you like.
+> From now on Bageo answers the phone's calls over Bluetooth. The phone stays an
+> ordinary phone with its own apps. To answer calls yourself for a while, switch
+> it to [normal phone mode](PHONE.md#normal-phone-mode) under *System → Phones*,
+> and switch back whenever you like.
 
 ## 5. Make the first test call
 
@@ -267,7 +260,7 @@ into the AI's prompt when that person calls. In a call's details, **Add to
 contacts** saves the caller.
 
 Each contact goes on one of four lists: ordinary contact, Whitelist (close
-family and friends, whose calls can be put through to you—use *Who can be
+family and friends, whose calls can be forwarded to you or alert you—use *Who can be
 forwarded* if you want others included too), Blacklist (turned
 away, no AI) or stall list (kept talking from the first second).
 
@@ -280,21 +273,21 @@ From then on:
    to them.
 2. After the call, the request waits under **To do** at the top of the
    *Calls* page, and in the notification.
-3. Pick how the caller hears your answer (**Text**, **AI call-back** or
-   **Don't tell them**), then press **Accept** or **Decline**. Texts also need
-   *Text the caller* switched on in the settings.
+3. Pick how the caller hears your answer (**AI call-back** or **Don't tell
+   them**), then press **Accept** or **Decline**.
 4. On an accepted appointment, press **Add to calendar**. The first time it
    asks which calendar you use (Google, Outlook.com, Microsoft 365, Apple,
    Yahoo or `.ics`); after that it goes straight there.
 
 ### Your first AI errand
 
-The 1.4+ phone app reports its SIMs automatically when it connects (calling the
-phone once is only needed on older app versions). Then open **Errands**:
+For the AI to dial, Bageo must know the country of the phone's SIM: type the
+SIM's phone number under *System → Phones*, or set `SIM_COUNTRY` on the
+Bluetooth computer (see [Phone setup](PHONE.md)). Then open **Errands**:
 
 1. **Who to call**: a contact's name or a number. A number without `+` is
    read as one from your own country; write numbers abroad with `+`. The AI
-   only calls from a SIM of the number's country.
+   only calls when the phone has a SIM of the number's country.
 2. **What to take care of**: what you want and what you can accept, for
    example "Book a table for 4 tomorrow at 7 pm under Wang, non-smoking;
    7:30 to 8 is fine too."
@@ -339,16 +332,16 @@ Calls are answered only while Bageo runs.
 - **Docker:** `restart: unless-stopped` in `docker-compose.yml` already brings
   it back after a reboot.
 
-Keep the phone on a charger. If the phone or the computer restarts, both sides
-reconnect by themselves.
+Keep the phone charged and within Bluetooth range. If the phone or a computer
+restarts, they reconnect by themselves.
 
 ### See the status in the system tray or menu bar
 
 On Windows and macOS, the Bageo icon (called **Bageo Status**) starts together
 with Bageo. It sits in the system tray (Windows) or the menu bar (macOS). The frame around
 its icon is green when everything works, yellow when something needs a look
-(for example the console still lists settings to fill in, a phone is not
-connected, or the Android tools are missing) and red when Bageo cannot be
+(for example the console still lists settings to fill in or a phone is not
+connected) and red when Bageo cannot be
 reached or no phone is connected.
 
 - **Windows:** Windows puts new icons behind the `^` next to the clock; drag
@@ -361,13 +354,11 @@ icon.
 
 Under "Settings" you can type the address, enter the console password, turn on
 "Start when I log in", and choose which small notifications to see: when a call
-comes in, when a text message arrives, and when a call summary is ready. Click
+comes in and when a call summary is ready. Click
 one to open the console. A call summary notification appears once Bageo has
 written the summary after a call ends. It shows the contact's name (or the
-number) and the main points of the call, and opens that call. Call and text
-message notifications are off by default; call summaries are on. Text message
-notifications need the
-[SMS forwarder](../../tools/sms_forward/README.md) from the same version.
+number) and the main points of the call, and opens that call. Call notifications
+are off by default; call summaries are on.
 
 ## Next
 

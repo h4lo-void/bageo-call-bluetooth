@@ -11,7 +11,7 @@ use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_opener::OpenerExt as _;
 
-use crate::notify::{CallWatch, Notice, SmsWatch, SummaryWatch};
+use crate::notify::{CallWatch, Notice, SummaryWatch};
 use crate::state::{lock, Shared};
 use crate::status::{self, DevicesResult, Snapshot};
 use crate::{config, local, toast, tray};
@@ -83,10 +83,8 @@ struct Poller {
     ui_url_tries: u32,
     lang: String,
     calls: CallWatch,
-    sms: SmsWatch,
     summary: SummaryWatch,
     calls_on: bool,
-    sms_on: bool,
     summary_on: bool,
     /// The Bageo base address the watchers last looked at.
     watched_base: Option<String>,
@@ -109,10 +107,8 @@ impl Poller {
             ui_url_tries: 0,
             lang,
             calls: CallWatch::default(),
-            sms: SmsWatch::default(),
             summary: SummaryWatch::default(),
             calls_on: false,
-            sms_on: false,
             summary_on: false,
             watched_base: None,
         })
@@ -127,7 +123,6 @@ impl Poller {
         self.ui_url_misses = 0;
         self.ui_url_tries = 0;
         self.calls.reset();
-        self.sms.reset();
         self.summary.reset();
         self.watched_base = None;
     }
@@ -139,7 +134,7 @@ impl Poller {
         }
     }
 
-    /// Looks for new calls, text messages and call summaries. Updates `snap.sms_supported`.
+    /// Looks for new calls and call summaries.
     async fn collect_notices(
         &mut self,
         cfg: &config::Config,
@@ -151,7 +146,6 @@ impl Poller {
         let mut notices = Vec::new();
         if self.watched_base.as_deref() != Some(base) {
             self.calls.reset();
-            self.sms.reset();
             self.summary.reset();
             self.watched_base = Some(base.to_string());
         }
@@ -173,34 +167,12 @@ impl Poller {
             self.calls_on = false;
         }
 
-        if cfg.notify_sms {
-            if !self.sms_on {
-                self.sms.reset();
-                self.sms_on = true;
-            }
-            if self.sms.due() {
-                let url = match self.sms.after() {
-                    Some(id) => format!("{base}calls/api/notify/recent?after={id}"),
-                    None => format!("{base}calls/api/notify/recent"),
-                };
-                match get(&self.client, &url, token).await {
-                    Some((200, Some(body))) => notices.extend(self.sms.on_response(&body, &snap.address)),
-                    Some((404, _)) => self.sms.on_not_found(),
-                    _ => self.sms.on_error(),
-                }
-            }
-            snap.sms_supported = self.sms.supported;
-        } else {
-            self.sms_on = false;
-            snap.sms_supported = None;
-        }
-
         if cfg.notify_summary {
             if !self.summary_on {
                 self.summary.reset();
                 self.summary_on = true;
             }
-            // Quiet on any failure (an older Bageo, a missing password): calls and texts go on.
+            // Quiet on any failure (an older Bageo, a missing password): call notices go on.
             if self.summary.due() {
                 if let Some((200, Some(body))) = get(&self.client, &format!("{base}calls/api/list?limit=10"), token).await {
                     notices.extend(self.summary.on_list(&body, &snap.address, &snap.lang));
@@ -250,7 +222,6 @@ impl Poller {
                 None => status::after_failure(self.last_good.as_ref(), self.failures, &self.lang, has_password, &address),
             };
             snap.local = managed;
-            snap.adb = local::adb_state(local_base.is_some(), false, true, *lock(&shared.adb_job)).to_string();
             return snap;
         };
         self.failures = 0;
@@ -287,16 +258,7 @@ impl Poller {
         let mut snap = status::build_snapshot(&health_json, &detail, has_password, &address, &self.system_locale);
         self.lang = snap.lang.clone();
 
-        // Android tools on this computer, and whether quitting also stops Bageo.
-        let (usb_enabled, adb_found) = status::usb_flags(&detail);
-        let adb = {
-            let mut job = lock(&shared.adb_job);
-            if *job == local::AdbJob::Failed && (!usb_enabled || adb_found) {
-                *job = local::AdbJob::Idle;
-            }
-            local::adb_state(local_base.is_some(), usb_enabled, adb_found, *job)
-        };
-        status::apply_adb(&mut snap, adb);
+        // Whether quitting also stops Bageo.
         snap.local = managed;
 
         // The first time Bageo answers on this computer, show the console once.
@@ -307,7 +269,7 @@ impl Poller {
             let _ = config::save(app, &saved);
         }
 
-        // Calls and text messages for desktop notifications.
+        // Calls and call summaries for desktop notifications.
         let notices = self.collect_notices(&cfg, &base, password.as_deref(), &health_json, &mut snap).await;
         self.last_good = Some(snap.clone());
         for notice in notices {

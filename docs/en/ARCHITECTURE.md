@@ -1,37 +1,43 @@
 # How Bageo works: architecture of a self-hosted AI phone assistant
 
 Bageo lets an AI answer and place calls on your real phone number. This page
-follows one call from the ring on a rooted Android phone, through one Rust
-program on your computer, to Gemini Live and back, and names the file that
-handles each step. Read it before you change the code, debug a call, or put
-another front end in place of the phone.
+follows one call from the ring on your phone, over Bluetooth to a small program
+on a Linux computer, through one Rust program to Gemini Live and back, and names
+the file that handles each step. Read it before you change the code, debug a
+call, or put another front end in place of the Bluetooth program.
 
 ## The big picture
 
-Bageo has three parts. There is no database, no message broker and no cloud
+Bageo has four parts. There is no database, no message broker and no cloud
 service of the project's own.
 
-1. **A spare Android phone** (rooted, with your SIM) runs the Bageo app and a
-   root module. It answers, dials and carries audio. It makes no decisions.
-2. **The Bageo program** is one Rust program on your computer. It holds all
+1. **Your phone** (an iPhone or an Android phone with your SIM) stays as it is:
+   no app, no root.
+2. **The Bluetooth program** runs on a Linux computer with Bluetooth, paired
+   with the phone like a car kit. It answers, dials and carries audio. It makes
+   no decisions.
+3. **The Bageo program** is one Rust program on your computer. It holds all
    the logic: when to answer, the Gemini Live session, the hang-up and scam
    rules, summaries, contacts, appointments, errands and notifications.
-3. **The web console** is one HTML page compiled into the Bageo program, in
+4. **The web console** is one HTML page compiled into the Bageo program, in
    nine languages.
 
 ```mermaid
 flowchart LR
-    subgraph phone["Android phone (rooted)"]
-        app["Bageo app<br/>privileged system app"]
-        module["Root module<br/>boot setup, mode switch"]
+    subgraph phone["Your phone (unchanged)"]
+        sim["SIM and phone app"]
+    end
+    subgraph bt["Linux computer with Bluetooth"]
+        bridge["bageo-bluetooth<br/>(Python, bluetooth/)"]
     end
     subgraph pc["Your computer"]
         agent["Bageo program (Rust)"]
         data[("data/calls<br/>records, WAV, contacts,<br/>to-do, errands, settings")]
         ui["web console<br/>(one HTML page)"]
     end
-    other(["Caller or callee"]) <-- "mobile network" --> app
-    app <-- "control + media WebSocket<br/>adb reverse (USB) or Wi-Fi<br/>JSON + 16 kHz PCM" --> agent
+    other(["Caller or callee"]) <-- "mobile network" --> sim
+    sim <-- "Bluetooth hands-free<br/>call audio" --> bridge
+    bridge <-- "control + media WebSocket<br/>same computer or network<br/>JSON + PCM audio" --> agent
     agent <-- "WebSocket<br/>audio in, audio out, tool calls" --> gemini[("Gemini Live API")]
     agent -- "transcript, contact files,<br/>scam review" --> llm[("Gemini Flash-Lite<br/>or an OpenAI-compatible model")]
     agent --> data
@@ -43,12 +49,10 @@ flowchart LR
 
 | Piece | Where | Role |
 |---|---|---|
-| **Phone app** | [`android/`](../../android) | Answers or places the call silently, captures the other side's voice, plays the AI's voice into the call, reports the SIM of each call, sends texts on request. No conversation logic. Details: [phone-side architecture](../../android/ARCHITECTURE.md). |
-| **Root module** | `android/magisk/pixelcallai_uplink` | Installs the app as a privileged system app, sets the phone up as a call box at every boot, and runs the root helper behind the AI phone / [normal phone](PHONE.md#normal-phone-mode) switch. |
-| **Bageo program** | [`crates/agent`](../../crates/agent) | Everything else: the call state machine, Gemini Live sessions, recording, summaries, contacts, appointments, errands, notifications, the web console and its API, the USB link to the phones. |
+| **Bluetooth program** | [`bluetooth/`](../../bluetooth) | The `bageo-bluetooth` service (Python) on a Linux computer with Bluetooth. Pairs with the phone as a hands-free kit, answers or places calls through it, hangs up, and carries both voices to Bageo over the same WebSocket protocol as the rest of the system. No conversation logic. Details: [Bluetooth README](../../bluetooth/README.md). |
+| **Bageo program** | [`crates/agent`](../../crates/agent) | Everything else: the call state machine, Gemini Live sessions, recording, summaries, contacts, appointments, errands, notifications, the web console and its API. |
 | **Web console** | `crates/agent/static/calls.html` | One self-contained page compiled into the Bageo program. |
-| **Bageo Status** | [`desktop/`](../../desktop) | Optional desktop tray / menu-bar app (Tauri 2, included in the Windows installer and macOS `.dmg`) that starts Bageo in the background and shows status, call, SMS and summary notifications. |
-| **SMS forwarder** | [`tools/sms_forward`](../../tools/sms_forward) | Optional, separate Python script that forwards the phone's incoming texts. |
+| **Bageo Status** | [`desktop/`](../../desktop) | Optional desktop tray / menu-bar app (Tauri 2, included in the Windows installer and macOS `.dmg`) that starts Bageo in the background and shows status, call and summary notifications. |
 
 ### Modules of the Bageo program
 
@@ -61,24 +65,22 @@ flowchart LR
 | `scenario.rs`, `preflight.rs` | Call-situation hints (courier, bank charge check, wrong number, …) and errand preflight question/ladder extraction. |
 | `stall_review.rs` | The second look before Stall Mode: `gemini-flash-lite-latest` labels the call `scam_or_sales`, `normal`, `ivr_recording` or `too_early` within 1.5 s, naming the kind of call from the scam database and how sure it is. |
 | `scam_db.rs` | The sales and scam database (`data/scam_db.json`: 46 kinds of call, keywords in 27 languages, number hints), your additions in `config/scam_db.local.json`, and the marks per number. |
-| `appointments.rs` | The appointment tools on normal calls, the to-do items they create, Accept / Decline, the text or AI call-back that tells the caller, and the shared outbound queue. |
-| `urgent_call.rs`, `urgency.rs` | Urgent caller detection across languages and the trial 3-way conference merge (`add_call`) for forwarded calls. |
-| `callback.rs` | The phones' control connections: `place_call`, `send_sms` and their results, routed to the right phone. |
+| `appointments.rs` | The appointment tools on normal calls, the to-do items they create, Accept / Decline, the AI call-back that tells the caller, and the shared outbound queue. |
+| `urgent_call.rs`, `urgency.rs` | Urgent caller detection across languages and the urgent notification. |
+| `callback.rs` | The phones' control connections: `place_call` and its result, routed to the right phone. |
 | `errands.rs` | AI errands: number checks, phone and SIM choice (`SimBook`), the errand script and `ask_owner`, live captions, what you type during the call, the structured result. |
 | `contacts.rs` | The contact list; number matching however a number is written; import from vCard, CSV, TSV, text, `.xlsx` and `.docx`, and through Gemini for PDFs and pictures; vCard export. |
 | `phone_region.rs` | Which country a number belongs to, read the way the answering SIM reads it; the SIM country each phone reported. |
 | `calendar.rs` | Calendar suggestions and "add to calendar" links for Google, Outlook.com, Microsoft 365, Yahoo and `.ics`. |
 | `summary.rs` | The after-call summary over Gemini or any OpenAI-compatible API, translations of lines said in another language, the result of an errand. |
 | `tasks.rs` | The store behind **To do**. |
-| `sms_store.rs` | Stored text messages, grouped into conversations, and replies sent back through the phone. |
 | `notify.rs`, `gmail.rs`, `tg_inbound.rs` | The 32 notification channels, e-mail over SMTP, Telegram button presses. |
 | `control/` | Remote chat commands and natural-language parsing across Telegram, Discord, Slack and Matrix. |
 | `mcp.rs` | Built-in Model Context Protocol (`POST /mcp`) server and universal inbound command endpoint (`POST /calls/api/control/inbound`). |
 | `calls.rs`, `calls_http.rs` | Call records, recordings and transcripts; the web console's REST API. |
 | `backup.rs`, `backup_crypt.rs` | Scheduled and manual backups, selective export/import, and `.bageo` encryption (Argon2id + XChaCha20-Poly1305). |
 | `settings_store.rs` | Settings from `.env` plus what the console saved, applied without a restart. |
-| `lan.rs`, `phone_wifi.rs` | LAN access guard, `Host` check, password rate limiting, and the USB-to-Wi-Fi phone pairing key. |
-| `usb_bridge.rs` | Keeps `adb reverse` up for every USB phone and starts the app's call service. |
+| `lan.rs`, `phone_wifi.rs` | LAN access guard, `Host` check, password rate limiting, and the pairing code and key for the Bluetooth computer's network link. |
 | `mdns.rs` | Answers `bageo.local` on the local network (multicast DNS), so the console opens without knowing the computer's IP. |
 | `log_text.rs` | Masks caller numbers and omits spoken words from logs unless `LOG_CALL_TEXT=1` is set. |
 | `adpcm.rs`, `voice_preview.rs`, `ambience.rs` | The 1,080 bundled voice clips (IMA ADPCM), voice previews and the "not available" announcement, the 12 background sounds. |
@@ -88,11 +90,11 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     participant C as Caller
-    participant P as Phone app
+    participant P as Bluetooth computer
     participant A as Bageo
     participant G as Gemini Live
     C->>P: rings
-    P->>A: incoming (number, SIM)
+    P->>A: incoming (number)
     A->>P: answer_plan (ring 3 s)
     A->>G: open session, prepare the opening line
     P->>A: picks up, opens the media WebSocket
@@ -107,14 +109,12 @@ sequenceDiagram
     A->>A: recording, summary, to-do, notifications
 ```
 
-1. **Idle.** Each phone keeps a *control* WebSocket open to the Bageo program.
-   - On USB, the app dials `ws://127.0.0.1:8765` on the phone, and
-     `adb reverse` (kept up by `usb_bridge.rs`) carries it to the Bageo
-     program.
-   - Over [Wi-Fi](PHONE.md#wi-fi), the app connects to the address of the
-     Bageo program directly.
-2. **Ringing.** The app reports `incoming` with the caller's number and the
-   SIM the call came in on. Bageo decides:
+1. **Idle.** Each Bluetooth computer keeps a *control* WebSocket open to the Bageo program.
+   - On the same computer it connects to `ws://127.0.0.1:8787/ws`.
+   - Over the network, it connects with the Bageo address and a pairing code
+     (see [Phone setup](PHONE.md#connect-it-to-bageo)).
+2. **Ringing.** The Bluetooth program reports `incoming` with the caller's
+   number. Bageo decides:
    - A Blacklist number is hung up on while it rings, or picked up for the
      recorded announcement. It never reaches Gemini.
    - Any other call gets an `answer_plan`: ring for `answer_ring_ms` (3 s by
@@ -127,18 +127,14 @@ sequenceDiagram
      names callers use for you, the language rules for this SIM and number, the
      appointment tools when appointments are on, and the fixed rules (see
      [Writing the prompt](PROMPTS.md#what-the-ai-is-told-on-every-call)).
-3. **Pick-up.** The app answers and opens a *media* WebSocket. Caller audio
+3. **Pick-up.** The Bluetooth program answers and opens a *media* WebSocket. Caller audio
    flows up in 60 ms PCM frames.
    - The Bageo program adopts the pre-warmed session and releases the opening
      line (measured median: about 0.43 s after pick-up).
-   - Some phones report the SIM only at pick-up. If that changes the opening
-     language, the prepared line is dropped and the AI answers a moment later
-     in the right language.
 4. **Conversation** (`gemini_live.rs`). Bageo:
-   - boosts the quiet call audio and checks in the first seconds whether the
-     phone's capture contains the AI's own voice. That decides whether the
-     caller may interrupt (**Let the caller interrupt**: about 0.8 s of speech;
-     a short "mm" does not count) and how the background sound is mixed;
+   - boosts the quiet call audio, lets the caller interrupt (**Let the caller
+     interrupt**: about 0.8 s of speech; a short "mm" does not count) and mixes
+     in the background sound;
    - streams the caller to Gemini, which detects the end of each turn itself by
      default, and sends Gemini's audio back mixed with the background sound;
    - on a Taiwanese SIM taking a call from abroad, keeps the AI quiet until the
@@ -195,7 +191,7 @@ Errands and appointment call-backs share one outbound route in
 `appointments.rs`:
 
 - One call to a number at a time.
-- `place_call` goes only to the phone and SIM chosen for it.
+- `place_call` goes only to the phone chosen for it.
 - The script applies only to the call that phone reports for that task. An
   incoming call from the same number never gets the outbound script.
 
@@ -214,17 +210,14 @@ Errands and appointment call-backs share one outbound route in
      SIM's country, and never to toll-free, premium-rate or short numbers.
 3. **Phone and SIM.**
    - An errand picks a phone in AI mode that has a SIM of the number's country.
-   - The Bageo program learns each phone's SIMs (subscription id and country)
-     from the calls it reports and from the `sims` list in its control hello,
-     and keeps them in `phone_sims.json`.
-   - A phone whose SIMs it has never heard of takes no errand
+   - The Bageo program knows each phone's SIM country from the phone number
+     you type under *System → Phones* or from `SIM_COUNTRY` on the Bluetooth
+     computer, and keeps it in `phone_sims.json`.
+   - A phone whose SIM country it does not know takes no errand
      (`sim_unknown`).
-   - A call-back goes out on the phone and SIM that took the original call.
+   - A call-back goes out on the phone that took the original call.
 4. **Dialing.**
-   - The Bageo program sends `place_call` with the number in E.164 form and the
-     SIM to use.
-   - If the call's media hello reports another SIM, or none, Bageo hangs up
-     before the AI speaks (`wrong_sim`) and forgets that SIM on that phone.
+   - The Bageo program sends `place_call` with the number in E.164 form.
    - A cancelled errand is never dialed; a call that still starts after a
      cancel is hung up at once.
 5. **Waiting for a person.** The AI does not say "Hello?" into the ringback.
@@ -319,9 +312,8 @@ data/calls/
   contacts.json                     your contacts
   tasks/index.json, tasks/<id>.json the to-do items (appointments)
   errands.json                      AI errands, the newest 500
-  phone_sims.json                   the SIMs each phone has reported
-  phone-pairing.key                 pairing key for phones over Wi-Fi
-  sms/messages.json                 forwarded and replied text messages
+  phone_sims.json                   the SIM country of each phone
+  phone-pairing.key                 pairing key for the Bluetooth computer's network link
   backups/                          scheduled, manual, before-import backups (.zip / .bageo)
   voice_preview/                    cached voice samples and announcements
 ```
@@ -340,8 +332,8 @@ password encryption), or copy the `data/calls` folder. Keep any copy private:
   interruptions come from the model, not from a chain of speech-to-text, LLM
   and text-to-speech.
 - **Your SIM, your phone.** No SIP trunk and no cloud telephony. The phone
-  protocol is small and documented in [API](API.md), so another front end
-  could stand in for the phone.
+  protocol is small and documented in [API](API.md); the Bluetooth program is
+  one front end that speaks it, and another could stand in.
 - **One process.** Nothing else to install, keep alive or secure.
 - **Fail closed on the risky paths.** Words that are a scam whoever says them
   keep the caller talking even when the review cannot answer; a phone with an unknown SIM

@@ -7,10 +7,6 @@
 //! Fulfillment (`ReplyMethod::Phone`) pushes `callback_requested`, then dispatches
 //! `place_call` only when: user confirmed + number on `callback_whitelist` + idle
 //! control client connected (never auto-dials; empty whitelist = fail-closed).
-//!
-//! The same connection carries text messages to callers (appointments):
-//! `send_sms` out, `send_sms_result` and `send_sms_delivered` back, only to
-//! apps whose hello says `supports_sms` ([`ControlRegistry::send_sms_on`]).
 
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
@@ -21,7 +17,7 @@ use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use futures_util::SinkExt;
 use serde_json::{json, Value};
-use tokio::sync::{oneshot, Mutex};
+use tokio::sync::Mutex;
 use tracing::{info, warn};
 use uuid::Uuid;
 
@@ -134,84 +130,8 @@ pub fn on_call_end(session: &mut CallbackSession, failed: bool) {
     });
 }
 
-/// What became of a text message the agent asked a phone to send.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SmsOutcome {
-    Sent,
-    /// No control connection from that phone (or it dropped before answering).
-    Offline,
-    /// The app's hello did not say `supports_sms` (an older app).
-    Unsupported,
-    /// No `send_sms_result` in time.
-    Timeout,
-    /// A message with this id is already waiting for its result (not sent twice).
-    Busy,
-    /// The phone's error code (one of [`SMS_ERROR_CODES`]).
-    Failed(String),
-}
-
-/// Error codes a phone may answer `send_sms` with; anything else reads as `generic_failure`.
-pub const SMS_ERROR_CODES: [&str; 8] = [
-    "no_permission",
-    "bad_request",
-    "no_service",
-    "radio_off",
-    "sim_not_found",
-    "generic_failure",
-    "timeout",
-    "exception",
-];
-/// How long the agent waits for `send_sms_result` (the phone gives up after 60 s).
-pub const SMS_RESULT_WAIT: Duration = Duration::from_secs(90);
-const SMS_TEXT_MAX: usize = 500;
-const SMS_ID_MAX: usize = 64;
-/// Texts whose result is remembered ([`ControlRegistry::sms_outcome`]), and
-/// tasks whose call's SIM is remembered for a call-back: the newest this many.
+/// Tasks whose call's SIM is remembered for a call-back: the newest this many.
 const RECENT_MAX: usize = 256;
-
-/// `{"type":"send_sms","id":…,"to":…,"text":…}` for the phone, with `"sub_id"`
-/// (the SIM to send from) when given; an app that does not know it uses its default SIM.
-pub fn send_sms_payload(id: &str, to: &str, text: &str, sub_id: Option<i64>) -> Value {
-    let mut payload = json!({ "type": "send_sms", "id": id, "to": to, "text": text });
-    if let Some(sub) = sub_id {
-        payload["sub_id"] = json!(sub);
-    }
-    payload
-}
-
-/// Digits only, with an optional leading `+`.
-fn sms_to_ok(to: &str) -> bool {
-    let digits = to.strip_prefix('+').unwrap_or(to);
-    (3..=20).contains(&digits.len()) && digits.chars().all(|c| c.is_ascii_digit())
-}
-
-/// A phone's `send_sms_result`: the message id and what happened.
-pub fn parse_sms_result(msg: &Value) -> Option<(String, SmsOutcome)> {
-    if msg.get("type")?.as_str()? != "send_sms_result" {
-        return None;
-    }
-    let id = msg.get("id")?.as_str()?.to_string();
-    if msg.get("ok").and_then(Value::as_bool) == Some(true) {
-        return Some((id, SmsOutcome::Sent));
-    }
-    let code = msg.get("error").and_then(Value::as_str).map(str::trim).unwrap_or("");
-    let code = if SMS_ERROR_CODES.contains(&code) {
-        code
-    } else {
-        "generic_failure"
-    };
-    Some((id, SmsOutcome::Failed(code.to_string())))
-}
-
-/// A phone's `send_sms_delivered` (the carrier's delivery report): message id and
-/// whether it reached the recipient.
-pub fn parse_sms_delivered(msg: &Value) -> Option<(String, bool)> {
-    if msg.get("type")?.as_str()? != "send_sms_delivered" {
-        return None;
-    }
-    let id = msg.get("id")?.as_str()?.to_string();
-    Some((id, msg.get("ok").and_then(Value::as_bool) == Some(true)))
-}
 
 /// A map that keeps only its newest [`RECENT_MAX`] keys.
 #[derive(Debug)]
@@ -241,57 +161,6 @@ impl<V> Recent<V> {
             }
         }
     }
-
-    fn remove(&mut self, key: &str) {
-        if self.entries.remove(key).is_some() {
-            self.order.retain(|k| k != key);
-        }
-    }
-
-    fn get_or_insert(&mut self, key: &str) -> &mut V
-    where
-        V: Default,
-    {
-        if !self.entries.contains_key(key) {
-            self.insert(key, V::default());
-        }
-        self.entries.get_mut(key).expect("just inserted")
-    }
-}
-
-/// What one text came to, as the phone reported it.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-struct SmsReport {
-    /// `send_sms_result`; None = no result yet.
-    result: Option<SmsOutcome>,
-    /// `send_sms_delivered`: false once any report says not delivered.
-    delivered: Option<bool>,
-}
-
-/// The phone gave up waiting for the radio after 60 s (`timeout`): not final —
-/// the real result can still come, under the same id.
-fn is_phone_timeout(out: &SmsOutcome) -> bool {
-    matches!(out, SmsOutcome::Failed(code) if code == "timeout")
-}
-
-/// What a `send_sms_result` adds to what is known about its text.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ResultNews {
-    /// The first result, or the real one after the phone's own `timeout`.
-    New,
-    /// The same result again (the phone resends its recent ones after reconnecting).
-    Repeat,
-    /// A different result for a text already settled: it stays as it was.
-    Settled,
-}
-
-fn weigh_result(known: Option<&SmsOutcome>, new: &SmsOutcome) -> ResultNews {
-    match known {
-        None => ResultNews::New,
-        Some(k) if k == new => ResultNews::Repeat,
-        Some(k) if is_phone_timeout(k) => ResultNews::New,
-        Some(_) => ResultNews::Settled,
-    }
 }
 
 /// The control serials a call's phone may be registered under: its own, and the
@@ -307,8 +176,6 @@ fn control_serials(serial: &str) -> Vec<String> {
     out
 }
 
-type SmsWaiters = HashMap<String, (String, oneshot::Sender<SmsOutcome>)>;
-
 const CALLBACK_SESSIONS_MAX: usize = 512;
 
 /// Connected idle-control WebSocket clients and in-flight callback sessions.
@@ -320,16 +187,9 @@ pub struct ControlRegistry {
     session_order: Arc<Mutex<VecDeque<String>>>,
     /// Phones switched to "normal phone" (their owner answers): call-backs skip them.
     normal_mode: Arc<Mutex<HashSet<String>>>,
-    /// Phones whose app sends text messages (`supports_sms` in the control hello).
-    sms_capable: Arc<Mutex<HashSet<String>>>,
     /// Phones whose app can refuse a ringing call (`supports_reject` in the
     /// control hello); older apps pick up whatever `answer_plan` says.
     reject_capable: Arc<Mutex<HashSet<String>>>,
-    /// `send_sms` sent, waiting for its result: message id → (serial, answer).
-    sms_waiters: Arc<Mutex<SmsWaiters>>,
-    /// What each recent text came to, also when its answer came after the wait
-    /// ended (the phone resends its last result after reconnecting).
-    sms_reports: Arc<Mutex<Recent<SmsReport>>>,
     /// The phone and SIM (subscription id) of the call each recent task came
     /// from, so its call-back dials out on the SIM the caller called.
     task_sims: Arc<Mutex<Recent<(String, i64)>>>,
@@ -454,29 +314,6 @@ impl ControlRegistry {
         }
     }
 
-    /// Record whether the phone's app sends text messages (from its control hello).
-    pub async fn set_supports_sms(&self, serial: &str, on: bool) {
-        let mut set = self.sms_capable.lock().await;
-        if on {
-            set.insert(serial.to_string());
-        } else {
-            set.remove(serial);
-        }
-    }
-
-    /// Whether a text can go out on serial now: its app is connected (under
-    /// its own serial or its main app's) and said it sends text messages.
-    pub async fn can_send_sms(&self, serial: &str) -> bool {
-        let picked = {
-            let clients = self.clients.lock().await;
-            control_serials(serial).into_iter().find(|s| clients.contains_key(s))
-        };
-        match picked {
-            Some(s) => self.sms_capable.lock().await.contains(&s),
-            None => false,
-        }
-    }
-
     /// Record whether the phone's app can refuse a ringing call (from its control hello).
     pub async fn set_supports_reject(&self, serial: &str, on: bool) {
         let mut set = self.reject_capable.lock().await;
@@ -493,163 +330,9 @@ impl ControlRegistry {
         control_serials(serial).iter().any(|s| set.contains(s))
     }
 
-    /// A phone went away: it sends no more texts (messages still waiting for its
-    /// answer end as [`SmsOutcome::Offline`]) and its abilities are forgotten
-    /// until its next hello.
+    /// A phone went away: its abilities are forgotten until its next hello.
     async fn forget_phone(&self, serial: &str) {
-        self.sms_capable.lock().await.remove(serial);
         self.reject_capable.lock().await.remove(serial);
-        // Dropping the senders wakes the waiters.
-        self.sms_waiters.lock().await.retain(|_, (s, _)| s != serial);
-    }
-
-    /// Have the phone that took a call (`serial`) text `to` and wait up to
-    /// `wait` for its `send_sms_result`. `id`: up to 64 characters (a task id);
-    /// `text` is cut at 500 characters. A message whose id is already waiting
-    /// is not sent again ([`SmsOutcome::Busy`]); the waiting one is left alone.
-    pub async fn send_sms(&self, serial: &str, id: &str, to: &str, text: &str, wait: Duration) -> SmsOutcome {
-        self.send_sms_on(serial, None, id, to, text, wait).await
-    }
-
-    /// [`Self::send_sms`] from the SIM `sub_id` (Android subscription id; None =
-    /// the phone's default SIM). What the phone reports later, also after `wait`,
-    /// is kept for [`Self::sms_outcome`].
-    pub async fn send_sms_on(
-        &self,
-        serial: &str,
-        sub_id: Option<i64>,
-        id: &str,
-        to: &str,
-        text: &str,
-        wait: Duration,
-    ) -> SmsOutcome {
-        let id: String = id.chars().take(SMS_ID_MAX).collect();
-        if self.sms_waiters.lock().await.contains_key(&id) {
-            warn!(serial, id, "send_sms: a message with this id is already waiting");
-            return SmsOutcome::Busy;
-        }
-        let picked = {
-            let clients = self.clients.lock().await;
-            control_serials(serial)
-                .into_iter()
-                .find_map(|s| clients.get(&s).map(|sink| (s, sink.clone())))
-        };
-        let Some((serial, sink)) = picked else {
-            info!(serial, "send_sms: phone not connected");
-            return SmsOutcome::Offline;
-        };
-        if !self.sms_capable.lock().await.contains(&serial) {
-            info!(serial, "send_sms: the phone's app does not send texts");
-            return SmsOutcome::Unsupported;
-        }
-        let text: String = text.chars().take(SMS_TEXT_MAX).collect();
-        if id.is_empty() || text.trim().is_empty() || !sms_to_ok(to) {
-            return SmsOutcome::Failed("bad_request".to_string());
-        }
-        let (tx, rx) = oneshot::channel();
-        {
-            let mut waiters = self.sms_waiters.lock().await;
-            if waiters.contains_key(&id) {
-                return SmsOutcome::Busy;
-            }
-            waiters.insert(id.clone(), (serial.clone(), tx));
-        }
-        // A new send under this id: what an earlier one reported no longer applies.
-        self.sms_reports.lock().await.remove(&id);
-        if let Err(e) = send_ws_json(&sink, send_sms_payload(&id, to, &text, sub_id)).await {
-            self.sms_waiters.lock().await.remove(&id);
-            warn!(serial, "send_sms write failed: {e:#}");
-            return SmsOutcome::Offline;
-        }
-        info!(
-            serial,
-            id,
-            sub_id = ?sub_id,
-            to_len = to.len(),
-            text_chars = text.chars().count(),
-            "send_sms dispatched"
-        );
-        match tokio::time::timeout(wait, rx).await {
-            Ok(Ok(out)) => out,
-            Ok(Err(_)) => SmsOutcome::Offline,
-            Err(_) => {
-                self.sms_waiters.lock().await.remove(&id);
-                warn!(
-                    serial,
-                    id,
-                    "send_sms: no result in {}s (a later one is still recorded)",
-                    wait.as_secs()
-                );
-                SmsOutcome::Timeout
-            }
-        }
-    }
-
-    /// A phone's `send_sms_result`; true when a waiting send took it. Recorded
-    /// also after the wait ended. The phone's own `timeout` is not final: the
-    /// real result may follow under the same id and replaces it, and a waiting
-    /// send keeps waiting for it (up to its own limit). The same result again
-    /// (the phone resends its recent ones after reconnecting) changes nothing,
-    /// nor does a different one for a text already settled.
-    pub async fn handle_sms_result(&self, msg: &Value) -> bool {
-        let Some((id, out)) = parse_sms_result(msg) else {
-            return false;
-        };
-        {
-            let mut reports = self.sms_reports.lock().await;
-            let report = reports.get_or_insert(&id);
-            match weigh_result(report.result.as_ref(), &out) {
-                ResultNews::New => report.result = Some(out.clone()),
-                ResultNews::Repeat => {
-                    info!(id, "send_sms_result repeated: already counted");
-                    return false;
-                }
-                ResultNews::Settled => {
-                    info!(id, outcome = ?out, known = ?report.result, "send_sms_result ignored: already settled");
-                    return false;
-                }
-            }
-        }
-        if is_phone_timeout(&out) && self.sms_waiters.lock().await.contains_key(&id) {
-            info!(id, "send_sms_result timeout from the phone: still waiting for its real result");
-            return false;
-        }
-        let Some((serial, tx)) = self.sms_waiters.lock().await.remove(&id) else {
-            info!(id, outcome = ?out, "send_sms_result after the wait ended: recorded");
-            return false;
-        };
-        info!(serial, id, outcome = ?out, "send_sms_result");
-        let _ = tx.send(out);
-        true
-    }
-
-    /// A phone's `send_sms_delivered`: recorded for [`Self::sms_outcome`]; false
-    /// when the message is not one.
-    pub async fn handle_sms_delivered(&self, msg: &Value) -> bool {
-        let Some((id, ok)) = parse_sms_delivered(msg) else {
-            return false;
-        };
-        let mut reports = self.sms_reports.lock().await;
-        let report = reports.get_or_insert(&id);
-        // A long text is several parts, each reported: one lost part is not delivered.
-        report.delivered = Some(report.delivered.unwrap_or(true) && ok);
-        info!(id, ok, "send_sms_delivered");
-        true
-    }
-
-    /// What became of the text `id` (one of the newest few hundred): `(sent,
-    /// delivered)`; `delivered` is None until the phone reports it. None = no
-    /// report from the phone yet.
-    pub async fn sms_outcome(&self, id: &str) -> Option<(bool, Option<bool>)> {
-        let id: String = id.chars().take(SMS_ID_MAX).collect();
-        let reports = self.sms_reports.lock().await;
-        let r = reports.get(&id)?;
-        if r.result.is_none() && r.delivered.is_none() {
-            return None;
-        }
-        // A delivery report only exists for a text that went out.
-        let sent = r.result == Some(SmsOutcome::Sent) || r.delivered.is_some();
-        Some((sent, r.delivered))
     }
 
     /// The call task `task_id` came from was taken by `serial` on the SIM
@@ -1065,6 +748,7 @@ pub async fn send_ws_json(sink: &WsSink, payload: Value) -> Result<()> {
 pub(crate) mod test_socket {
     use super::*;
     use futures_util::StreamExt;
+    use tokio::sync::oneshot;
 
     pub(crate) type PhoneEnd =
         tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
@@ -1381,118 +1065,9 @@ mod tests {
     }
 
     #[test]
-    fn send_sms_message_and_its_result() {
-        assert_eq!(
-            send_sms_payload("task-1", "+886912345678", "你好", None),
-            json!({"type": "send_sms", "id": "task-1", "to": "+886912345678", "text": "你好"})
-        );
-        assert_eq!(
-            send_sms_payload("task-1", "0912345678", "hi", Some(2)),
-            json!({"type": "send_sms", "id": "task-1", "to": "0912345678", "text": "hi", "sub_id": 2})
-        );
-        let ok = json!({"type": "send_sms_result", "id": "task-1", "ok": true});
-        assert_eq!(parse_sms_result(&ok), Some(("task-1".to_string(), SmsOutcome::Sent)));
-        let failed = json!({"type": "send_sms_result", "id": "task-1", "ok": false, "error": "no_service"});
-        assert_eq!(
-            parse_sms_result(&failed),
-            Some(("task-1".to_string(), SmsOutcome::Failed("no_service".into())))
-        );
-        let odd = json!({"type": "send_sms_result", "id": "x", "ok": false, "error": "<script>"});
-        assert_eq!(parse_sms_result(&odd).unwrap().1, SmsOutcome::Failed("generic_failure".into()));
-        assert_eq!(parse_sms_result(&json!({"type": "place_call_ack", "id": "x"})), None);
-        assert_eq!(parse_sms_result(&json!({"type": "send_sms_result", "ok": true})), None);
-        assert!(sms_to_ok("+886912345678") && sms_to_ok("0912345678"));
-        assert!(!sms_to_ok("09-12") && !sms_to_ok("++886") && !sms_to_ok("") && !sms_to_ok("abc"));
+    fn a_twin_copy_reaches_the_main_apps_connection() {
         assert_eq!(control_serials("pixel-1010341"), vec!["pixel-1010341", "pixel-10341"]);
         assert_eq!(control_serials("pixel-10341"), vec!["pixel-10341"]);
-    }
-
-    #[tokio::test]
-    async fn send_sms_needs_a_connected_phone_and_results_reach_their_waiter() {
-        let reg = ControlRegistry::default();
-        let out = reg
-            .send_sms("pixel-1", "t1", "+886912345678", "hi", Duration::from_millis(50))
-            .await;
-        assert_eq!(out, SmsOutcome::Offline);
-        // A result arrives for a message that is waiting.
-        let (tx, rx) = oneshot::channel();
-        reg.sms_waiters.lock().await.insert("t2".into(), ("pixel-1".into(), tx));
-        let msg = json!({"type": "send_sms_result", "id": "t2", "ok": false, "error": "radio_off"});
-        assert!(reg.handle_sms_result(&msg).await);
-        assert_eq!(rx.await.unwrap(), SmsOutcome::Failed("radio_off".into()));
-        assert!(!reg.handle_sms_result(&msg).await);
-        // The same id while one waits: refused, and the waiting one still gets its answer.
-        let (tx, rx) = oneshot::channel();
-        reg.sms_waiters.lock().await.insert("t4".into(), ("pixel-1".into(), tx));
-        let again = reg
-            .send_sms("pixel-1", "t4", "+886912345678", "hi", Duration::from_millis(50))
-            .await;
-        assert_eq!(again, SmsOutcome::Busy);
-        assert!(reg.handle_sms_result(&json!({"type": "send_sms_result", "id": "t4", "ok": true})).await);
-        assert_eq!(rx.await.unwrap(), SmsOutcome::Sent);
-        // The phone drops: its waiting messages end, its texting flag goes.
-        let (tx, rx) = oneshot::channel();
-        reg.sms_waiters.lock().await.insert("t3".into(), ("pixel-1".into(), tx));
-        reg.set_supports_sms("pixel-1", true).await;
-        reg.unregister_client("pixel-1").await;
-        assert!(rx.await.is_err());
-        assert!(!reg.sms_capable.lock().await.contains("pixel-1"));
-    }
-
-    #[tokio::test]
-    async fn sms_results_count_once_and_late_ones_are_kept() {
-        let reg = ControlRegistry::default();
-        assert_eq!(reg.sms_outcome("t5").await, None);
-        // The agent stopped waiting (90 s) before the phone answered: still recorded.
-        let late = json!({"type": "send_sms_result", "id": "t5", "ok": true});
-        assert!(!reg.handle_sms_result(&late).await);
-        assert_eq!(reg.sms_outcome("t5").await, Some((true, None)));
-        // The phone resends its recent results after reconnecting: counted once,
-        // and a different one does not undo a settled text.
-        assert!(!reg.handle_sms_result(&late).await);
-        let replay = json!({"type": "send_sms_result", "id": "t5", "ok": false, "error": "no_service"});
-        assert!(!reg.handle_sms_result(&replay).await);
-        assert_eq!(reg.sms_outcome("t5").await, Some((true, None)));
-        // The phone timed out (60 s), then its radio answered: the real result
-        // replaces the timeout, a resent timeout does not come back.
-        let timeout = json!({"type": "send_sms_result", "id": "t8", "ok": false, "error": "timeout"});
-        let sent = json!({"type": "send_sms_result", "id": "t8", "ok": true});
-        assert!(!reg.handle_sms_result(&timeout).await);
-        assert_eq!(reg.sms_outcome("t8").await, Some((false, None)));
-        assert!(!reg.handle_sms_result(&sent).await);
-        assert_eq!(reg.sms_outcome("t8").await, Some((true, None)));
-        assert!(!reg.handle_sms_result(&timeout).await);
-        assert!(!reg.handle_sms_result(&sent).await);
-        assert_eq!(reg.sms_outcome("t8").await, Some((true, None)));
-        // A send still waiting is not ended by the phone's timeout; it gets the
-        // real result that follows.
-        let (tx, mut rx) = oneshot::channel();
-        reg.sms_waiters.lock().await.insert("t9".into(), ("pixel-1".into(), tx));
-        let t9_timeout = json!({"type": "send_sms_result", "id": "t9", "ok": false, "error": "timeout"});
-        assert!(!reg.handle_sms_result(&t9_timeout).await);
-        assert!(rx.try_recv().is_err());
-        assert!(reg.handle_sms_result(&json!({"type": "send_sms_result", "id": "t9", "ok": true})).await);
-        assert_eq!(rx.await.unwrap(), SmsOutcome::Sent);
-        // A waiting send gets the first result; a repeat does not reach it twice.
-        let (tx, rx) = oneshot::channel();
-        reg.sms_waiters.lock().await.insert("t6".into(), ("pixel-1".into(), tx));
-        let failed = json!({"type": "send_sms_result", "id": "t6", "ok": false, "error": "radio_off"});
-        assert!(reg.handle_sms_result(&failed).await);
-        assert_eq!(rx.await.unwrap(), SmsOutcome::Failed("radio_off".into()));
-        assert!(!reg.handle_sms_result(&failed).await);
-        assert_eq!(reg.sms_outcome("t6").await, Some((false, None)));
-        // Delivery reports: every part has to arrive.
-        let delivered = |ok: bool| json!({"type": "send_sms_delivered", "id": "t5", "ok": ok});
-        assert!(reg.handle_sms_delivered(&delivered(true)).await);
-        assert_eq!(reg.sms_outcome("t5").await, Some((true, Some(true))));
-        assert!(reg.handle_sms_delivered(&delivered(false)).await);
-        assert!(reg.handle_sms_delivered(&delivered(true)).await);
-        assert_eq!(reg.sms_outcome("t5").await, Some((true, Some(false))));
-        assert!(!reg.handle_sms_delivered(&json!({"type": "send_sms_result", "id": "t5"})).await);
-        // A delivery report before the result: it went out.
-        let early = json!({"type": "send_sms_delivered", "id": "t7", "ok": true});
-        assert!(reg.handle_sms_delivered(&early).await);
-        assert_eq!(reg.sms_outcome("t7").await, Some((true, Some(true))));
     }
 
     #[tokio::test]
@@ -1532,9 +1107,6 @@ mod tests {
         reg.handle_phone_event(&json!({"type": "call_end", "task_id": "errand-1", "call_id": "call-old"}), &tasks).await;
         assert_eq!(reg.callback_session_for("errand-1", "").await.unwrap().phase, CallbackPhase::Dialing);
 
-        // sim_not_found parses as Failed("sim_not_found") rather than generic_failure.
-        let parsed = parse_sms_result(&json!({"type": "send_sms_result", "id": "s1", "ok": false, "error": "sim_not_found"})).unwrap();
-        assert_eq!(parsed.1, SmsOutcome::Failed("sim_not_found".into()));
         let _ = std::fs::remove_dir_all(root);
     }
 }

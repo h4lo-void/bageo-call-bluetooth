@@ -1,28 +1,32 @@
 # Bageo 是怎么工作的：自托管 AI 电话助理的架构
 
-Bageo 让 AI 用你的真实号码接电话、打电话。这一页跟着一通电话走一遍：从已 root 的 Android 手机响铃，经过你电脑上的一个 Rust 程序，到 Gemini Live 再回来，并标出每一步由哪个文件负责。要改代码、排查一通电话出了什么问题，或想用别的前端取代手机，先读这页。
+Bageo 让 AI 用你的真实号码接电话、打电话。这一页跟着一通电话走一遍：从你的手机响铃，经过蓝牙到 Linux 电脑上的一个小程序，再经过一个 Rust 程序到 Gemini Live 再回来，并标出每一步由哪个文件负责。要改代码、排查一通电话出了什么问题，或想用别的前端取代蓝牙程序，先读这页。
 
 ## 全貌
 
-Bageo 由三个部分组成，没有数据库、没有消息队列，也没有项目自己的云服务。
+Bageo 由四个部分组成，没有数据库、没有消息队列，也没有项目自己的云服务。
 
-1. **一部备用 Android 手机**（已 root，插着你的 SIM 卡），装 Bageo 应用和 root 模块。它负责接电话、拨号、传声音，不做任何决定。
-2. **Bageo 程序**：你电脑上的一个 Rust 程序，所有逻辑都在这里——什么时候接、Gemini Live 连接、挂断与防诈规则、摘要、联系人、日程预约、AI 代打、通知。
-3. **网页控制台**：编译进 Bageo 程序的单一 HTML 页面，九种语言。
+1. **你的手机**（iPhone 或 Android，插着你的 SIM 卡）保持原样：不用装 App，也不用 root。
+2. **蓝牙程序**：运行在有蓝牙的 Linux 电脑上，像车载免提一样和手机配对。它负责接电话、拨号、传声音，不做任何决定。
+3. **Bageo 程序**：你电脑上的一个 Rust 程序，所有逻辑都在这里——什么时候接、Gemini Live 连接、挂断与防诈规则、摘要、联系人、日程预约、AI 代打、通知。
+4. **网页控制台**：编译进 Bageo 程序的单一 HTML 页面，九种语言。
 
 ```mermaid
 flowchart LR
-    subgraph phone["Android 手机（已 root）"]
-        app["Bageo 应用<br/>特权系统应用"]
-        module["Root 模块<br/>开机设置、模式切换"]
+    subgraph phone["你的手机（保持原样）"]
+        sim["SIM 卡和电话应用"]
+    end
+    subgraph bt["有蓝牙的 Linux 电脑"]
+        bridge["bageo-bluetooth<br/>（Python，bluetooth/）"]
     end
     subgraph pc["你的电脑"]
         agent["Bageo 程序（Rust）"]
         data[("data/calls<br/>记录、WAV、联系人、<br/>待处理事项、代打、设置")]
         ui["网页控制台<br/>（单一 HTML 页面）"]
     end
-    other(["来电者或被叫方"]) <-- "移动网络" --> app
-    app <-- "控制＋媒体 WebSocket<br/>adb reverse（USB）或 Wi-Fi<br/>JSON＋16 kHz PCM" --> agent
+    other(["来电者或被叫方"]) <-- "移动网络" --> sim
+    sim <-- "蓝牙免提<br/>通话音频" --> bridge
+    bridge <-- "控制＋媒体 WebSocket<br/>同一台电脑或通过网络<br/>JSON＋PCM 音频" --> agent
     agent <-- "WebSocket<br/>音频收发、工具调用" --> gemini[("Gemini Live API")]
     agent -- "文字记录、联系人文件、<br/>防诈复审" --> llm[("Gemini Flash-Lite<br/>或 OpenAI 兼容模型")]
     agent --> data
@@ -34,12 +38,10 @@ flowchart LR
 
 | 部分 | 位置 | 作用 |
 |---|---|---|
-| **手机应用** | [`android/`](../../android) | 安静地接起或拨出电话、采集对方的声音、把 AI 的声音播进通话、报告每通电话用的 SIM 卡、按指令发短信。不包含任何对话逻辑。详见[手机端架构](../../android/ARCHITECTURE.md)（英文）。 |
-| **Root 模块** | `android/magisk/pixelcallai_uplink` | 把应用装成特权系统应用，每次开机把手机设置成专门接电话的设备，并运行“AI 接听／[普通手机](PHONE.md#普通手机模式)”切换背后的 root 小程序。 |
-| **Bageo 程序** | [`crates/agent`](../../crates/agent) | 其余所有事情：通话状态机、Gemini Live 连接、录音、摘要、联系人、日程预约、AI 代打、通知、网页控制台与 API、和手机的 USB 连接。 |
+| **蓝牙程序** | [`bluetooth/`](../../bluetooth) | 运行在有蓝牙的 Linux 电脑上的 `bageo-bluetooth` 服务（Python）。以免提设备的身份和手机配对，通过它接起或拨出电话、挂断，并用和系统其他部分相同的 WebSocket 协议把双方的声音送给 Bageo。不包含任何对话逻辑。详见[蓝牙说明](../../bluetooth/README.zh-CN.md)。 |
+| **Bageo 程序** | [`crates/agent`](../../crates/agent) | 其余所有事情：通话状态机、Gemini Live 连接、录音、摘要、联系人、日程预约、AI 代打、通知、网页控制台与 API。 |
 | **网页控制台** | `crates/agent/static/calls.html` | 编译进 Bageo 程序的单一页面。 |
-| **Bageo Status** | [`desktop/`](../../desktop) | 可选的桌面托盘／菜单栏程序（Tauri 2，含于 Windows 安装包与 macOS `.dmg`），在后台启动 Bageo 并显示状态、来电、短信与摘要通知。 |
-| **短信转发器** | [`tools/sms_forward`](../../tools/sms_forward) | 可选、独立的 Python 脚本，转发手机收到的短信。 |
+| **Bageo Status** | [`desktop/`](../../desktop) | 可选的桌面托盘／菜单栏程序（Tauri 2，含于 Windows 安装包与 macOS `.dmg`），在后台启动 Bageo 并显示状态、来电与摘要通知。 |
 
 ### Bageo 程序的模块
 
@@ -52,24 +54,22 @@ flowchart LR
 | `scenario.rs`、`preflight.rs` | 来电场景小提示（快递、银行核对刷卡、打错电话…）与代打拨出前补问／可接受时间整理。 |
 | `stall_review.rs` | 进入陪聊前的复审：`gemini-flash-lite-latest` 在 1.5 秒内把通话判为 `scam_or_sales`、`normal`、`ivr_recording` 或 `too_early`，并说出是数据库里哪一种话术、有多确定。 |
 | `scam_db.rs` | 推销与诈骗数据库（`data/scam_db.json`：46 种话术类型、27 种语言的关键词、号码提示）、你在 `config/scam_db.local.json` 加的内容，以及每个号码的标记。 |
-| `appointments.rs` | 普通通话的预约工具、由它们生成的待处理事项、同意／不同意、用短信或 AI 回拨告诉对方，以及共用的拨出队列。 |
-| `urgent_call.rs`、`urgency.rs` | 多语言急事检测，以及转接来电试验用的三方通话合并（`add_call`）。 |
-| `callback.rs` | 手机的控制连接：`place_call`、`send_sms` 及其结果，发到正确的手机。 |
+| `appointments.rs` | 普通通话的预约工具、由它们生成的待处理事项、同意／不同意、用 AI 回拨告诉对方，以及共用的拨出队列。 |
+| `urgent_call.rs`、`urgency.rs` | 多语言急事检测，以及急事通知。 |
+| `callback.rs` | 手机的控制连接：`place_call` 及其结果，发到正确的手机。 |
 | `errands.rs` | AI 代打：号码检查、选择手机与 SIM 卡（`SimBook`）、代打脚本与 `ask_owner`、实时字幕、通话中你输入的内容、结构化结果。 |
 | `contacts.rs` | 通讯录；无论号码怎么写都能匹配；从 vCard、CSV、TSV、纯文本、`.xlsx`、`.docx` 导入，PDF 与图片交给 Gemini 读；导出 vCard。 |
 | `phone_region.rs` | 判断号码属于哪个国家（按接这通电话的 SIM 卡的规则解读）；每部手机报告的 SIM 卡国家。 |
 | `calendar.rs` | 日历建议，以及 Google、Outlook.com、Microsoft 365、Yahoo、`.ics` 的“添加到日历”链接。 |
 | `summary.rs` | 通话后的摘要，走 Gemini 或任何 OpenAI 兼容 API；其他语言句子的翻译；代打的结果。 |
 | `tasks.rs` | “待处理事项”背后的存储。 |
-| `sms_store.rs` | 按号码分组保存的短信对话，以及通过手机发出的回复。 |
 | `notify.rs`、`gmail.rs`、`tg_inbound.rs` | 32 种通知渠道、通过 SMTP 发邮件、Telegram 按钮。 |
 | `control/` | Telegram、Discord、Slack 与 Matrix 的远程指令与自然语言解析。 |
 | `mcp.rs` | 内置 Model Context Protocol（`POST /mcp`）服务器，以及跨平台通用指令接口（`POST /calls/api/control/inbound`）。 |
 | `calls.rs`、`calls_http.rs` | 通话记录、录音与文字记录；网页控制台的 REST API。 |
 | `backup.rs`、`backup_crypt.rs` | 定时与手动备份、选择性导出／导入，以及 `.bageo` 加密（Argon2id + XChaCha20-Poly1305）。 |
 | `settings_store.rs` | `.env` 加上控制台保存的设置，修改后无需重启。 |
-| `lan.rs`、`phone_wifi.rs` | 局域网访问把关、`Host` 头检查、猜密码限速，以及 USB 转 Wi-Fi 的手机配对密钥。 |
-| `usb_bridge.rs` | 为每部 USB 手机维持 `adb reverse`，并启动应用的通话服务。 |
+| `lan.rs`、`phone_wifi.rs` | 局域网访问把关、`Host` 头检查、猜密码限速，以及蓝牙电脑通过网络连接用的配对码与密钥。 |
 | `mdns.rs` | 在局域网响应 `bageo.local`（multicast DNS），不知道电脑 IP 也能打开控制台。 |
 | `log_text.rs` | 遮罩来电号码，且默认不把通话内容写进日志（除非设 `LOG_CALL_TEXT=1`）。 |
 | `adpcm.rs`、`voice_preview.rs`、`ambience.rs` | 1,080 个内置语音文件（IMA ADPCM）、声音试听与“无法接通”语音、12 种背景音。 |
@@ -79,11 +79,11 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     participant C as 来电者
-    participant P as 手机应用
+    participant P as 蓝牙电脑
     participant A as Bageo
     participant G as Gemini Live
     C->>P: 响铃
-    P->>A: incoming（号码、SIM 卡）
+    P->>A: incoming（号码）
     A->>P: answer_plan（响 3 秒）
     A->>G: 建立连接、先准备开场白
     P->>A: 接起、打开媒体 WebSocket
@@ -98,19 +98,18 @@ sequenceDiagram
     A->>A: 录音、摘要、待处理事项、通知
 ```
 
-1. **待机。** 每部手机都和 Bageo 程序保持一条*控制* WebSocket。
-   - 走 USB：应用在手机上连接 `ws://127.0.0.1:8765`，由 `usb_bridge.rs` 维持的 `adb reverse` 转到 Bageo 程序。
-   - 走 [Wi-Fi](PHONE.md#wi-fi)：应用直接连接 Bageo 程序的地址。
-2. **响铃。** 应用报告 `incoming`，附带来电号码和接这通电话的 SIM 卡。Bageo 决定：
+1. **待机。** 每台蓝牙电脑都和 Bageo 程序保持一条*控制* WebSocket。
+   - 在同一台电脑上：连接 `ws://127.0.0.1:8787/ws`。
+   - 通过网络：用 Bageo 的地址和配对码连接（见[手机设置](PHONE.md#连到-bageo)）。
+2. **响铃。** 蓝牙程序报告 `incoming`，附带来电号码。Bageo 决定：
    - 黑名单号码在响铃时直接挂断，或接起播放预录语音，完全不会用到 Gemini。
    - 其他电话返回一个 `answer_plan`：响 `answer_ring_ms`（默认 3 秒、最多 8 秒）再接。
    - 打开“**响铃时先让 AI 准备好**”（`gemini_ring_prewarm`）时，Bageo 立刻建立 Gemini Live 连接并组装提示词，模型先把开场白准备好，等接起再放出来。
    - 提示词包含：你的或内置的提示词、你的状态留言与资料、号码在通讯录里时附上对方是谁、别人怎么称呼你、这张 SIM 卡和这个号码适用的语言规则、日程预约开启时的预约工具，以及固定底线（见[编写提示词](PROMPTS.md)）。
-3. **接起。** 应用接起电话并打开一条*媒体* WebSocket，对方的声音以 60 毫秒的 PCM 片段往上发。
+3. **接起。** 蓝牙程序接起电话并打开一条*媒体* WebSocket，对方的声音以 60 毫秒的 PCM 片段往上发。
    - Bageo 程序接手预热好的连接、放出开场白（实测从接起算中位数约 0.43 秒）。
-   - 有些手机接起时才报告 SIM 卡。如果因此要换开场语言，就丢掉准备好的那句，AI 稍后用正确的语言开口。
 4. **对话**（`gemini_live.rs`）。Bageo 会：
-   - 把音量偏小的通话声音放大，并在头几秒检测手机收音里有没有 AI 自己的声音。这决定对方能不能插话（“**对方可以打断 AI**”：说满约 0.8 秒；“嗯”这种短声不算），以及背景音怎么混；
+   - 把音量偏小的通话声音放大，让对方可以插话（“**对方可以打断 AI**”：说满约 0.8 秒；“嗯”这种短声不算），并混上背景音；
    - 把对方的声音流式发给 Gemini（默认由 Gemini 自己判断对方说完没有），再把 Gemini 的声音混上背景音发回手机；
    - 台湾 SIM 卡接到国际来电时，让 AI 等运营商的预录提示播完再开口；
    - 读取 Gemini 双方的文字记录，执行少数不交给模型的规则：
@@ -142,7 +141,7 @@ sequenceDiagram
 AI 代打和预约回拨共用 `appointments.rs` 里同一条拨出路线：
 
 - 同一个号码一次只打一通。
-- `place_call` 只发到指定的手机和 SIM 卡。
+- `place_call` 只发到指定的手机。
 - 脚本只套用在那部手机为这项任务报告的那通电话上。同一个号码打进来的电话，绝不会拿到拨出用的脚本。
 
 1. **发起。**
@@ -153,12 +152,11 @@ AI 代打和预约回拨共用 `appointments.rs` 里同一条拨出路线：
    - 回拨只打给对方本人的号码，只限接听 SIM 卡的国内号码，绝不打免费、增值或短号码。
 3. **手机与 SIM 卡。**
    - 代打会挑一部处于 AI 接听模式、并且有号码所属国家 SIM 卡的手机。
-   - Bageo 程序从手机报告的通话、以及控制连接 hello 里的 `sims` 列表，学到每部手机的 SIM 卡（subscription id 与国家），保存在 `phone_sims.json`。
-   - 从没报告过 SIM 卡的手机不接代打（`sim_unknown`）。
-   - 回拨则用原来接那通电话的手机和 SIM 卡拨出。
+   - Bageo 程序从你在“系统 → 手机”填的号码、或蓝牙电脑上的 `SIM_COUNTRY`，知道每部手机的 SIM 卡国家，保存在 `phone_sims.json`。
+   - 不知道 SIM 卡国家的手机不接代打（`sim_unknown`）。
+   - 回拨则用原来接那通电话的手机拨出。
 4. **拨号。**
-   - Bageo 程序发送 `place_call`，附带 E.164 格式的号码和要用的 SIM 卡。
-   - 如果这通电话的媒体 hello 报告的是另一张卡、或没有报告，Bageo 会在 AI 开口前挂断（`wrong_sim`），并忘掉那部手机上的那张卡。
+   - Bageo 程序发送 `place_call`，附带 E.164 格式的号码。
    - 已取消的代打绝不会拨出；取消后仍然接通的电话会立即挂断。
 5. **等真人。** AI 不会对着回铃音说“喂？”。
    - 对方接起并开口之前（至少 400 毫秒人声，滤掉 350–520 Hz 的回铃音），Gemini 只收到静音。
@@ -223,9 +221,8 @@ data/calls/
   contacts.json                     你的联系人
   tasks/index.json、tasks/<id>.json 待处理事项（日程预约）
   errands.json                      AI 代打，保留最新 500 条
-  phone_sims.json                   每部手机报告过的 SIM 卡
-  phone-pairing.key                 手机 Wi-Fi 连接的配对密钥
-  sms/messages.json                 转发与回复的短信
+  phone_sims.json                   每部手机的 SIM 卡国家
+  phone-pairing.key                 蓝牙电脑通过网络连接的配对密钥
   backups/                          定时、手动与导入前备份（.zip / .bageo）
   voice_preview/                    缓存的声音示例与语音
 ```
@@ -237,7 +234,7 @@ data/calls/
 ## 设计取舍
 
 - **语音对语音。** 同一个模型听也说，延迟和插话由模型处理，而不是靠语音转文字、LLM、文字转语音串起来的一条链。
-- **你的 SIM 卡、你的手机。** 不用 SIP 中继，也不用云通信服务。手机通信协议很小，写在 [API](API.md) 里，其他前端也可以取代手机。
+- **你的 SIM 卡、你的手机。** 不用 SIP 中继，也不用云通信服务。手机通信协议很小，写在 [API](API.md) 里；蓝牙程序就是讲这个协议的一种前端，其他前端也可以取代它。
 - **单一进程。** 没有其他东西要安装、保活或加固。
 - **有风险的路径一律保守。** 听到不管谁说都是诈骗的话，复审答不出来也照样陪聊；SIM 卡不明的手机不接代打；预约一定等你决定。
 

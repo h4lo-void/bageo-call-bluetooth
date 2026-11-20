@@ -1,11 +1,11 @@
 # 开始使用：让 AI 电话助理接听你的真实号码
 
-这份指南带你从下载开始，一直做到 AI 用你自己的号码接起第一通电话，再让 AI 第一次替你打电话。Bageo 是自托管的：一部 root 过的 Android 手机插着你的 SIM 卡，电脑上的一个程序把每通电话实时接到 Gemini Live，所有录音和文字记录都留在你硬盘上的文件夹里。请预留大约一小时，大部分时间花在准备手机上。
+这份指南带你从下载开始，一直做到 AI 用你自己的号码接起第一通电话，再让 AI 第一次替你打电话。Bageo 是自托管的：手机保持普通手机，一台有蓝牙的 Linux 电脑像车载免提一样替它接电话，Bageo 把每通电话实时接到 Gemini Live，所有录音和文字记录都留在你硬盘上的文件夹里。请预留大约半小时。
 
 1. [需要准备什么](#1-需要准备什么)
 2. [安装并启动 Bageo](#2-安装并启动-bageo)
 3. [填写基本设置](#3-填写基本设置)
-4. [准备手机](#4-准备手机)
+4. [用蓝牙连上手机](#4-用蓝牙连上手机)
 5. [打第一通测试电话](#5-打第一通测试电话)
 6. [设置通知](#6-设置通知)
 7. [联系人、日程预约与 AI 代打](#7-联系人日程预约与-ai-代打)
@@ -15,42 +15,42 @@
 
 | | |
 |---|---|
-| **一部备用 Android 手机** | 已用 Magisk 或 KernelSU root，Android 10 及以上，插着能接电话的 SIM 卡。在 Google Pixel 7、7a、8、9 上实测过（见[支持哪些手机](PHONE.md#支持哪些手机)）。这里不讲 root：请按你那个型号的教程操作，并记住解锁 bootloader 会清空手机。 |
-| **一台电脑** | Windows 10/11、macOS（Apple Silicon 或 Intel）或 Linux，需要接电话的时段都得开着，再加一根连接手机的 USB 线。也可以用 Docker，手机改走 Wi-Fi。 |
+| **一部手机** | iPhone 或 Android 都可以，要有能接电话的 SIM 卡。不用装 App，也不用 root。 |
+| **一台运行 Bageo 的电脑** | Windows 10/11、macOS（Apple Silicon 或 Intel）或 Linux，要接电话的时段都得开着。也可以用 Docker。 |
+| **一台有蓝牙的 Linux 电脑** | 放在手机附近（约 10 米内）的树莓派、迷你主机或家里的服务器，系统是 Debian、Ubuntu 或 Raspberry Pi OS。如果运行 Bageo 的电脑本身是 Linux，可以是同一台。见[手机设置](PHONE.md)。 |
 | **一个 Gemini API 密钥** | 到 <https://aistudio.google.com/apikey> 创建并复制。Bageo 只需要这一个：实时通话、摘要、防诈复审、联系人导入都用它。Google 按用量计费；想设上限，可以在 Google 账号里设置预算。 |
 
 ## 2. 安装并启动 Bageo
 
-电脑上只需要运行一个 Bageo 程序：它和手机、Gemini 通信，保存通话记录，也提供网页控制台。不需要数据库，也不用另外安装其他服务。
+电脑上只需要运行一个 Bageo 程序：它和蓝牙电脑、Gemini 通信，保存通话记录，也提供网页控制台。不需要数据库，也不用另外安装其他服务。
 
 ### 下载发布版（最简单）
 
-1. 到 [Releases](https://github.com/h4lo-void/bageo-call/releases) 页面下载适合你系统的文件：
+1. 到 [Releases](https://github.com/h4lo-void/bageo-call-bluetooth/releases) 页面下载适合你系统的文件：
 
    | 系统 | 文件 |
    |---|---|
-   | Windows | `bageo-call-<版本>-windows-x64-setup.exe` |
-   | macOS（Apple 芯片） | `bageo-call-<版本>-macos-arm64.dmg` |
-   | macOS（Intel） | `bageo-call-<版本>-macos-x64.dmg` |
-   | Linux | `bageo-call-<版本>-linux-x64.tar.gz` |
+   | Windows | `bageo-call-bluetooth-<版本>-windows-x64-setup.exe` |
+   | macOS（Apple 芯片） | `bageo-call-bluetooth-<版本>-macos-arm64.dmg` |
+   | macOS（Intel） | `bageo-call-bluetooth-<版本>-macos-x64.dmg` |
+   | Linux | `bageo-call-bluetooth-<版本>-linux-x64.tar.gz` |
 
-   显示 Bageo 状态的小图标（Bageo Status）已经包在安装文件里，不用另外下载。
+   显示 Bageo 状态的小图标（Bageo Status）已经包在安装文件里。Linux 的文件另外包含蓝牙程序（见步骤 4）。
 2. 安装并启动：
    - **Windows：** 双击 `setup.exe`。不需要管理员权限，会装到 `%LOCALAPPDATA%\Programs\Bageo`。再点桌面或开始菜单里的“Bageo”快捷方式。如果弹出“Windows 已保护你的电脑”，点“更多信息 → 仍要运行”（程序没有付费签名）。通话、录音和设置存在安装文件夹里的 `data`，卸载程序不会删掉它。
    - **macOS：** 打开 `.dmg`，把 **Bageo** 拖进“应用程序”，再点一下它。通话、录音和设置存在 `~/Library/Application Support/Bageo`，更新 App 不会动到。第一次如果 macOS 说无法验证开发者：在 Finder 里对 Bageo 点右键 →“打开”，或到“系统设置 → 隐私与安全性”点“仍要打开”。
    - **Linux：** 解压后，在终端运行 `./start.sh`。
 3. Windows 和 macOS 不会出现命令窗口。系统托盘（Windows）或菜单栏（macOS）会多一个图标，Bageo 跟着它在后台运行。在图标的菜单里点“退出 Bageo”才会停。
 4. 第一次会自动用浏览器打开网页控制台，并问要不要设置控制台密码；要用手机或别的电脑打开控制台就要设置。之后点图标就能打开控制台，或直接打开 <http://bageo.local/>（这台电脑也能用 <http://localhost:8787/>）。Windows 第一次会问要不要允许 Bageo 访问网络，请选“专用网络”允许。
-5. USB 连接要用 `adb`（Google 的 Android platform-tools）。没装的话，点图标后按“下载”，它会放进程序旁边的 `platform-tools` 文件夹。
-6. 进阶：想用 `.env` 的话，Windows 放在安装文件夹，macOS 放在 `~/Library/Application Support/Bageo/.env`。Windows 安装文件夹里另有 `start.cmd` 和 `start.ps1`，可以用命令行启动 Bageo；Mac 的 App 里没有启动脚本。想在终端里看输出，用 `start.cmd -Console`（Windows）或 `./start.sh --console`（Linux）。
+5. 进阶：想用 `.env` 的话，Windows 放在安装文件夹，macOS 放在 `~/Library/Application Support/Bageo/.env`。Windows 安装文件夹里另有 `start.cmd` 和 `start.ps1`，可以用命令行启动 Bageo；Mac 的 App 里没有启动脚本。想在终端里看输出，用 `start.cmd -Console`（Windows）或 `./start.sh --console`（Linux）。
 
-Linux，以及 Windows 加了 `-Console` 的时候，启动脚本会在终端里做同样的事：询问是否下载 `adb`、打开网页控制台，并在桌面放一个“**Bageo 控制台**”快捷方式（不想要快捷方式的话，Windows 加 `-NoShortcut`、其他系统加 `--no-shortcut`，或在 `.env` 里设置 `BAGEO_NO_SHORTCUT=1`）。那个终端窗口请保持打开：关掉它，Bageo 就停了。
+Linux，以及 Windows 加了 `-Console` 的时候，启动脚本会在终端里做同样的事：打开网页控制台，并在桌面放一个“**Bageo 控制台**”快捷方式（不想要快捷方式的话，Windows 加 `-NoShortcut`、其他系统加 `--no-shortcut`，或在 `.env` 里设置 `BAGEO_NO_SHORTCUT=1`）。那个终端窗口请保持打开：关掉它，Bageo 就停了。
 
 ### 从源码
 
 ```text
-git clone https://github.com/h4lo-void/bageo-call.git
-cd bageo-call
+git clone https://github.com/h4lo-void/bageo-call-bluetooth.git
+cd bageo-call-bluetooth
 ./start.sh            # Windows: .\start.cmd
 ```
 
@@ -63,16 +63,16 @@ cp .env.example .env        # 设置 CALLS_UI_TOKEN 和 DEVICE_TOKEN
 docker compose up -d --build
 ```
 
-不想自己构建的话，可以用现成的镜像 `bageo/bageo-call`（Docker Hub，另有 `ghcr.io/h4lo-void/bageo-call`），支持 amd64 和 arm64：把 `docker-compose.yml` 里 `build: .` 那一行删掉、`image:` 改成 `bageo/bageo-call:latest`，再运行 `docker compose up -d`。
+这会用这个 repo 构建蓝牙版。（现成的 `bageo/bageo-call` 镜像是 Android 版，里面有蓝牙用不到的功能。）
 
-容器里的 Bageo 对局域网开放，所以 `.env` 里这两个值必须设置：`CALLS_UI_TOKEN`（控制台密码）和 `DEVICE_TOKEN`（手机连接用）。
+容器里的 Bageo 对局域网开放，所以 `.env` 里这两个值必须设置：`CALLS_UI_TOKEN`（控制台密码）和 `DEVICE_TOKEN`（蓝牙电脑连接用）。
 
 - 控制台在 `http://<主机>:8787/`，打开时输入 `CALLS_UI_TOKEN` 的值。
-- 手机按 IP 地址连接，不用插 USB：
+- 蓝牙电脑用 IP 地址连接：
   1. 控制台打开“系统”页，在“**用 IP 地址配对手机**”点“**生成配对码**”。
-  2. 手机的 Bageo 应用里点“**用 IP 地址连接**”，输入 Docker 主机的 IP（例如 `192.168.1.20`）和配对码。配对码 10 分钟内有效。
+  2. 在蓝牙电脑上运行 `sudo bageo-bluetooth link 192.168.1.20 123456`（换成 Docker 主机的 IP 和配对码），再运行 `sudo systemctl restart bageo-bluetooth`。配对码 10 分钟内有效。
 
-  手机和控制台用同一个端口，所以只要开放 8787。主机上的端口换成别的号码也可以（例如 `9000:8787`），手机输入的地址就填你对外开放的那个端口（`192.168.1.20:9000`）。手机和 Docker 主机要在同一个网络。详见[手机设置 → Wi-Fi](PHONE.md#wi-fi)。手动填写 `ws://<主机>:8787/ws?token=<DEVICE_TOKEN>` 也照样能用。
+  蓝牙电脑和控制台用同一个端口，所以只要开放 8787。两台电脑要在同一个网络。详见[手机设置 → 连到 Bageo](PHONE.md#连到-bageo)。
 - 在 `.env` 里设置 `PUBLIC_URL`（例如 `http://192.168.1.20:8787`），通知里的链接才打得开。容器里不能用 `bageo.local`。
 - 时区设置写在 `docker-compose.yml` 的注释里。
 
@@ -82,7 +82,7 @@ docker compose up -d --build
 
 | 路径 | 内容 |
 |---|---|
-| `data/calls/` | 通话记录、录音、文字记录、联系人、待处理事项、AI 代打记录、转发短信（`sms/`）与备份文件（`backups/`） |
+| `data/calls/` | 通话记录、录音、文字记录、联系人、待处理事项、AI 代打记录与备份文件（`backups/`） |
 | `data/calls/config/settings.json` | 你在网页控制台里设置的所有内容，**包括你的 API 密钥** |
 | `.env` | 可选的启动选项（端口、密码）；见[设置参考](SETTINGS.md) |
 
@@ -104,20 +104,19 @@ docker compose up -d --build
 
 保存。“系统”页的检查清单会列出还缺什么。
 
-## 4. 准备手机
+## 4. 用蓝牙连上手机
 
-下面是简要步骤；详细说明和还原方法见[手机设置](PHONE.md)。
+下面是简要步骤；详细说明见[手机设置](PHONE.md)。
 
-1. 把发布版附带的 `bageo-phone-module-<version>.zip` 复制到手机，在 Magisk 或 KernelSU 应用里安装为模块。重启。
-2. 打开 **Bageo** 应用，把“**设置步骤**”逐项做完：权限、默认电话应用、来电过滤、勿扰模式权限、电池优化豁免。应用本身不需要 root 权限，这些事由模块完成。
-3. 开启 **USB 调试**：“设置 → 关于手机”，连续点“版本号”七次，再到“系统 → 开发者选项 → USB 调试”。
-4. 把手机插到电脑上。在手机上的“**允许 USB 调试吗？**”里点允许，并勾选“始终允许使用这台计算机进行调试”。
+1. 在有蓝牙的 Linux 电脑上安装蓝牙程序。用 Linux 下载文件的话，运行 `sudo ./bluetooth/install.sh`；用源代码的话，在 `bluetooth` 文件夹里运行 `sudo ./install.sh`。
+2. Bageo 在另一台电脑或 Docker 里的话，要把两边连起来：控制台打开“系统”页，在“**用 IP 地址配对手机**”点“**生成配对码**”，然后在蓝牙电脑上运行 `sudo bageo-bluetooth link <Bageo 的 IP 地址> <配对码>` 和 `sudo systemctl restart bageo-bluetooth`。Bageo 就运行在蓝牙电脑上的话，这一步跳过。
+3. 配对手机。
+   - **Android：** 安装后 10 分钟内，打开“设置 → 蓝牙 → 配对新设备”，点“Bageo HF”，再点“配对”。
+   - **iPhone：** 打开“设置 → 蓝牙”并停在这一页。在蓝牙电脑上运行 `sudo bageo-bluetooth pair` 列出附近的手机，再运行 `sudo bageo-bluetooth pair <手机的地址>`，然后到 iPhone 上点“配对”。
 
-大约 15 秒内，Bageo 会自动建好 USB 连接并启动应用的通话服务。网页控制台的“系统 → 手机”会列出这部手机，显示“待命中，可以接电话”就好了。
+几秒内，网页控制台的“系统 → 手机”就会列出这部手机。第一次配对之后，手机会自己连回来。
 
-之后可以拔掉线：只要手机和电脑在同一个网络，手机会自己改用 Wi-Fi 连接（见[手机设置 → Wi-Fi](PHONE.md#wi-fi)）。Windows 防火墙弹出询问时，请允许 Bageo 使用专用网络。
-
-> 从现在起，这部手机就是一台接电话专用机：它不会响铃出声，原来的电话应用被隐藏，通话时麦克风和扬声器都静音，房间里的声音不会被听到。这是有意的设计。想暂时当普通手机用，在“系统 → 手机”或应用里切换到[普通手机模式](PHONE.md#普通手机模式)，随时都能切回来。
+> 从现在起，Bageo 会通过蓝牙接这部手机的电话。手机还是普通手机，照样用它的 App。想暂时自己接电话，在“系统 → 手机”切换成[普通手机模式](PHONE.md#普通手机模式)，随时都能切回来。
 
 ## 5. 打第一通测试电话
 
@@ -164,14 +163,14 @@ docker compose up -d --build
 
 1. 来电的人想约时间，AI 会说确认后再回复。
 2. 通话结束后，这条预约出现在“通话”页最上面的“**待处理事项**”，通知里也有。
-3. 选择怎么告诉对方（**发短信**、**AI 回拨**或**不通知对方**），再点“**同意**”或“**不同意**”。要发短信，设置里的“发短信告诉对方”要开着。
+3. 选择怎么告诉对方（**AI 回拨**或**不通知对方**），再点“**同意**”或“**不同意**”。
 4. 同意之后点“**添加到日历**”。第一次会问你用哪个日历（Google、Outlook.com、Microsoft 365、Apple、Yahoo 或 `.ics`），之后点一下就直接添加。
 
 ### 第一次 AI 代打
 
-1.4 以上版本的手机应用连接时会自动上报它插了哪些 SIM 卡（只有旧版应用才需要先打一通电话给它）。然后打开“**AI 代打**”：
+要让 AI 拨出去，Bageo 得知道手机 SIM 卡的所在国家：到“系统 → 手机”填这张卡的号码，或在蓝牙电脑上设置 `SIM_COUNTRY`（见[手机设置](PHONE.md)）。然后打开“**AI 代打**”：
 
-1. **打给谁**：输入联系人名字或号码。不带 `+` 的号码视为你所在国家的号码；国外号码请以 `+` 开头。AI 只会用和号码同一国家的 SIM 卡拨打。
+1. **打给谁**：输入联系人名字或号码。不带 `+` 的号码视为你所在国家的号码；国外号码请以 `+` 开头。手机要有和号码同一国家的 SIM 卡，AI 才会拨打。
 2. **要处理的事**：写清楚要办什么、哪些条件可以接受，例如：“订明天晚上 7 点 4 位，姓王，无烟区；7 点半到 8 点也行。”
 3. **用什么身份打**：你的助理（默认）或你本人。
 4. 按“**开始打**”，并保持页面打开。实时字幕会显示双方在说什么。如果餐厅只剩 8 点半，AI 会弹出一张 40 秒倒计时的提问卡问你；“**交代 AI**”也能随时给它指示。
@@ -204,20 +203,20 @@ Bageo 在运行，才接得到电话。
   再运行 `systemctl --user enable --now bageo-call`，以及 `loginctl enable-linger $USER`，让它在没有登录时也能运行。
 - **Docker：** `docker-compose.yml` 里的 `restart: unless-stopped` 已经会在重启后把它拉起来。
 
-手机请一直连着充电器。手机或电脑重启后，两边都会自动重新连接。
+手机请保持有电、在蓝牙范围内。手机或电脑重启后，会自动重新连接。
 
 ### 在系统托盘或菜单栏看状态
 
-在 Windows 和 macOS，Bageo 的图标（叫 **Bageo Status**）会跟着 Bageo 一起启动，待在系统托盘（Windows）或菜单栏（macOS）。图标外框是绿色表示一切正常，黄色表示有地方需要留意（例如控制台还有项目没设置、有手机没有连接，或缺 Android 工具），红色表示连接不上 Bageo 或没有手机连接。
+在 Windows 和 macOS，Bageo 的图标（叫 **Bageo Status**）会跟着 Bageo 一起启动，待在系统托盘（Windows）或菜单栏（macOS）。图标外框是绿色表示一切正常，黄色表示有地方需要留意（例如控制台还有项目没设置、有手机没有连接），红色表示连接不上 Bageo 或没有手机连接。
 
 - **Windows：** 新图标会先收在时钟旁的 `^` 里，把它拖到任务栏上就能一直看到。
 - **macOS：** 图标在菜单栏右边。
 
 点图标可以看到控制台地址和手机，也可以直接打开控制台。在图标上点右键选“退出 Bageo”，Bageo 会停止，图标也会消失。
 
-在“设置”里可以填地址、输入控制台的密码、打开“开机时自动启动”，以及选择要弹出哪些小通知：有来电时、收到短信时、通话摘要写好时。点一下通知就打开控制台。
+在“设置”里可以填地址、输入控制台的密码、打开“开机时自动启动”，以及选择要弹出哪些小通知：有来电时、通话摘要写好时。点一下通知就打开控制台。
 
-通话摘要的通知会在通话结束、Bageo 写好摘要后弹出，标题是联系人名称（没有就显示号码），内容是这通电话的重点，点一下直接打开那通电话的记录。来电和短信通知默认关闭，通话摘要通知默认开启。短信通知要搭配同一版的[短信转发](../../tools/sms_forward/README.md)。
+通话摘要的通知会在通话结束、Bageo 写好摘要后弹出，标题是联系人名称（没有就显示号码），内容是这通电话的重点，点一下直接打开那通电话的记录。来电通知默认关闭，通话摘要通知默认开启。
 
 ## 接下来
 

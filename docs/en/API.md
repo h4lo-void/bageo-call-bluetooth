@@ -7,7 +7,7 @@ manage contacts, switch a phone between AI answering and a normal phone, and
 send the AI to make a phone call for you.
 
 This page covers every route the console and the phones use in Bageo 1.6,
-including the WebSocket protocol the rooted Android phone speaks.
+including the WebSocket protocol the Bluetooth program speaks.
 
 | | |
 |---|---|
@@ -86,7 +86,7 @@ Two route groups use their own shape: the phone mode switch answers
 | 400 | The request is wrong: not JSON, no `Content-Type: application/json`, a bad id or value. | `bad_request`, `invalid_id`, `missing_field`, `invalid_contact`, an errand code |
 | 401 | Password missing or wrong. | `unauthorized` |
 | 404 | No such call, task, contact or errand, or no such file. | `not_found`, `task_not_found`, `contact_not_found`, `no_audio`, `no_calendar` |
-| 409 | The change conflicts with what is stored. | `contact_exists`, `sms_not_retryable`, `call_in_progress`, `device_online`, `device_in_call` |
+| 409 | The change conflicts with what is stored. | `contact_exists`, `call_in_progress`, `device_online`, `device_in_call` |
 | 413 / 415 | An import file too large / of an unknown type. | `file_too_large`, `too_many_rows`, `unsupported_file` |
 | 500 | Bageo could not save or read its own files. | `save_failed`, `contacts_save_failed`, `import_failed` |
 | 502 | An outside service failed (a notification channel, Gemini). | `auth_failed`, `network_error`, `ai_failed`, `preview_failed` |
@@ -95,7 +95,7 @@ Two route groups use their own shape: the phone mode switch answers
 
 Another web page open in a browser on your network could try to send requests
 to the console, which has no login cookie. To stop that, every route that
-places a call, sends a text, decides something or changes stored data requires
+places a call, decides something or changes stored data requires
 `Content-Type: application/json`. Without it the route answers HTTP 400
 `bad_request`.
 
@@ -105,9 +105,7 @@ Bageo never answers preflights. This covers:
 - `POST /calls/api/initial-password` and `POST /calls/api/phone-pairing/renew`;
 - `POST /calls/api/call/{id}/scam-feedback`;
 - `POST /calls/api/tasks/{id}/confirm` and `…/ignore`;
-- `POST /calls/api/appointments/{id}/retry-sms`;
 - `POST /calls/api/calls/clear`;
-- `POST /calls/api/sms/send`, `…/retry`, `…/clear`, and `DELETE /calls/api/sms/thread`;
 - `POST /calls/api/devices/{serial}/mode` and `PUT /calls/api/devices/{serial}/sim-number`;
 - `POST /calls/api/contacts`, `PUT /calls/api/contacts/{id}`, `POST /calls/api/contacts/batch`, `POST /calls/api/contacts/block`
   (`POST /calls/api/contacts/import` needs an `X-Filename` header instead);
@@ -161,7 +159,7 @@ Each call record (`call`, and every entry of `calls`) carries, among others:
 | `scam` | Set when the call was judged sales or scam: `{kind, typology, confidence, source, released}`. The values are explained below the table. |
 | `scam_feedback` | Your mark from the call's page: `scam`, `sales` or `safe`. |
 | `summary` | The summary text, once written. |
-| `appointment` | When the caller set a time with the AI: the appointment as the call left it (see [Appointments and tasks](#appointments-and-tasks)). Later changes (your decision, the text and call-back results) go to `notes.appointment`. |
+| `appointment` | When the caller set a time with the AI: the appointment as the call left it (see [Appointments and tasks](#appointments-and-tasks)). Later changes (your decision and the call-back result) go to `notes.appointment`. |
 | `sim_country`, `sim_sub_id` | The SIM the call came in on, when the phone said. |
 | `audio_path`, `remote_audio_path`, `tts_audio_path`, `voicemail_path` | Which recordings exist (paths inside the data folder). |
 
@@ -253,13 +251,12 @@ Fields worth knowing (all of them are in `RuntimeSettings` in
 | `summary_provider` | `gemini` (default) / `custom`. `custom` uses `summary_api_base`, `summary_model` (required with a base URL) and `summary_api_key` (the key of that service). |
 | `calendar_app` | `google`, `outlook`, `office365`, `apple`, `yahoo`, `ics`, or empty (not chosen yet). Anything else is stored as empty. |
 | `appointment_mode` | `off` (default) / `confirm`. An older `auto` reads as `confirm`. |
-| `appointment_sms` | `true` / `false`: text the caller your decision. |
-| `appointment_reply` | `auto` (default), `sms` or `call`. |
+| `appointment_reply` | `auto` (default) or `call`. |
 | `reject_numbers` | Older form of the Blacklist, still taken by `PUT`: a list of `{number, reason}`. The numbers join the Blacklist (an ordinary contact moves there; one on the Whitelist or Stall list stays) and are not stored in the settings. Reads back what an older version saved, which counts no more once `reject_numbers_moved` is `true`. |
 | `reject_mode` | How Blacklist calls are turned away: `decline` (default: refuse while it rings) or `announce` (answer and play the announcement). |
-| `whitelist_mode` | `off` (default: AI answers normally), `direct` (decline to trigger carrier call forwarding and alert), or `emergency` (urgent: AI answers and gives out `whitelist_forward_number` if the caller has an urgent matter). Applies to the callers `transfer_whitelist`, `transfer_contacts` and `transfer_others` allow. |
-| `whitelist_forward_number` | Your real forwarding phone number used by direct and urgent transfer. |
-| `transfer_whitelist`, `transfer_contacts`, `transfer_others` | Who may be forwarded: Whitelist contacts (default `true`), other contacts (default `false`), numbers not in the contacts including hidden ones (default `false`). Blacklist and stall-list contacts never are. A number not in the contacts gets the owner called at most once every 30 minutes; a call judged sales or scam gets no urgent alert or call. |
+| `whitelist_mode` | `off` (default: AI answers normally), `direct` (decline to trigger carrier call forwarding and alert), or `emergency` (urgent: AI answers, alerts you at once and tells the caller you will call back). Applies to the callers `transfer_whitelist`, `transfer_contacts` and `transfer_others` allow. |
+| `whitelist_forward_number` | Your own phone number for forwarded calls. |
+| `transfer_whitelist`, `transfer_contacts`, `transfer_others` | Who may be forwarded: Whitelist contacts (default `true`), other contacts (default `false`), numbers not in the contacts including hidden ones (default `false`). Blacklist and stall-list contacts never are. A number not in the contacts alerts the owner at most once every 30 minutes; a call judged sales or scam gets no urgent alert. |
 | `ui_password` | Password for external console/API access (masked on read; `"ui_password_clear": true` clears it). |
 | `country_code` | Digits only (`886`, `1`). Not shown in the console; a value here wins over `COUNTRY_CODE`. |
 | `gemini_thinking_level` | `low` (default) / `medium` / `high`, for thinking models only. |
@@ -291,16 +288,8 @@ curl -s -X PUT "http://127.0.0.1:8787/calls/api/settings" \
 | Method and path | What |
 |---|---|
 | `POST /calls/api/notify/test` | Body `{"channel": {kind, url, token, target, id?}}`. Sends the test message to that one channel (stored secrets are filled in by `id`). |
-| `POST /calls/api/notify/send` | Body `{"title": "...", "body": "..."}`. Sends your message to every enabled channel (an empty `title` becomes "Bageo"; an empty `body` is HTTP 400 `empty_body`). `{ok: true}` when at least one channel accepted it. For a text message, add `"kind": "sms"` with `"from"` (sender), `"text"`, `"to"` (the number that received it), `"serial"` and `"device"` (the phone), `"received_ms"` (when it arrived, Unix milliseconds) and `"ref"` (your own key for the message), `"sub_id"` (the SIM that received it): Bageo keeps it for the console's **SMS** page, stores the same `ref` only once, and the desktop status app shows a notification. The [SMS forwarder](../../tools/sms_forward/README.md) uses this route. |
+| `POST /calls/api/notify/send` | Body `{"title": "...", "body": "..."}`. Sends your message to every enabled channel (an empty `title` becomes "Bageo"; an empty `body` is HTTP 400 `empty_body`). `{ok: true}` when at least one channel accepted it. |
 | `GET /calls/api/notify/recent?after=<id>` | The messages sent through `notify/send`, oldest first: `{ok, last_id, events: [{id, at_ms, kind, title, from, text}]}`. `events` holds only those with an `id` above `after`; without a number for `after` it is empty and `last_id` tells the client where to start. Only the latest 50 are kept, in memory only, so a restart empties the list. |
-| `GET /calls/api/sms?q=&before=<id>&limit=<n>` | The stored text messages, newest first: `{ok, total, retention_days, has_more, messages: [{id, at_ms, dir, from, from_name, to, text, serial, device, status}]}`. `q` searches sender, contact name and text; `before` gives the messages older than that `id`; `limit` is 1 to 200 (default 50). `total` counts every stored message, whatever the search. Messages older than the *Days to keep records* setting are deleted, and at most 5000 are kept. |
-| `DELETE /calls/api/sms/{id}` | Deletes one text message: `{ok: true}`, or HTTP 404 `not_found`. |
-| `POST /calls/api/sms/clear` | Deletes every stored text message: `{ok: true, removed: N}`. |
-| `GET /calls/api/sms/threads?q=` | The conversations, one per number, newest first: `{ok, total, retention_days, threads: [{key, number, name, last_at, last_text, last_dir, last_status, count, last_in_at, can_reply}], lines: [{serial, sub_id, device, number, carrier, slot, can_send}]}`. `0912…` and `+886912…` are one conversation (numbers are read in the country of the SIM that got them). `q` searches names, numbers and every message. `can_reply` is false for a sender name such as "BankInfo". `lines` are the SIMs texts can go out from; `can_send` means the phone is connected and its app sends texts. |
-| `GET /calls/api/sms/thread?number=<number or key>&before=<id>&limit=<n>` | One conversation, oldest first: `{ok, key, number, name, can_reply, has_more, reply, messages: [{id, at_ms, dir, from, to, text, serial, sub_id, device, status, error}]}`. `dir` is `in` or `out`; a sent message has `status` `sending`, `sent`, `failed` (with `error`, the phone's code) or `timeout`. `reply` (`{serial, sub_id}` or `null`) is the line a reply uses by default: the phone and SIM that received the newest message, else the first line that can send. A number without a conversation gives an empty one. |
-| `POST /calls/api/sms/send` | Body `{"to", "text", "serial", "sub_id"}` (one of `lines`; `text` 1 to 500 characters). Has that phone send the text and waits up to 30 seconds for its answer: `{ok, message}`, `ok` when it was sent. HTTP 400 `bad_number`, `bad_line` or `bad_text`. The text is kept in the conversation and is not sent to notification channels. |
-| `POST /calls/api/sms/{id}/retry` | Sends a text that `failed` or `timeout` again, on the same line: answer as for `send`. HTTP 409 `not_retryable` for any other message. |
-| `DELETE /calls/api/sms/thread?number=<number or key>` | Deletes one conversation: `{ok: true, removed: N}`. |
 | `GET /calls/api/quick-action` · `POST /calls/api/quick-action` | Signed one-tap action links included in notifications across all 32 channels (`?act=confirm\|ignore\|block\|stall\|white&target=<id_or_number>&sig=<hmac>`). Opening a link (`GET`) only shows a confirmation page; the action runs when you press the button on that page (`POST`). A link stops working after 7 days. Verified with HMAC-SHA256 so no console login is needed; localized in all 9 languages. |
 | `POST /calls/api/control/inbound` | Universal chat command webhook, accepting `{"text": "calls 5", "channel_id": "line", "sender_id": "owner", "reply": false, "token": "..."}` (`user` / `channel` aliases also work). Runs a chat command and returns `{ok, text, buttons, pushed}` in your notification language. |
 | `GET /calls/api/auth-status` · `POST /calls/api/initial-password` | Public status check (`{ok, password_set, authenticated, prompt_initial, language}`) and first-time password setup (`{"password": "..."}` or `{"skip": true}`, allowed before any password/token is set). |
@@ -356,7 +345,7 @@ The same `appointment` object sits on the call record, in its notes and on the t
   "start": "2026-11-14T15:00", "end": "2026-11-14T16:00",
   "title": "House viewing", "caller_name": "Mr Chen",
   "mode": "confirm", "status": "confirmed",
-  "reply": "sms", "sms": "sent", "call_lang": "en",
+  "reply": "call", "call_lang": "en",
   "tag": "6f1c2a9e-3b7d-4e0a-9c55-2d8f1b7e4a10",
   "tg_card": {"chat_id": "123456789", "message_id": 42}
 }
@@ -367,25 +356,13 @@ The same `appointment` object sits on the call record, in its notes and on the t
 | `start`, `end` | Local time (`TZ`). A back-up time the caller only mentioned does not replace the agreed one; a second, separate appointment on the same call becomes a task of its own. |
 | `title`, `caller_name` | What it is about, and how the caller introduced themselves (in their own words). |
 | `status` | `pending` (waiting for you), `confirmed`, `declined`; `booked` only on records from older versions. |
-| `reply` | How the caller was told: `sms`, `call` or `none`. |
-| `sms` | `sent`, or why the text did not go. The values are listed below the table. |
+| `reply` | How the caller was told: `call` or `none`. |
 | `call` | The AI call-back. The values are listed below the table. |
 | `call_lang` | The language spoken on the call (`zh-TW`, `en`, …). The AI call-back speaks it and gives your answer once, after the callee has picked up and spoken. |
 | `tg_card` | `{chat_id, message_id}` of the Telegram card sent for it; its buttons are taken off when you decide elsewhere. |
 | `tag` | A stable id for the appointment. |
 
 Empty fields are left out.
-
-`sms` values when the text did not go:
-
-- `offline`: the phone is not connected.
-- `old_app`: its app cannot send texts.
-- `timeout`.
-- `busy`: the same text is already being sent.
-- `no_number`: a number that takes no texts.
-- The phone's own code: `no_permission`, `bad_request`, `no_service`, `radio_off`, `generic_failure`, `exception`.
-
-The console and the Telegram reply put each in words.
 
 `call` values (the AI call-back):
 
@@ -399,21 +376,17 @@ Records without `call_lang` use the `language` setting.
 |---|---|
 | `GET /calls/api/tasks` | Tasks, newest first (up to 200): `{ok, tasks}`. An appointment task also carries extra fields, listed below the table. |
 | `GET /calls/api/tasks/{id}/event.ics` | An appointment as an iCalendar file (Apple Calendar and other apps). Opens with the console password or a link's `?k=<HMAC key>`; HTTP 404 `no_calendar` for a task without an appointment. |
-| `POST /calls/api/tasks/{id}/confirm` | **Accept**, the same as the button in the console or on the Telegram card. Body: empty, `{}` or `{"reply": "sms" \| "call" \| "none"}`. Answer `{ok, task, message}`. Details are below the table. |
+| `POST /calls/api/tasks/{id}/confirm` | **Accept**, the same as the button in the console or on the Telegram card. Body: empty, `{}` or `{"reply": "call" \| "none"}`. Answer `{ok, task, message}`. Details are below the table. |
 | `POST /calls/api/tasks/{id}/ignore` | **Decline**: the caller is told the same way, with a polite no. Same body, answer and rules. |
-| `POST /calls/api/appointments/{id}/retry-sms` | Text the caller of a decided appointment again when the text did not go out. Body: empty, `{}` or `{"serial": "<phone>"}` (another connected phone; none means the phone that took the call). Answer `{ok, sms, message}`. Details are below the table. |
 
 Details for these routes:
 
 - `GET /calls/api/tasks`: an appointment task also carries `calendar_links` (`{google, outlook, office365, yahoo}`) and `contact_name` when the caller is a contact.
-- `reply` = `{sms, call, default}`: whether a text or a call-back can reach this caller, and the way *Default reply* picks.
-- `sms_route` = `{serial, label}`: the phone the text goes out from when you pick none (the phone that took the call). `label` is its name in `device_labels`, else its id.
+- `reply` = `{call, default}`: whether a call-back can reach this caller, and the way *Default reply* picks.
 - The console's *To do* list is the tasks whose `appointment.status` is `pending`.
 - `confirm`: without `reply`, *Default reply* decides; a way that cannot reach this caller tells nobody.
 - `confirm` answers `message`: what happened, in words, as the Telegram bot replies it, with the *Add to calendar* link for your `calendar_app`. If none is chosen yet, the link opens the call's page in the console, where *Add to calendar* asks which calendar. With no console address, there is no link.
-- `confirm`: a text may take up to 90 seconds; a call-back is handed to the phone (follow it in `appointment.call`).
-- `retry-sms`: `ok` when the text was sent, and `sms` is the new code.
-- `retry-sms` errors: HTTP 409 `sms_not_retryable` (with the current `sms`) when it is still pending, already sent or never to be sent (`no_number`); 404 `task_not_found`; 400 `invalid_serial` / `bad_request`.
+- `confirm`: a call-back is handed to the phone (follow it in `appointment.call`).
 
 Rules for decisions:
 
@@ -423,9 +396,7 @@ Rules for decisions:
 - When a Telegram card went out for the appointment, its buttons are taken off
   and `message` is posted in that chat (best effort; the decision stands
   either way).
-- Texts and call-backs go out from the SIM the call came in on (`sub_id`). A
-  text gives only the time and its weekday, never what the appointment is
-  about.
+- Call-backs go out from the phone that took the call, and say only the time and its weekday, never what the appointment is about.
 - Sales and scam calls never leave an appointment, and an appointment from a
   call judged one afterwards is dropped.
 
@@ -490,10 +461,9 @@ transfer.
 **Which phone and SIM.**
 
 - The call goes out from a connected phone in AI mode that has a SIM of the number's country.
-- Bageo learns each phone's SIMs (subscription id, country, carrier, and optional number) from the `sims` list reported in control `hello` / `status` (plus `sim_sub_id` and `sim_country` on calls for older app versions). They are kept in `phone_sims.json`.
-- A phone whose SIMs Bageo has never heard about takes no errand (`sim_unknown`): reconnect the phone (or call it once on older app versions).
-- The phone gets the number in E.164 form with the SIM to use (`sub_id`).
-- If the call's own media `hello` shows another SIM, or none, Bageo hangs up before the AI speaks (`failed`, `call_code` `wrong_sim`, you are told) and forgets that SIM on that phone until a call reports it again.
+- Bageo knows each phone's SIM country from the number you save for it (`PUT /calls/api/devices/{serial}/sim-number`) or from `SIM_COUNTRY` on the Bluetooth computer, and keeps it in `phone_sims.json`.
+- A phone whose SIM country Bageo does not know takes no errand (`sim_unknown`).
+- The phone gets the number in E.164 form.
 
 **Queues and limits.**
 
@@ -536,7 +506,7 @@ transfer.
 | `identity` | `assistant` or `owner`. |
 | `serial`, `device_label` | The phone that dials it, and its name. |
 | `status` | `queued`, `dialing` (the line rings, nobody has spoken yet), `on_call` (the other side picked up and spoke), `done`, `no_answer`, `failed`, `cancelled`. The last four are final. |
-| `call_code` | Where the dial stands: `dialing`, `queued`, `answered`, `no_answer`, `failed`, `phone_busy`, `number_busy`, `no_phone`, `send_failed`, `keypad_menu`, `carrier_message`, `wrong_sim`, `agent_restarted`, `cancelled`, `redial_wait`, `voicemail`. |
+| `call_code` | Where the dial stands: `dialing`, `queued`, `answered`, `no_answer`, `failed`, `phone_busy`, `number_busy`, `no_phone`, `send_failed`, `keypad_menu`, `carrier_message`, `agent_restarted`, `cancelled`, `redial_wait`, `voicemail`. |
 | `attempts` | 1, plus one per **Try again** and per redial. |
 | `redial` | **Redial until answered** is on. Left out when off. |
 | `redial_at` | When the next try is dialed (while `call_code` is `redial_wait`). Left out otherwise. |
@@ -704,13 +674,13 @@ Content-Type: application/json
 
 Twelve routes back up and restore Bageo's own data: the same as *Backup & restore* in the console settings (see [Settings](SETTINGS.md#backup--restore)). Nothing is sent outside your computer. They follow the console's password rule, and every `POST` the `Content-Type: application/json` rule above (`import` takes the file itself with an `X-Filename` header, like `contacts/import`). `GET …/download/{ticket}` needs only its ticket, so no password ever goes into a download link.
 
-Four settings control it, saved with `PUT /calls/api/settings`: `backup_schedule` (`off`, `daily`, `weekly` by default, or `monthly`), `backup_dir` (empty: the `backups` folder in the data folder; otherwise an absolute path, which Bageo creates and test-writes, answering HTTP 400 `backup_dir_unwritable` when it cannot), `backup_keep` (1 to 100, default 10, automatic backups only) and `backup_include_calls` (default `false`: with `true`, automatic and manual backups also hold call records, recordings, texts and *To do* items). Two more encrypt backups: `backup_encrypt` (default `false`: with `true`, manual, automatic and `before_import` backups are encrypted) and `backup_password` (at least 8 characters, else HTTP 400 `backup_password_short`; never sent back, only `backup_password_set`; `backup_password_clear: true` removes it). Turning `backup_encrypt` on without a password, or removing the password while it is on, answers HTTP 400 `backup_password_missing`. The password is saved on this computer with the other settings, so automatic backups can use it: encryption protects the copies kept elsewhere, such as on an external drive or in a cloud or network folder. It belongs to `keys`.
+Four settings control it, saved with `PUT /calls/api/settings`: `backup_schedule` (`off`, `daily`, `weekly` by default, or `monthly`), `backup_dir` (empty: the `backups` folder in the data folder; otherwise an absolute path, which Bageo creates and test-writes, answering HTTP 400 `backup_dir_unwritable` when it cannot), `backup_keep` (1 to 100, default 10, automatic backups only) and `backup_include_calls` (default `false`: with `true`, automatic and manual backups also hold call records, recordings and *To do* items). Two more encrypt backups: `backup_encrypt` (default `false`: with `true`, manual, automatic and `before_import` backups are encrypted) and `backup_password` (at least 8 characters, else HTTP 400 `backup_password_short`; never sent back, only `backup_password_set`; `backup_password_clear: true` removes it). Turning `backup_encrypt` on without a password, or removing the password while it is on, answers HTTP 400 `backup_password_missing`. The password is saved on this computer with the other settings, so automatic backups can use it: encryption protects the copies kept elsewhere, such as on an external drive or in a cloud or network folder. It belongs to `keys`.
 
 | Method and path | What |
 |---|---|
 | `GET /calls/api/backup` | The state: `{dir, default_dir, dir_ok, can_open_folder, can_download, running, last, next_at, backups}`. |
 | `POST /calls/api/backup/run` | Body `{}`. Makes a manual backup now: `{entry}`, one item of `backups`. Another one running: HTTP 409 `busy`. A failure: HTTP 500 `dir_unwritable`, `disk_full` or `io`. |
-| `POST /calls/api/backup/export` | Body `{items, password}`. Makes a file of the items in `items`: `settings`, `keys`, `contacts`, `numbers`, `phones`, `errands`, `calls`, `sms`, `tasks`. Without `items`: `settings`, `keys`, `contacts`, `numbers`, `phones`, `errands`. An unknown id or an empty list: HTTP 400 `bad_items`. With `password` (at least 8 characters, else HTTP 400 `backup_password_short`) the file is encrypted (`.bageo`); without it, a zip. Answers `{ticket, name}`: download the file with `GET …/download/{ticket}`. With `calls` the file can be very large. With `keys` and no console password it works only from the computer Bageo runs on, opened as `localhost`; otherwise HTTP 403 `need_password`. |
+| `POST /calls/api/backup/export` | Body `{items, password}`. Makes a file of the items in `items`: `settings`, `keys`, `contacts`, `numbers`, `phones`, `errands`, `calls`, `tasks`. Without `items`: `settings`, `keys`, `contacts`, `numbers`, `phones`, `errands`. An unknown id or an empty list: HTTP 400 `bad_items`. With `password` (at least 8 characters, else HTTP 400 `backup_password_short`) the file is encrypted (`.bageo`); without it, a zip. Answers `{ticket, name}`: download the file with `GET …/download/{ticket}`. With `calls` the file can be very large. With `keys` and no console password it works only from the computer Bageo runs on, opened as `localhost`; otherwise HTTP 403 `need_password`. |
 | `POST /calls/api/backup/file-ticket` | Body `{name}`. A ticket for a file of the backup folder: `{ticket, name}`. `name` must be the name of a backup file that exists there (HTTP 404 `not_found`). Backups hold the keys: without a console password, the same rule as an export with `keys` (HTTP 403 `need_password`). |
 | `GET /calls/api/backup/download/{ticket}` | Downloads the file of a ticket. A ticket is 256 random bits and works once, within 2 minutes; after that HTTP 404 `not_found`. An export's file is deleted once it is sent or its ticket runs out. |
 | `POST /calls/api/backup/import` | The file itself as the body (up to 200 MB), its name URL-encoded in `X-Filename`. A backup zip, an encrypted backup (`.bageo`), or an older single `settings.json`. **Restores nothing**: it keeps the file for 15 minutes and answers a preview. An encrypted file answers `{token, source_name, encrypted: true, needs_password: true}` without `items`: open it with `unlock`. At most 3 previews wait: a new one pushes out the oldest, whose token then answers `expired`. At most 2 uploads run at once; another one: HTTP 409 `busy`. |
@@ -724,34 +694,33 @@ Four settings control it, saved with `PUT /calls/api/settings`: `backup_schedule
 Details:
 
 - `GET /calls/api/backup`: `dir` is the folder in use, `default_dir` the default one, `dir_ok` whether it can be written to, `can_open_folder` whether `open-folder` works, `can_download` whether downloads that hold keys work from here, `running` whether a backup is under way, `next_at` when the next automatic one is due (RFC 3339, or `null`). `last` is `{at, ok, name, size, error}` for the last automatic or manual attempt, or `null`. `backups` lists the files in the folder, newest first, each `{name, at, size, kind, app_version, include_calls, encrypted}`; `kind` is `scheduled`, `manual`, `before_import` or `export`. An encrypted file shows `app_version` and `include_calls` as `null`: nothing in it can be read without its password.
-- The file is a zip. `bageo-backup.json` at its root holds `{format: "bageo-backup", version: 1, app_version, created_at, kind, include_calls, items, files: [{path, size, sha256}]}`; `items` lists the ids the file really holds. Everything else is under `data/`, with the path inside the data folder (`data/config/settings.json`). Left out: the `backups` folder itself, temporary files, debug files, one-time files such as the restart marker, and caches. Automatic, manual and `before_import` backups always hold `settings`, `keys`, `contacts`, `numbers`, `phones` and `errands`, and also `calls`, `sms` and `tasks` when `backup_include_calls` is `true`. An export holds only the ticked items: with `settings` but not `keys`, `settings.json` leaves out the whole `keys` group; with `keys` but not `settings`, the file has only that group and the phone pairing key (`phone-pairing.key`). `keys` means keys, passwords and connections: the keys of Gemini and other services, the tokens of notifications and chat bots, the console password and the MCP token, and everything that decides where data goes or who may control Bageo (the notification channels whole, with their targets and who may give commands there; the Telegram chat and remote control; the notification gateway; the mail account; the summary service; the TRTC bridge and endpoints; the forwarding number and whether urgent calls are put through to it; the numbers Bageo may call back; MCP access), plus the phone pairing key. The full list is `CREDENTIAL_FIELDS` and `CONNECTION_FIELDS` in `crates/agent/src/settings_store.rs`.
+- The file is a zip. `bageo-backup.json` at its root holds `{format: "bageo-backup", version: 1, app_version, created_at, kind, include_calls, items, files: [{path, size, sha256}]}`; `items` lists the ids the file really holds. Everything else is under `data/`, with the path inside the data folder (`data/config/settings.json`). Left out: the `backups` folder itself, temporary files, debug files, one-time files such as the restart marker, and caches. Automatic, manual and `before_import` backups always hold `settings`, `keys`, `contacts`, `numbers`, `phones` and `errands`, and also `calls` and `tasks` when `backup_include_calls` is `true`. An export holds only the ticked items: with `settings` but not `keys`, `settings.json` leaves out the whole `keys` group; with `keys` but not `settings`, the file has only that group and the phone pairing key (`phone-pairing.key`). `keys` means keys, passwords and connections: the keys of Gemini and other services, the tokens of notifications and chat bots, the console password and the MCP token, and everything that decides where data goes or who may control Bageo (the notification channels whole, with their targets and who may give commands there; the Telegram chat and remote control; the notification gateway; the mail account; the summary service; the TRTC bridge and endpoints; the forwarding number and whether urgent calls are put through to it; the numbers Bageo may call back; MCP access), plus the phone pairing key. The full list is `CREDENTIAL_FIELDS` and `CONNECTION_FIELDS` in `crates/agent/src/settings_store.rs`.
 - Names use local time: `bageo-backup-YYYYMMDD-HHMMSS-auto.zip`, `…-manual.zip`, `…-before-import.zip`, and `bageo-export-YYYYMMDD-HHMMSS.zip` for an export (`kind` `export`; it is listed with the others and never deleted). Encrypted files end in `.bageo` instead of `.zip`.
 - An encrypted file (`.bageo`) is the same zip, sealed so it can be opened with the password and standard tools:
   - A 62-byte header (integers little-endian): `BAGEOENC` (8 bytes); format version `1` (1); key derivation `1` = Argon2id, version 0x13 (1); memory in KiB (4, 65536 = 64 MiB); passes (4, 3); lanes (4, 1); salt (16, random); cipher `1` = XChaCha20-Poly1305 in the STREAM construction (1); chunk size (4, 1048576); nonce prefix (19, random).
   - The key: Argon2id of the password (UTF-8, without spaces at the ends) and the salt, 32 bytes.
   - Then the zip in chunks of the chunk size (the last one shorter, maybe empty), each sealed with XChaCha20-Poly1305 and followed by its 16-byte tag. A chunk's 24-byte nonce is the prefix, the chunk's number from 0 (4 bytes, big-endian), and one byte: 1 for the last chunk, 0 for the others. The whole header is the associated data of every chunk.
   - Bageo refuses a file that asks for more than 256 MiB of memory, more than 4 passes or more than 4 lanes, and any changed, cut-off or missing chunk (`damaged`, or `wrong_password` when it is the first chunk).
-- The preview is `{token, source_name, created_at, app_version, kind, items, has_calls, calls_count, changes_password, changes_connections, total_size, warnings, encrypted, needs_password}`. `items` has `{id}` or `{id, count}` for each item the file really holds: `settings`, `keys`, `contacts`, `numbers`, `phones`, `errands`, `calls`, `sms` and `tasks`. An older single settings file lists `keys` too when it has key or password fields. `changes_password` is `true` only when applying `keys` would change the console password (to another one or to none), `changes_connections` only when it would change where notifications go, the forwarding number or who may control Bageo. Both compare this computer with the result of the restore, worked out the way `apply` does it. `total_size` is what the files it can restore unpack to, in bytes. `warnings` holds `newer_version` and `plain_settings_file` (an older single settings file: only the settings, and the keys if it has any, are restored). The preview never touches the backup folder named in the file.
-- `apply` restores only the ticked `items`. `settings` without `keys` replaces the other settings and keeps the whole `keys` group of this computer. With `keys`, each field the file has set replaces this computer's, and one it does not have or leaves empty stays. Only restoring this computer's own `before_import` backup from the backup folder takes the group exactly as the file has it (a missing or empty field is cleared or goes back to its default), taking back every key and connection an import brought; an uploaded file never does. `keys` without `settings` replaces only that group, and the phone pairing key when the file has one. A file that has no `keys`, or an `apply` without `keys`, never changes the group on this computer. `retention_days` and `backup_keep` never get shorter: the file's value is taken only when it is longer, and a file without them keeps this computer's. `backup_dir` and `public_url` always stay as they are on this computer. A restored call record or *To do* item keeps only the recording paths of files this restore brought back (`YYYY-MM-DD/<name>`); any other path is cleared. Before unpacking, Bageo checks there is room on the disk (HTTP 500 `disk_full`). `calls`, `sms` and `tasks` are added to the existing ones; nothing is deleted. Before it changes anything Bageo makes a `before_import` backup of the current settings (in the default folder when the chosen one cannot be written to) and names it in `before_import`. `restart_needed` says some changes only take full effect after Bageo is reopened.
-- Errors of the preview routes (HTTP 400): `not_backup`, `damaged`, `too_new` (made by a newer Bageo) and `too_large`. The limits follow what the files are, never what the manifest says: the items other than `calls`, `sms` and `tasks` may unpack to 20 MB a file and 50 MB in all, the call records to 8 GB; a file packed more than 200 times tighter than it unpacks is `damaged`. With 2 uploads already running: HTTP 409 `busy`. `unlock` answers HTTP 400 `wrong_password`, and `expired` after 5 wrong passwords. `apply` answers HTTP 409 `call_active` during a call, HTTP 400 `bad_items` for an empty `items` or ids the preview did not list, and HTTP 400 `expired` for a token that is older than 15 minutes or already used.
+- The preview is `{token, source_name, created_at, app_version, kind, items, has_calls, calls_count, changes_password, changes_connections, total_size, warnings, encrypted, needs_password}`. `items` has `{id}` or `{id, count}` for each item the file really holds: `settings`, `keys`, `contacts`, `numbers`, `phones`, `errands`, `calls` and `tasks`. An older single settings file lists `keys` too when it has key or password fields. `changes_password` is `true` only when applying `keys` would change the console password (to another one or to none), `changes_connections` only when it would change where notifications go, the forwarding number or who may control Bageo. Both compare this computer with the result of the restore, worked out the way `apply` does it. `total_size` is what the files it can restore unpack to, in bytes. `warnings` holds `newer_version` and `plain_settings_file` (an older single settings file: only the settings, and the keys if it has any, are restored). The preview never touches the backup folder named in the file.
+- `apply` restores only the ticked `items`. `settings` without `keys` replaces the other settings and keeps the whole `keys` group of this computer. With `keys`, each field the file has set replaces this computer's, and one it does not have or leaves empty stays. Only restoring this computer's own `before_import` backup from the backup folder takes the group exactly as the file has it (a missing or empty field is cleared or goes back to its default), taking back every key and connection an import brought; an uploaded file never does. `keys` without `settings` replaces only that group, and the phone pairing key when the file has one. A file that has no `keys`, or an `apply` without `keys`, never changes the group on this computer. `retention_days` and `backup_keep` never get shorter: the file's value is taken only when it is longer, and a file without them keeps this computer's. `backup_dir` and `public_url` always stay as they are on this computer. A restored call record or *To do* item keeps only the recording paths of files this restore brought back (`YYYY-MM-DD/<name>`); any other path is cleared. Before unpacking, Bageo checks there is room on the disk (HTTP 500 `disk_full`). `calls` and `tasks` are added to the existing ones; nothing is deleted. Before it changes anything Bageo makes a `before_import` backup of the current settings (in the default folder when the chosen one cannot be written to) and names it in `before_import`. `restart_needed` says some changes only take full effect after Bageo is reopened.
+- Errors of the preview routes (HTTP 400): `not_backup`, `damaged`, `too_new` (made by a newer Bageo) and `too_large`. The limits follow what the files are, never what the manifest says: the items other than `calls` and `tasks` may unpack to 20 MB a file and 50 MB in all, the call records to 8 GB; a file packed more than 200 times tighter than it unpacks is `damaged`. With 2 uploads already running: HTTP 409 `busy`. `unlock` answers HTTP 400 `wrong_password`, and `expired` after 5 wrong passwords. `apply` answers HTTP 409 `call_active` during a call, HTTP 400 `bad_items` for an empty `items` or ids the preview did not list, and HTTP 400 `expired` for a token that is older than 15 minutes or already used.
 
 ## Phones and health
 
 | Method and path | What |
 |---|---|
-| `GET /calls/api/devices` | `{ok, usb: {enabled, adb_found, adb_path, error, phones: [{serial, state, model, reverse, app_installed}]}, connected: [...], labels: {<phone id>: <name>}, calls_in_progress, phones: [...]}`. Details are below the table. |
+| `GET /calls/api/devices` | `{ok, connected: [...], labels: {<phone id>: <name>}, calls_in_progress, phones: [...]}`. Details are below the table. |
 | `POST /calls/api/devices/{serial}/mode` | Body `{"mode": "ai" \| "normal"}`. Asks the phone to switch and waits up to 15 seconds for its answer. Answers `{ok, mode, error_code}` (a 400 adds `error`, a description). |
 | `DELETE /calls/api/devices/{serial}` | Removes an offline phone from the phone list, saved device labels and recorded SIMs while keeping past call records: `{ok, serial}`. HTTP 409 `device_online` / `device_in_call` if the phone is connected or in a call. |
 | `PUT /calls/api/devices/{serial}/sim-number` | Body `{"sub_id": <int>, "number": "..."}`. Saves (or clears when empty) the phone number for a SIM on that phone so calls and AI errands show and pick by number: `{ok, serial, sims}`. |
-| `POST /calls/api/phone-pairing/renew` | Rotates the Wi-Fi pairing key (`phone-pairing.key`) and disconnects Wi-Fi-paired phones so each must plug in via USB once more to get the new key: `{ok: true}` (or HTTP 500 `save_failed`). The key is never returned. |
+| `POST /calls/api/phone-pairing/renew` | Rotates the pairing key (`phone-pairing.key`) and disconnects Bluetooth computers connected over the network, so each must be linked again with a new pairing code: `{ok: true}` (or HTTP 500 `save_failed`). The key is never returned. |
 | `GET /health` | A large flat JSON object for troubleshooting: version, language, what is configured, connected phones, calls in progress; no keys or tokens. Needs the password (see the last point below the table). Details are below the table. |
 | `GET /calls/api/health` | The same full JSON as `/health`, for the console. Like the other `/calls/api/` routes: HTTP 401 without the password when one is set, open when none is set. |
 
 Details for these routes:
 
-- Each entry of the top-level `phones` is a phone seen on its control connection since Bageo started: `{serial, connected, mode, supports_mode, model, app_version, in_call, last_seen_ms}`.
+- Each entry of the top-level `phones` is a phone seen on its control connection since Bageo started: `{serial, connected, mode, model, app_version, in_call, last_seen_ms}`.
 - `mode` is `ai` (the AI answers) or `normal` (an ordinary phone, see [Phone setup](PHONE.md#normal-phone-mode)).
-- `supports_mode` is false for apps older than the switch, which always run as `ai`.
 - `GET /health`: `control_idle_clients` / `control_idle_serials` count every connected phone; `normal_mode_serials` lists those switched to a normal phone; `local_time` is Bageo's clock in its `TZ`; `summary_ready` (and `summary_api_key_set`, the same value) says whether a summary service is set.
 - `GET /health`: `setup_missing` lists what the console's "Ready?" list still needs: `ai_off`, `gemini_key`, `owner_name`, `notify`, `summary` (names only, never values). It is empty when everything is set.
 - `GET /health` returns the full JSON only to a request that carries the console password. With no password set, only a request from this computer itself gets it (not one through a reverse proxy; in Docker's default network, a request from the host counts as another computer). Everyone else gets only `ok`, `version`, `local_time`, `language`, `notify_language`, `active_call_count`, `control_idle_clients` and `setup_missing`, enough for monitoring.
@@ -762,12 +731,10 @@ After a mode switch, `mode` is the phone's mode (`null` when unknown) and
 | `error_code` | Meaning |
 |---|---|
 | `offline` | The phone is not connected. |
-| `unsupported` | Its app is older than the mode switch. |
 | `in_call` | A call rings or is up; try after it. |
 | `busy` | A switch is already running. |
-| `no_root` | The Bageo module's root helper did not take the request: the module is not running. |
-| `save_failed`, `dialer_failed`, `screening_failed`, `dnd_failed`, `volume_failed`, `failed` | The step that did not take effect. Switching again repeats every step. |
-| `timeout` | Not confirmed yet, which is not the same as failed: the switch can restart the phone app, and it reports after it reconnects. Read `GET /calls/api/devices` a little later. |
+| `save_failed`, `failed` | The step that did not take effect. Switching again repeats every step. |
+| `timeout` | Not confirmed yet, which is not the same as failed. Read `GET /calls/api/devices` a little later. |
 | `bad_request` / `invalid_mode` | HTTP 400: not JSON, no `Content-Type: application/json`, no string `mode`, a serial that is not letters, digits, `-` and `_`; or an unknown `mode`. |
 
 ```bash
@@ -779,30 +746,30 @@ curl -s -X POST "http://127.0.0.1:8787/calls/api/devices/pixel-12345/mode" \
 
 ## The phones' side (WebSocket)
 
-Phones connect by WebSocket to `/` or `/ws` (the same thing). Each phone keeps
-one long-lived *control* connection and opens one *media* connection per
-call.
+The Bluetooth program connects by WebSocket to `/` or `/ws` (the same thing).
+Each phone it serves keeps one long-lived *control* connection and opens one
+*media* connection per call.
 
 Both carry JSON text frames and raw 16 kHz mono 16-bit little-endian PCM binary
-frames in both directions (the phone sends 60 ms frames).
+frames in both directions (the sender uses 60 ms frames).
 
-A connection from the computer itself (the USB tunnel) is accepted without a
-token. Wireless connections use `PHONE_WIFI_PORT` (default `8788`, serving
-`/ws` only) with the `phone-pairing.key` pushed over USB or `DEVICE_TOKEN`, or
-the main port with `?token=<DEVICE_TOKEN>` when set.
+A connection from the computer itself is accepted without a token. Connections
+over the network use `PHONE_WIFI_PORT` (default `8788`, serving `/ws` only) with
+the pairing key from a pairing code or `DEVICE_TOKEN`, or the main port with
+`?token=<DEVICE_TOKEN>` when set.
 
-The complete message list, field by field, is in
-[`android/README.md`](../../android/README.md#websocket-protocol).
+The complete message list, field by field, is below.
 
-Anything that speaks this protocol can stand in for the phone, so a SIP or
-softphone front end could be added without touching the call logic. Both sides
-ignore what they do not know, so old apps and older Bageo versions keep working.
+Anything that speaks this protocol can stand in for the Bluetooth program, so a
+SIP or softphone front end could be added without touching the call logic. Both
+sides ignore what they do not know, so older programs and older Bageo versions
+keep working.
 
 ### Control connection
 
 | Direction | Message | Meaning |
 |---|---|---|
-| phone → Bageo | `hello` | `serial`, `mode` = `CONTROL_IDLE`, `model`, `app_version`, `phone_mode` (`ai` / `normal`), `in_call`, `supports_sms`, `supports_reject`, and `sims` (`[{sub_id, country, slot?, carrier?, number?}]`, reported automatically by 1.4+ apps). No `phone_mode`: an app older than the mode switch (always `ai`). No `supports_sms`: no texts are asked of it. No `supports_reject`: Blacklist numbers are answered and get the announcement instead. |
+| phone → Bageo | `hello` | `serial`, `mode` = `CONTROL_IDLE`, `model`, `app_version`, `phone_mode` (`ai` / `normal`), `in_call`, `supports_reject`, and `sims` (`[{sub_id, country, slot?, carrier?, number?}]`). No `phone_mode`: always `ai`. No `supports_reject`: Blacklist numbers are answered and get the announcement instead. |
 | phone → Bageo | `ping` | Every 15 s. |
 | phone → Bageo | `status` | `{mode, in_call}` (and optional `sims`): the mode, call state, or SIM list changed. |
 | phone → Bageo | `incoming`, `incoming_cancel` | A call rings (`caller_id`, empty for a hidden number; `sim_country`; `sim_sub_id` when known) / it ended before it was answered. |
@@ -810,43 +777,24 @@ ignore what they do not know, so old apps and older Bageo versions keep working.
 | Bageo → phone | `answer_plan` | `{delay_ms, prewarm, reject}`: how long to ring before answering, or `reject: true` to decline the ringing call (Blacklist numbers with `reject_mode` `decline`). |
 | phone → Bageo | `call_waiting_rejected` | `{serial, caller_id, sim_country, sim_sub_id}`: a second call rang during a call and the phone declined it at once (AI mode). Becomes a call record and a "Missed while on a call" notification. |
 | Bageo → phone / phone → Bageo | `set_mode` / `set_mode_result` | `{mode, id}` / `{id, ok, mode, error}`: the remote mode switch; `error` uses the codes above. |
-| Bageo → phone | `agent_info` | `{console_url}` for the app's **Open the web console** button (`public_url` or the LAN address), plus `wifi: {urls: [...]}` over a trusted USB connection (`ws://<lan-ip>:<PHONE_WIFI_PORT>/ws?token=<key>`, and `ws://<name>.local:<PHONE_WIFI_PORT>/ws?token=<key>` when the network name is enabled). |
+| Bageo → phone | `agent_info` | `{console_url}` (`public_url` or the LAN address), plus `wifi: {urls: [...]}` for a connection from the computer itself (`ws://<lan-ip>:<PHONE_WIFI_PORT>/ws?token=<key>`, and `ws://<name>.local:<PHONE_WIFI_PORT>/ws?token=<key>` when the network name is enabled). |
 | Bageo → phone | `place_call` | `{number, call_id, task_id, sub_id}`: dial out for an AI call-back or an AI errand, from the SIM with subscription id `sub_id` (the phone's default when that SIM is not found). While a call rings or is up, the phone does not dial and answers `place_call_failed` with `reason` `busy`. |
 | phone → Bageo | `place_call_ack`, `place_call_failed`, `outbound_ready`, `call_end` | The outgoing call was dialed / could not be dialed / connected / ended. |
-| Bageo → phone | `send_sms` | `{id, to, text, sub_id}`: text a caller (appointments). An id already sent is answered again and never texted twice. |
-| phone → Bageo | `send_sms_result` | `{id, ok, error}`, once every part reported back. The phone gives up after 60 s (`timeout`); a later report sends a second result with the real outcome. |
-| phone → Bageo | `send_sms_delivered` | `{id, ok}`: the network's delivery report, when it gives one (the phone waits up to an hour). |
-
-Details for `send_sms` and `send_sms_result`:
-
-- `send_sms`: `id` is 1–64 characters; `to` is digits with an optional leading `+`; `text` is up to 500 characters.
-- `sub_id` picks the SIM (the `sim_sub_id` the phone reported), else the default SMS SIM.
-- `send_sms_result` `error` values: `no_permission`, `bad_request`, `no_service`, `radio_off`, `generic_failure`, `timeout`, `exception`.
-- Bageo waits up to 90 s for the result.
-- Results for the last 20 ids are sent again after a reconnect; Bageo drops repeats by `id`.
 
 ### Media connection
 
 | Direction | Message | Meaning |
 |---|---|---|
-| phone → Bageo | `hello` | `serial`, `caller_id`, `sample_rate` (16000), `mode` = `SILENT_LOCAL`, `sim_country`, `sim_sub_id`, `model`, `app_version`. For an outgoing call Bageo checks `sim_sub_id` against the SIM it asked for (errands: `wrong_sim`). |
+| phone → Bageo | `hello` | `serial`, `caller_id`, `sample_rate` (16000), `mode` = `SILENT_LOCAL`, `sim_country`, `model`, `app_version`. |
 | phone → Bageo | `ringing`, `call_end` | The caller's number (sent again when it becomes known later) / the call ended. |
 | Bageo → phone | `tts_start`, `tts_end`, `hangup` | Audio follows / audio ended / end the call. |
-| Bageo → phone | `add_call`, `add_call_abort` | `{id, number, merge, answer_timeout_ms}` / `{id}`: used by Whitelist urgent forwarding to call you and merge a 3-way call (or cancel and take the caller off hold). |
-| phone → Bageo | `add_call_result` | `{id, status, reason?}` (`status` in `dialing` / `active` / `merged` / `failed`): progress or outcome of the 3-way dial/merge attempt. |
 | both | binary | The caller's voice (phone → Bageo) and the AI's voice (Bageo → phone), PCM as above. |
 
 How Bageo handles the edge cases:
 
-- A text result that arrives after Bageo stopped waiting is still
-  recorded, and the phone's later real result under the same `id` replaces a
-  `timeout`. The same result again, or a different one for a text already
-  settled, changes nothing.
 - A Blacklist number is declined only when `reject_mode` is `decline` and the
   phone said `supports_reject`. Otherwise it is picked up and gets the
   announcement, and the notification says which happened.
-- Call-backs and errands carry `sub_id`, so a dual-SIM phone calls from the
-  right number.
 
 
 <!-- SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call> -->

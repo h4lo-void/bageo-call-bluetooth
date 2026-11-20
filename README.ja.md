@@ -8,17 +8,17 @@
 
 <p align="center">
   <strong>あなたの電話番号に出る AI 電話アシスタント。Gemini Live が着信に出て、発信もします。</strong><br>
-  セルフホスト型のオープンソース。SIM を入れた root 化済みの予備の Android スマホ、パソコン上のプログラム 1 つ、自分の Gemini キーがあれば動きます。
+  セルフホスト型のオープンソース。root 化していないスマホ（iPhone でも Android でも可）とペアリングする Bluetooth 付きの Linux パソコン、パソコン上のプログラム 1 つ、自分の Gemini キーがあれば動きます。
 </p>
 
 <p align="center">
   <a href="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/h4lo-void/bageo-call/releases/tag/v1.6.9"><img src="https://img.shields.io/badge/release-v1.6.9-brightgreen.svg" alt="リリース v1.6.9"></a>
+  <a href="https://github.com/h4lo-void/bageo-call-bluetooth/releases"><img src="https://img.shields.io/github/v/release/h4lo-void/bageo-call-bluetooth?include_prereleases&sort=semver" alt="リリース"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg" alt="ライセンス：AGPL-3.0-only"></a>
   <a href="COMMERCIAL_LICENSE.md"><img src="https://img.shields.io/badge/commercial-dual%20license-gold.svg" alt="商用ライセンスあり"></a>
 </p>
 
-> **Bluetooth 版（開発中）。** Bageo のすべてに Bluetooth を加えたものです。Bluetooth 付きの Linux パソコンが車のハンズフリーのようにスマホの電話に出るので、スマホは root もアプリも不要で、iPhone でも使えます。Bluetooth ではまだ SMS と緊急時の三者通話は使えません。設定方法：[bluetooth/README.md](bluetooth/README.md)（英語）。
+> **Bluetooth 版（開発中）。** Bluetooth で使う Bageo です。Bluetooth 付きの Linux パソコンが車のハンズフリーのようにスマホの電話に出るので、スマホは root もアプリも不要で、iPhone でも使えます。SMS と緊急時の三者通話は、この版にはありません。設定方法：[bluetooth/README.md](bluetooth/README.md)（英語）。
 
 <table>
   <tr>
@@ -153,12 +153,12 @@
   <img src="docs/images/languages.en.svg" width="900" alt="Bageo が話す 9 つの言語：英語、繁体字中国語、簡体字中国語、日本語、韓国語、スペイン語、フランス語、ドイツ語、ポルトガル語。それぞれの言語で、その言語のあいさつで応答します。">
 </p>
 
-AI の声、内蔵のプロンプト（ご自身の状況や話し方に合わせて書き換えられる、短い一般的な基本設定）、コンソール、スマホアプリ、通知は、すべて 9 つの言語に対応しています。デュアル SIM のスマホなら、SIM ごとに決めた言語で電話に出ます。海外からの相手には、その国の言語で話します。通話の途中で相手が言語を変えれば、AI もそれについていきます。文字起こしは相手の言葉のまま残り、各行にあなたの通知言語の訳が付きます。[言語とデュアル SIM について](docs/en/FEATURES.md#nine-languages-dual-sim-translated-transcripts)
+AI の声、内蔵のプロンプト（ご自身の状況や話し方に合わせて書き換えられる、短い一般的な基本設定）、コンソールと通知は、すべて 9 つの言語に対応しています。デュアル SIM のスマホなら、SIM ごとに決めた言語で電話に出ます。海外からの相手には、その国の言語で話します。通話の途中で相手が言語を変えれば、AI もそれについていきます。文字起こしは相手の言葉のまま残り、各行にあなたの通知言語の訳が付きます。[言語とデュアル SIM について](docs/en/FEATURES.md#nine-languages-dual-sim-translated-transcripts)
 
 ## 仕組み
 
 <p align="center">
-  <img src="docs/images/how-it-works.en.svg" width="900" alt="Bageo の仕組み：相手は携帯回線で、予備の root 化済みスマホにつながります。スマホは通話の音声を USB か Wi-Fi でパソコン上の Bageo プログラムに渡し、プログラムが Gemini Live と会話します。録音は自分のディスクに残り、通知は 32 の通知先に届き、すべてコンソールで管理できます。">
+  <img src="docs/images/how-it-works.en.svg" width="900" alt="Bageo の仕組み：相手は携帯回線であなたのスマホにつながります。スマホは通話の音声を Bluetooth でそばの Linux パソコンに渡し、そこからパソコン上の Bageo プログラムに渡って、プログラムが Gemini Live と会話します。録音は自分のディスクに残り、通知は 32 の通知先に届き、すべてコンソールで管理できます。">
 </p>
 
 スマホは通話を運ぶだけで、ほかの処理はすべて自分のパソコンで動きます。スマホがまだ鳴っている間に AI がつながるので、最初のひとことは、電話に出てから約 **0.43 s** で出ます（実測の中央値）。1 本の通話を順に追った説明は [アーキテクチャ](docs/en/ARCHITECTURE.md) をご覧ください。
@@ -170,7 +170,7 @@ AI の声、内蔵のプロンプト（ご自身の状況や話し方に合わ�
 | **電話番号** | サービスが用意する番号、またはそこへの転送 | いま使っている番号そのまま。発信でもその番号が表示されます。 |
 | **料金** | 月額課金か、1 分ごとの従量課金 | プラットフォーム料金はありません。Gemini の利用料は Google に、SIM の料金は携帯会社に払います。 |
 | **データ** | サービスのサーバーに保存 | 自分のディスクの `data/` フォルダにあるふつうのファイル |
-| **注意点** | 登録してすぐ使える | root 化済みの予備の Android スマホと、つけっぱなしにするパソコンが必要 |
+| **注意点** | 登録してすぐ使える | スマホのそばに置く Bluetooth 付きの Linux パソコンと、つけっぱなしにするパソコンが必要 |
 
 ## ほかにもできること
 
@@ -179,7 +179,7 @@ AI の声、内蔵のプロンプト（ご自身の状況や話し方に合わ�
     <td width="33%" align="center" valign="top">
       <img src="docs/images/icons/calendar.svg" width="56" height="56" alt=""><br>
       <strong>予約はあなたの返事を待つ</strong><br>
-      「予約の受付」をオンにすると、日時を決めたい相手が「対応待ち」に載ります。承諾かお断りを選ぶと、AI が SMS か折り返し電話で相手に伝えます。
+      「予約の受付」をオンにすると、日時を決めたい相手が「対応待ち」に載ります。承諾かお断りを選ぶと、AI が折り返し電話で相手に伝えます。
     </td>
     <td width="33%" align="center" valign="top">
       <img src="docs/images/icons/contacts.svg" width="56" height="56" alt=""><br>
@@ -189,7 +189,7 @@ AI の声、内蔵のプロンプト（ご自身の状況や話し方に合わ�
     <td width="33%" align="center" valign="top">
       <img src="docs/images/icons/switch.svg" width="56" height="56" alt=""><br>
       <strong>スイッチ 1 つで通常のスマホに戻せる</strong><br>
-      予備のスマホを普通のスマホにして、また元に戻せます。コンソールでもアプリでもできます。
+      コンソールで AI 応答と通常のスマホを切り替えられます。通常のスマホにすると、電話はスマホに残ります。
     </td>
   </tr>
   <tr>
@@ -215,22 +215,22 @@ AI の声、内蔵のプロンプト（ご自身の状況や話し方に合わ�
 
 ## 必要なもの
 
-1. **予備の Android スマホ**：自分の SIM を入れ、Magisk か KernelSU で root 化した Android 10 以上のもの。動作確認済み：Google Pixel 7、7a、8、9。
-2. **パソコン**：電話に出てほしい間、電源が入っているもの。Windows 10/11、macOS、Linux、または Docker。
-3. **USB ケーブル**（Wi-Fi でも使えます）。
+1. **SIM を入れたスマホ**：iPhone でも Android でも使えます。root もアプリも不要です。
+2. **Bluetooth 付きの Linux パソコン**：スマホの近く（約 10 m 以内）に置きます。Debian、Ubuntu、Raspberry Pi OS に対応。Bageo を動かすパソコンと同じでも構いません。
+3. **Bageo を動かすパソコン**：電話に出てほしい間はつけておきます。Windows 10/11、macOS、Linux、または Docker。
 4. **Gemini API キー**：[Google AI Studio](https://aistudio.google.com/apikey) で取得します。料金は、使った分だけ Google から請求されます。
 
 ## クイックスタート
 
-スマホが root 化済みなら、ダウンロードから AI が最初の電話に出るまで約 3 分です。
+Bluetooth 側のパソコンは Linux です。Bageo 本体は Windows、macOS、Docker でも動きます。
 
-1. **ダウンロード**：お使いの OS 用のファイルを [Releases](https://github.com/h4lo-void/bageo-call/releases) から入手します。Windows は `bageo-call-<version>-windows-x64-setup.exe`、macOS は `bageo-call-<version>-macos-arm64.dmg`（Apple シリコン）または `bageo-call-<version>-macos-x64.dmg`（Intel）、Linux は `bageo-call-<version>-linux-x64.tar.gz` です。Docker 用の既製イメージ（`bageo/bageo-call`・`ghcr.io/h4lo-void/bageo-call`）もあります。Docker の場合、スマホは Web コンソールで表示したペアリングコードを使い、IP アドレスで接続します（[Phone setup → Wi-Fi](docs/en/PHONE.md#wi-fi)）。
+1. **ダウンロード**：お使いの OS 用のファイルを [Releases](https://github.com/h4lo-void/bageo-call-bluetooth/releases) から入手します。Windows は `bageo-call-bluetooth-<version>-windows-x64-setup.exe`、macOS は `bageo-call-bluetooth-<version>-macos-arm64.dmg`（Apple シリコン）または `bageo-call-bluetooth-<version>-macos-x64.dmg`（Intel）、Linux は `bageo-call-bluetooth-<version>-linux-x64.tar.gz` です。Docker の場合は、このリポジトリで `docker compose up -d --build` を実行してビルドします。
 2. **インストールして起動**：Windows は `setup.exe` をダブルクリックしてインストールし、デスクトップの「Bageo」ショートカットをクリックします。macOS は `.dmg` を開き、Bageo を「アプリケーション」にドラッグして、クリックします。Linux は展開して `./start.sh` を実行します。コンソールが <http://localhost:8787/> で開きます。コンソールパスワードを設定すれば、このパソコンや同じ Wi-Fi 内の端末から <http://bageo.local/> でも開けます。
 3. **基本を入力**：**設定**で、Gemini API キー、あなたの名前、言語を入れます。▶ を押すと声を聞けるので、好きな声を選びます。
-4. **スマホを準備**（最初の 1 回だけ）：`bageo-phone-module-<version>.zip` を Magisk か KernelSU のモジュールとしてインストールし、再起動して、**Bageo** アプリを開きます。チェックリストを順に進めたら、スマホをつなぎます。
+4. **スマホをつなぐ**（最初の 1 回だけ）：Bluetooth 側のパソコンで `sudo ./bluetooth/install.sh` を実行し（Linux 版のダウンロードに入っています）、スマホをペアリングします。Bageo が別のパソコンや Docker にあるときは、コンソールのペアリングコードで両方をつなぎます。詳しくは [bluetooth/README.md](bluetooth/README.md)（英語）をご覧ください。
 5. **ほかのスマホからかけてみる**：1 回鳴ると、AI が出ます。
 
-うまくいかないときは、各手順の詳細をご覧ください：[はじめに](docs/en/GETTING_STARTED.md) · [スマホのセットアップ](docs/en/PHONE.md)。
+うまくいかないときは、各手順の詳細をご覧ください：[はじめに](docs/en/GETTING_STARTED.md) · [スマホのセットアップ（英語）](bluetooth/README.md)。
 
 ## ドキュメント
 
@@ -238,46 +238,33 @@ AI の声、内蔵のプロンプト（ご自身の状況や話し方に合わ�
 
 | | |
 |---|---|
-| **はじめる** | [はじめに](docs/en/GETTING_STARTED.md) · [スマホのセットアップ](docs/en/PHONE.md) · [トラブルシューティングと FAQ](docs/en/TROUBLESHOOTING.md) |
+| **はじめる** | [はじめに](docs/en/GETTING_STARTED.md) · [スマホのセットアップ（英語）](bluetooth/README.md) · [トラブルシューティングと FAQ](docs/en/TROUBLESHOOTING.md) |
 | **使う** | [機能一覧](docs/en/FEATURES.md) · [チャットコマンドと通知の操作](docs/en/CHAT_COMMANDS.md) · [プロンプトの書き方](docs/en/PROMPTS.md) · [設定リファレンス](docs/en/SETTINGS.md) · [通知](docs/en/NOTIFICATIONS.md) |
-| **さらに深く** | [アーキテクチャ](docs/en/ARCHITECTURE.md) · [API](docs/en/API.md) · [MCP](docs/en/MCP.md) · [ロードマップ](docs/en/ROADMAP.md) · [変更履歴](CHANGELOG.md) · [`android/`](android/README.md) · [`tools/sms_forward/`](tools/sms_forward/README.md) |
+| **さらに深く** | [アーキテクチャ](docs/en/ARCHITECTURE.md) · [API](docs/en/API.md) · [MCP](docs/en/MCP.md) · [ロードマップ](docs/en/ROADMAP.md) · [変更履歴](CHANGELOG.md) · [`bluetooth/`（英語）](bluetooth/README.md) |
 | **法務** | [プライバシー・安全・法律](docs/en/PRIVACY_AND_LEGAL.md) · [免責事項と運用者向け規約](LEGAL.md) · [デュアルライセンスと商用ライセンス](COMMERCIAL_LICENSE.md) · [プロジェクトのセキュリティ・コンプライアンス監査](AUDIT_REPORT.md) |
 
-**テスト状況：** CI で 1,400 件を超える自動テスト、28 言語・234 通の模擬通話、Pixel 7、7a、9 での実際の通話。[詳細](docs/en/FEATURES.md#test-status)。ほかのスマホや言語での報告がいちばん助かります：[CONTRIBUTING.md](CONTRIBUTING.md)。
+**テスト状況：** CI で 1,400 件を超える自動テスト、28 言語・234 通の模擬通話、Pixel 9 での Bluetooth 経由の実際の通話。[詳細](docs/en/FEATURES.md#test-status)。ほかのスマホや言語での報告がいちばん助かります：[CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## FAQ
 
 <details>
 <summary><strong>いま使っている電話番号に、AI を出させられますか？</strong></summary>
 
-はい。そのための Bageo です。
-SIM を root 化した予備の Android スマホに入れると、
-AI があなたの番号への着信に出て、その番号から発信もします。
-SIM をメインのスマホに入れたままにしたいときは、
-出られなかった着信を予備スマホの番号に転送してください。
-まずメインのスマホが鳴り、不在着信が AI に回ります
-（その場合、代理電話や折り返しには予備スマホの番号が表示されます）。
+はい。そのための Bageo です。スマホを車と同じように Bluetooth で Linux パソコンとペアリングすると、AI があなたの番号への着信に出て、その番号から発信もします。「通常のスマホ」にすると、電話はスマホに残ります。
 
 </details>
 
 <details>
 <summary><strong>root なしや iPhone でも使えますか？</strong></summary>
 
-いいえ。Android では、特権を持つシステムアプリだけが
-通話を録音し、通話に音を流せます。
-そのため、Bageo モジュールを入れるには Magisk か KernelSU が必要です。
-iOS では、そもそもできません。
+はい。スマホに root もアプリも要らず、iPhone でも Android でも使えます。Bageo が使うのは、車のハンズフリーと同じ Bluetooth の機能です。
 
 </details>
 
 <details>
-<summary><strong>どのスマホに対応していますか？</strong></summary>
+<summary><strong>どのスマホとパソコンに対応していますか？</strong></summary>
 
-動作確認済みなのは、Android 10 以上の Google Pixel 7、7a、8、9 です。
-ほかの root 化したスマホは、オーディオのハードウェア層が、アプリによる通話の録音と
-通話への再生を許す場合だけ動きます。
-そうでないと、電話には出られても、片方に何も聞こえません。
-[対応機種](docs/en/PHONE.md#which-phones) をご覧ください。
+車のハンズフリーとペアリングできるスマホなら、基本的に使えます。実際の通話は Google Pixel 9 で確認済みです。iPhone もペアリングできますが、確認は少なめです。Bluetooth 側のパソコンは Linux（Debian、Ubuntu、Raspberry Pi OS）が必要です。Windows と macOS は Bluetooth 側にはできませんが、Bageo 自体は動きます。[Bluetooth のセットアップ](bluetooth/README.md)（英語）をご覧ください。
 
 </details>
 
@@ -330,7 +317,7 @@ Google アカウントで予算を設定してください。
   コードには決して同意せず、予約はあなたの判断を待ちます。
   それでも相手は AI です。要約と結果は必ず目を通してください。
 - **緊急時の頼りにしないでください。** 代理電話が緊急通報の番号にかけることはありません。
-- **root 化は保証が無効になり、失敗することもあります。** 予備のスマホを使ってください。
+- **この版は開発中です。** 大事な電話を、これだけに任せないでください。
 
 ## ライセンスと免責事項
 
@@ -339,6 +326,6 @@ Google アカウントで予算を設定してください。
 - **オープンソース コミュニティ ライセンス：** [GNU Affero General Public License v3.0 only (`AGPL-3.0-only`)](LICENSE)。[LICENSING.md](LICENSING.md) の第 7 条の追加条項付きです。個人、学術、オープンソースでの利用は無料です。Bageo を改変し、他の人がネットワークや電話回線を通じてそれを利用できるようにする場合は、対応する完全なソースコードを `AGPL-3.0-only` で公開する必要があります。
 - **商用ライセンスの取得：** 事業者、企業、SaaS／コールセンター事業者、ハードウェアベンダーが、`AGPL-3.0-only` によるソースコード開示なしに Bageo を導入、組み込み、またはホスティングしたい場合は、別途、書面によるプロプライエタリライセンスを取得できます。[**商用ライセンス条件**](COMMERCIAL_LICENSE.md) をご覧ください。
 
-**免責事項と各地の法律：** Bageo はセルフホスト型のソフトウェアで、「現状有姿（AS IS）」で、いかなる保証もなく提供されます。作者はサービスを運営せず、利用者のデータも受け取りません。導入した人が、通話録音、AI であることの開示、自動発信に関する各地の法律の遵守、端末の root 化、携帯会社や API の料金について責任を負います。ご利用の前に、[**LEGAL.md**](LEGAL.md)、[プライバシー・安全・法律](docs/en/PRIVACY_AND_LEGAL.md)、および [v1.0 AI 支援による社内レビューの注記](AUDIT_REPORT.md)（`gemini-4-carbon`。第三者による監査ではありません）をお読みください。サードパーティの表示（OpenCC の `Apache-2.0` 辞書を含む）は [NOTICE.md](NOTICE.md) にあります。Google LLC とは無関係です。Pixel、Android、Gemini は Google LLC の商標です。
+**免責事項と各地の法律：** Bageo はセルフホスト型のソフトウェアで、「現状有姿（AS IS）」で、いかなる保証もなく提供されます。作者はサービスを運営せず、利用者のデータも受け取りません。導入した人が、通話録音、AI であることの開示、自動発信に関する各地の法律の遵守、携帯会社や API の料金について責任を負います。ご利用の前に、[**LEGAL.md**](LEGAL.md)、[プライバシー・安全・法律](docs/en/PRIVACY_AND_LEGAL.md)、および [v1.0 AI 支援による社内レビューの注記](AUDIT_REPORT.md)（`gemini-4-carbon`。第三者による監査ではありません）をお読みください。サードパーティの表示（OpenCC の `Apache-2.0` 辞書を含む）は [NOTICE.md](NOTICE.md) にあります。Google LLC、Apple Inc.、Bluetooth SIG とは無関係です。Android と Gemini は Google LLC、iPhone は Apple Inc.、Bluetooth は Bluetooth SIG の商標です。
 
 <!-- SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call> -->

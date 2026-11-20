@@ -6,13 +6,11 @@
 #
 #   docker compose up -d --build
 #
-# A container cannot see USB phones unless you pass the USB bus through, so
-# USB_BRIDGE is off here by default. Pair phones by IP address instead: in the
-# web console open System -> "Pair a phone by IP address" -> "Get a pairing
-# code", then in the Bageo app tap "Connect by IP address" and enter this
-# host's IP and the code. Phones use the console's port (8787, or the host
-# port you map to it), so no other port is needed. Running the agent directly
-# on the computer the phones are plugged into also works.
+# The Bluetooth computer connects to this container by IP address: in the web
+# console open System -> "Pair a phone by IP address" -> "Get a pairing code",
+# then on the Bluetooth computer run "bageo-bluetooth link <this host's IP>
+# <code>" (see bluetooth/README.md). It uses the console's port (8787, or the
+# host port you map to it), so no other port is needed.
 FROM rust:bookworm AS builder
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
@@ -38,8 +36,7 @@ COPY assets /app/assets
 ENV AGENT_HOST=0.0.0.0 \
     AGENT_PORT=8787 \
     ASSETS_DIR=/app/assets \
-    CALLS_DATA_DIR=/data/calls \
-    USB_BRIDGE=off
+    CALLS_DATA_DIR=/data/calls
 VOLUME ["/data/calls"]
 EXPOSE 8787
 

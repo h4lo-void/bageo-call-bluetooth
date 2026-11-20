@@ -1332,7 +1332,7 @@ mod tests {
         let aliases = vec!["Mr. Wang".to_string()];
         for (lang, region) in [(Lang::En, Region::Us), (Lang::Ja, Region::Jp), (Lang::De, Region::De)] {
             let me = crate::locale::Active { owner: "Wang".into(), lang, ..Default::default() };
-            let stub = crate::appointments::prompt_stub(crate::appointments::Reply::Sms, &me);
+            let stub = crate::appointments::prompt_stub(crate::appointments::Reply::Call, &me);
             for stall in [StallPrompt::Off, StallPrompt::ListenFirst] {
                 let c = Ctx {
                     lang,
@@ -1364,7 +1364,7 @@ mod tests {
         let custom = "假".repeat(1760);
         let aliases = vec!["王生".to_string()];
         let me = crate::locale::Active { owner: "王先生".into(), ..Default::default() };
-        let stub = crate::appointments::prompt_stub(crate::appointments::Reply::Sms, &me);
+        let stub = crate::appointments::prompt_stub(crate::appointments::Reply::Call, &me);
         assert_eq!(persona_chars(Lang::ZhTw, false, "王先生", &custom), 1760);
         for own in [custom.as_str(), ""] {
             let user = persona_chars(Lang::ZhTw, false, "王先生", own);

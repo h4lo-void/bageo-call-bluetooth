@@ -5,7 +5,7 @@ Bageo is a self-hosted AI phone assistant that answers your real phone number wi
 Settings live in two places:
 
 - **The web console** (the *Settings* tab): everything about answering calls. Saved to `data/calls/config/settings.json` and used from the next call on, with no restart.
-- **Start-up options**: where Bageo listens, where data lives, the USB link. Read once at start from environment variables or from a `.env` file next to the start script (copy `.env.example`).
+- **Start-up options**: where Bageo listens, where data lives. Read once at start from environment variables or from a `.env` file next to the start script (copy `.env.example`).
 
 ## Find it fast
 
@@ -28,7 +28,7 @@ The few things the AI needs before it can answer your phone.
 
 | Setting | Default | What it does |
 |---|---|---|
-| Language | English | The language the AI speaks with callers, including its first line, the blocked-number announcement and the texts it sends callers. |
+| Language | English | The language the AI speaks with callers, including its first line and the blocked-number announcement. |
 | Your name | empty | How callers refer to you. Fills `{owner}` wherever a prompt uses it. |
 | Answer style | AI assistant | **AI assistant**: says it is an AI answering for you and takes a message. **As me**: answers as you, without agreeing to anything on your behalf. |
 | Gemini API key | empty | Your key from Google AI Studio; the AI voice needs it. Stored on your computer only. |
@@ -50,8 +50,8 @@ The few things the AI needs before it can answer your phone.
 Details for each:
 
 - **Other names callers use for you**: this works in both answer styles, and with your own prompt too. Call summaries still write *Your name*. Saved as `owner_aliases` (a list).
-- **Language of notifications and summaries**: notifications, call summaries (also in the call list), appointment cards and their results, and messages from the SMS forwarder use this language. Handy abroad: the AI answers in English, your notifications stay in 繁體中文. Switching the console's display language (top right) sets this to the same language.
-- **Main language for each SIM**: e.g. *United States (US)* → English while *Language* stays 繁體中文; a Japanese number calling the US SIM still hears Japanese. Needs phone app 1.0 or later, which reports the SIM of each call. Saved as `sim_languages`, e.g. `{"us": "en"}`.
+- **Language of notifications and summaries**: notifications, call summaries (also in the call list), and appointment cards and their results use this language. Handy abroad: the AI answers in English, your notifications stay in 繁體中文. Switching the console's display language (top right) sets this to the same language.
+- **Main language for each SIM**: e.g. *United States (US)* → English while *Language* stays 繁體中文; a Japanese number calling the US SIM still hears Japanese. Bageo needs to know the SIM's number: type it under *System → Phones*. Saved as `sim_languages`, e.g. `{"us": "en"}`.
 - **AI calls: call as**: who the AI says it is on the calls it makes from the **Errands** tab ([AI errands](#ai-errands)): **Your assistant** (it calls on your behalf, and admits to being an AI when sincerely asked) or **You in person** (it speaks as you). Saved as `errand_identity` (`assistant` / `owner`; anything else reads as `assistant`).
 
 ### How it answers
@@ -63,8 +63,8 @@ Details for each:
 | Longest normal call | 5 min | 3 to 30 minutes. About 25 seconds before the limit the AI wraps up politely and hangs up. |
 | Status note | off | One line about right now, up to 400 characters ("Deliveries: please leave the parcel at the front desk"). The AI mentions it only when it fits the call. |
 | Background sound, Background volume | off, Medium | A quiet room tone under the AI's voice, so it sounds like someone picking up in a real place. Volume Quiet, Medium or Loud. |
-| Forward to your phone: Turn on forwarding, how | off | Whether a call is put through to your phone, and how: *Don't answer: send to your phone* or *AI answers, puts you through if urgent* (`whitelist_mode`, which is `off` while the switch is off). A confirmation box comes first when you turn it on. The Whitelist tab on the **Contacts** page has the same setting. |
-| Forward to your phone: Your own phone number | empty | The number the phone calls when something is urgent; it also appears in the notification (`whitelist_forward_number`). |
+| Forward to your phone: Turn on forwarding, how | off | Whether a call is put through to your phone, and how: *Don't answer: send to your phone* or *AI answers, tells you if urgent* (`whitelist_mode`, which is `off` while the switch is off). A confirmation box comes first when you turn it on. The Whitelist tab on the **Contacts** page has the same setting. |
+| Forward to your phone: Your own phone number | empty | Your own number, shown in the notification for forwarded calls (`whitelist_forward_number`). |
 | Forward to your phone: Who can be forwarded | Whitelist | Whose calls are put through: **Whitelist** (`transfer_whitelist`), **Other contacts** (`transfer_contacts`) and **Numbers not in your contacts** (`transfer_others`, hidden numbers too). People on the Blacklist or the Stall list never are. |
 
 With *Answer hidden numbers* off, the "not available" announcement uses your *Language* and the *Announcement voice*, like Blacklist calls. It comes recorded with Bageo, so no Gemini key is needed.
@@ -73,27 +73,26 @@ With *Answer hidden numbers* off, the "not available" announcement uses your *La
 
 *Forward to your phone* is off by default; while it is off the AI answers as usual and tells you afterwards. Once you turn on **Turn on forwarding** you can pick one of two ways, for the callers ticked under **Who can be forwarded**:
 
-- **Don't answer: send to your phone** (`direct`): this phone doesn't answer; your carrier forwards the call to your number, the AI stays silent, and you get a notification at once. First switch the phone to normal phone and dial `**67*your number#` to turn on forward-when-busy, or callers reach voicemail.
-- **AI answers, puts you through if urgent** (`emergency`): the AI answers first and alerts you right away. If the caller says it is urgent, it asks them to hold and calls you, and once you pick up you talk to them directly. If you don't answer, the AI says you'll call back. Without your number, you only get the alert.
+- **Don't answer: send to your phone** (`direct`): Bageo turns the call away on the phone, your carrier forwards it to your number, the AI stays silent, and you get a notification at once. First dial `**67*your number#` from the phone to turn on forward-when-busy, or callers reach voicemail.
+- **AI answers, tells you if urgent** (`emergency`): the AI answers first. If the caller says it is urgent, Bageo sends you an urgent notification at once and the AI tells the caller you will call back.
 
 **Who can be forwarded.** Only the Whitelist is ticked at first, so nothing changes until you tick more. **Other contacts** adds everyone else in your contacts. **Numbers not in your contacts** adds everyone else, hidden numbers included; a stranger saying it is urgent may be a scam, so turn it on only if you need it.
 
-Two limits apply to urgent calls. Once a call is judged sales or scam, you get no urgent alert and no call (a call to you that is already ringing goes on). A number not in your contacts gets you called at most once every 30 minutes, and hidden numbers share that allowance; after that the AI tells the caller you will call back and you only get the alert.
+Two limits apply to urgent calls. Once a call is judged sales or scam, you get no urgent notification. A number not in your contacts alerts you at most once every 30 minutes, and hidden numbers share that allowance; after that the AI only tells the caller you will call back.
 
-**Before you turn on forwarding.** A confirmation box appears each time you turn on **Turn on forwarding**, and it only turns on after you pick **I understand, turn it on**; Cancel or Esc leaves it off. The box says the five points below.
+**Before you turn on forwarding.** A confirmation box appears each time you turn on **Turn on forwarding**, and it only turns on after you pick **I understand, turn it on**; Cancel or Esc leaves it off. The box says the four points below.
 
-1. The AI can get it wrong: it may not call you about something truly urgent, or may call you when it isn't.
+1. The AI can get it wrong: it may not alert you about something truly urgent, or may alert you when it isn't.
 2. This does not replace emergency services. If a life is at risk, the caller should call the local emergency number directly.
-3. The call to you is made from this phone's SIM. Your carrier charges as usual; international or roaming calls may cost more.
-4. After you are put through, the call is recorded according to your settings. You are responsible for following local laws about telling people they are recorded.
-5. The call to you may not get through. You use this at your own risk; Bageo and its developers are not liable for any loss.
+3. With *Don't answer*, your carrier forwards the call to your number and charges as usual; international or roaming calls may cost more.
+4. The notification or the forwarded call may not reach you. You use this at your own risk; Bageo and its developers are not liable for any loss.
 
 **More options.** These three are folded under *More options* in How it answers, and most people never change them:
 
 | Setting | Default | What it does |
 |---|---|---|
 | Get the AI ready while the phone rings | on | Recommended: the AI speaks the moment the call connects. Off: callers wait 1 to 3 seconds for the first word. |
-| Let the caller interrupt | on | The AI stops talking when the caller cuts in. Used only on phones that do not pick up the AI's own voice, checked at the start of every call (see [which phones](PHONE.md#which-phones)). |
+| Let the caller interrupt | on | The AI stops talking when the caller cuts in. |
 | Let Gemini decide when the caller has finished | on | Recommended: Gemini's own voice detection decides when it is the AI's turn. Off: a simpler loudness rule built into Bageo decides. |
 
 *Get the AI ready while the phone rings* connects to Gemini and prepares the first words before pick-up. It costs one short Gemini session even when the caller hangs up while it rings.
@@ -103,8 +102,6 @@ Two limits apply to urgent calls. Once a call is judged sales or scam, you get n
 **Calls from abroad and the carrier's warning.** Taiwan's carriers play a recorded fraud warning at the start of every call from abroad. When a Taiwanese SIM takes a call from another country (a `+…` or `00…` number with another country code), the AI waits for that warning to end: it speaks once the line goes quiet, or after 7.5 seconds at most, and says its opening line only once.
 
 Calls on any other SIM (say, the US SIM of a dual-SIM phone) carry no warning, so the AI answers at once. This is automatic.
-
-With a phone app older than 1.0, a call from abroad is a `+…` number whose country code is not yours ([`COUNTRY_CODE`](#country-calling-code)).
 
 ### Sales & scam calls
 
@@ -174,7 +171,6 @@ Blocked numbers saved by older versions (`reject_numbers`) move onto the Blackli
 
 - **Hang up while it rings** (`decline`): the call never connects.
 - **Answer, play "not available", then hang up** (`announce`): a short "the number you have dialed is not available" in your *Language*; the caller sees the call connect for a few seconds.
-- A phone app too old to decline picks up and announces either way.
 
 Try it: open a call in the call list and press **Block this number** (it joins the Blacklist), or tap the signed **Block / Stall / Whitelist** buttons in any notification channel to classify the caller in one tap.
 
@@ -193,7 +189,7 @@ During the call the AI reads every time, date, number or name back as a question
 
 What it needs and how it behaves:
 
-- A connected phone in AI mode with a SIM of the number's country. Current phone apps report their active SIMs automatically on connect and when SIMs change; calling the phone once is only needed for older apps or if Android has not reported the SIM (*This phone hasn't taken a call yet*).
+- A connected phone in AI mode, with the number's country known. Type the SIM's phone number under *System → Phones*, or set `SIM_COUNTRY` on the Bluetooth computer (see [Phone setup](PHONE.md)).
 - It never dials an emergency number, a short code (7 digits or fewer) or a premium-rate number; toll-free numbers are fine. Write numbers abroad with `+`; a number without `+` is one of your country.
 - One call to a number at a time, shared with the AI call-backs of [appointments](#appointments). A busy phone makes the errand wait up to 10 minutes, and an earlier call to the same number up to 25 minutes.
 - A call lasts 10 minutes at most (the AI wraps up at 9:30).
@@ -254,41 +250,32 @@ Base URL examples:
 
 #### Appointments
 
-When a caller wants to set a time with you (a meeting, a visit, a call at a set time), the AI does not agree on the call. You decide later, and the caller hears your answer by text or by an AI call-back.
+When a caller wants to set a time with you (a meeting, a visit, a call at a set time), the AI does not agree on the call. You decide later, and the caller hears your answer by an AI call-back.
 
 | Setting | Default | What it does |
 |---|---|---|
 | Appointments | Off | **Ask me first** (`confirm`) turns the flow below on. |
-| Text the caller | off | Lets the phone that took the call text your answer, in your name, after you accept or decline. Texts go to mobile numbers only. |
-| Default reply | Automatic | How the caller hears your answer unless you pick another way: **Automatic**, **Always a text** or **Always an AI call-back**. |
-
-*Text the caller*:
-
-- A text looks like this: "Hi, it's Alex. Sat, Nov 14, 3:00 PM works for me. See you then!"
-- Only the time goes in, never what it is about: those are the caller's own words and could carry a link.
-- Texts go to mobile numbers only: Taiwan mobiles, +1 numbers (not toll-free or 900) and other countries' mobiles. Needs a phone app that can send texts.
+| Default reply | Automatic | How the caller hears your answer unless you pick another way: **Automatic** or **Always an AI call-back**. |
 
 *Default reply*:
 
 - **Automatic** follows the chart below.
-- **Always a text** / **Always an AI call-back** use only that way, else nothing.
+- **Always an AI call-back** uses only that way, else nothing.
 - It presets the choice under *To do*, is what a Telegram button press uses, and decides what the AI promises on the call.
 
 How a request plays out:
 
 1. **On the call.** The AI first asks the time back in full ("Thursday, November 19, at 4:30 pm, right?") and waits for a yes; a correction is asked back again. It never asks the caller to wait.
-   Then it says it will check and text them back, or "call you back later" when the answer goes by call-back, or only "get back to you" when neither can reach them.
-2. **After the call.** The request waits under **To do** at the top of the **Calls** tab (and in the call's details): who, what and when, how the caller hears your answer (**Text**, **AI call-back** or **Don't tell them**; a way that cannot reach the number is greyed out), and **Accept** / **Decline**.
-3. **You decide.** The entry says what happened, in words: "Accepted, and the caller got a text", why a text did not go out, or how far the call-back got. An accepted one gets **Add to calendar**; a text that did not go out gets **Send the text again**.
+   Then it says it will "call you back later", or only "get back to you" when a call-back cannot reach them.
+2. **After the call.** The request waits under **To do** at the top of the **Calls** tab (and in the call's details): who, what and when, how the caller hears your answer (**AI call-back** or **Don't tell them**; a way that cannot reach the number is greyed out), and **Accept** / **Decline**.
+3. **You decide.** The entry says what happened, in words: "Accepted, and the caller is being called back", or how far the call-back got. An accepted one gets **Add to calendar**.
 4. **On the go.** With a Telegram bot set up and *Send notifications* on, you also get a card with **Accept** / **Decline**.
 
 Set the Telegram bot with `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` (or `telegram_bot_token` / `telegram_chat_id` through `PUT /calls/api/settings`). A Telegram channel added in the console, like every other channel, gets a reminder with a link to the call.
 
 ```mermaid
 flowchart TD
-    A[You press Accept or Decline] --> B{Mobile number and<br/>Text the caller on?}
-    B -- yes --> T[Text from the phone<br/>that took the call]
-    B -- no --> C{A number a call-back<br/>may dial?}
+    A[You press Accept or Decline] --> C{A number a call-back<br/>may dial?}
     C -- yes --> K[AI call-back]
     C -- no --> N[Nobody is told]
 ```
@@ -305,10 +292,9 @@ Rules that keep it safe:
 
 **How the AI call-back works:**
 
-- It goes out from the phone and SIM that took the call (when that phone is connected), only to that caller's own number, one call-back per number at a time.
+- It goes out from the phone that took the call (when that phone is connected), only to that caller's own number, one call-back per number at a time.
 - The AI waits until the callee picks up and speaks (nobody for 70 seconds: no answer), says who is calling, gives your answer in the language of the original call, says goodbye once and hangs up.
 - It is listed as *AI call-back*. *To do* shows how it went; one that could not be placed is also sent to your notification channels.
-- Texts also go out from the SIM the call came in on, so a dual-SIM phone answers from the right number.
 
 Times are the computer's local time (see [Time zone](#time-zone)). Without any key for the summary, the notification carries the caller's first words instead; the transcript is always in the console. Every appointment field and route is in [API → Appointments and tasks](API.md#appointments-and-tasks).
 
@@ -316,14 +302,14 @@ Times are the computer's local time (see [Time zone](#time-zone)). Without any k
 
 Bageo can back up your settings on its own, make a copy when you ask, and pack everything into one file for another computer. Backups stay on your computer: nothing is uploaded or sent anywhere, and Bageo does not update itself.
 
-Backup files hold your keys, passwords and connections, unless you leave them out of an export. Connections are where notifications go and who can control Bageo remotely: the notification channels, the Telegram chat, the number calls are forwarded to and whether urgent calls are put through to it, the numbers Bageo may call back, the summary service and what AI tools may do over MCP. Keep backup files where only you can get them.
+Backup files hold your keys, passwords and connections, unless you leave them out of an export. Connections are where notifications go and who can control Bageo remotely: the notification channels, the Telegram chat, the number calls are forwarded to, the numbers Bageo may call back, the summary service and what AI tools may do over MCP. Keep backup files where only you can get them.
 
 | Setting | Default | What it does |
 |---|---|---|
 | Automatic backup | every week | Off, every day, every week or every month. |
 | Save backups to | default location | The full path of a folder. Empty: the `backups` folder inside Bageo's data folder (`data/calls/backups`). When you save, Bageo checks that it can write there. |
 | Automatic backups to keep (*More options*) | 10 | 1 to 100. Only automatic backups count. |
-| Include call records, recordings and texts (*More options*) | off | On: *Back up now* and automatic backups also hold call records, recordings, texts and *To do* items. The file gets much bigger. |
+| Include call records and recordings (*More options*) | off | On: *Back up now* and automatic backups also hold call records, recordings and *To do* items. The file gets much bigger. |
 | Encrypt backup files (*More options*) | off | On: *Back up now*, automatic backups and "Before import" copies are encrypted with the backup password. |
 | Backup password (*More options*) | empty | At least 8 characters; needed before encryption can be turned on. It is never shown again. If you forget it, these backups can't be opened, and Bageo can't recover them either. |
 
@@ -332,11 +318,11 @@ The six settings are saved as `backup_schedule`, `backup_dir`, `backup_keep`, `b
 The backup password is saved on this computer with your other settings, so automatic backups can use it. Encryption protects the copies that leave this computer: on an external drive, in a cloud folder or on a network folder. An export with only the settings leaves the password out.
 
 - *Back up now* makes a copy right away.
-- *Export settings* opens a list where you tick what to export: settings, keys, passwords and connections, contacts and lists, your own number notes and scam numbers, SIM card details, AI errands, call records and recordings, texts, and *To do* items. The first six are ticked at the start. Tick *Keys, passwords and connections* when you move to another computer; leave it off when you show your settings to someone. Call records, texts and *To do* items make the file much bigger. Without a console password, a file with keys only downloads when the console is open on the computer that runs Bageo. Tick *Encrypt this file with a password* and type a password twice (at least 8 characters) for an encrypted file. The file is named `bageo-export-YYYYMMDD-HHMMSS.zip`, or `.bageo` when it is encrypted.
+- *Export settings* opens a list where you tick what to export: settings, keys, passwords and connections, contacts and lists, your own number notes and scam numbers, SIM card details, AI errands, call records and recordings, and *To do* items. The first six are ticked at the start. Tick *Keys, passwords and connections* when you move to another computer; leave it off when you show your settings to someone. Call records and *To do* items make the file much bigger. Without a console password, a file with keys only downloads when the console is open on the computer that runs Bageo. Tick *Encrypt this file with a password* and type a password twice (at least 8 characters) for an encrypted file. The file is named `bageo-export-YYYYMMDD-HHMMSS.zip`, or `.bageo` when it is encrypted.
 - *Import settings* takes a backup or export (.zip, or .bageo when it is encrypted), or an older single settings file (.json). An encrypted file asks for its password first; after 5 wrong tries, choose the file again. From the older file only the settings come back, and the keys, passwords and connections too if it holds any.
 - *Backup files* lists the latest 10 copies, each with *Restore*, *Download* and *Delete*. Encrypted copies are marked *Encrypted*. Restoring one uses the backup password saved here; if the copy was made with another password, the console asks for it. *Delete* asks first and cannot be undone; without a console password it works only on the computer that runs Bageo.
 
-Before anything is restored, the console shows when the backup was made, which version it comes from, how big it is and what is inside, with a tick box for each item. All are ticked at the start, and items the file does not hold are not shown. Untick what you do not want back; *Restore* needs at least one. Bageo first saves your current settings as a separate file ("Before import"). If *Keys, passwords and connections* is not ticked, or the file has none, those on this computer stay as they are. If it is ticked, the ones the file holds replace these, and any the file does not have stay, so an older backup never takes away a password or key set since. Restoring a "Before import" file from the backup list puts the whole group back exactly as it was before that import, taking away everything the import brought. The console warns you first when the console password, where notifications go or who can control Bageo would change. The backup folder always stays as it is on this computer. A restore never shortens how long things are kept: *Days to keep records* and *Automatic backups to keep* only stay the same or get longer. To shorten them, change them in the console. Call records, texts and *To do* items are added to the ones you already have, and nothing is deleted. Nothing can be restored during a call: try again when it ends. If some changes need a restart, the console says so.
+Before anything is restored, the console shows when the backup was made, which version it comes from, how big it is and what is inside, with a tick box for each item. All are ticked at the start, and items the file does not hold are not shown. Untick what you do not want back; *Restore* needs at least one. Bageo first saves your current settings as a separate file ("Before import"). If *Keys, passwords and connections* is not ticked, or the file has none, those on this computer stay as they are. If it is ticked, the ones the file holds replace these, and any the file does not have stay, so an older backup never takes away a password or key set since. Restoring a "Before import" file from the backup list puts the whole group back exactly as it was before that import, taking away everything the import brought. The console warns you first when the console password, where notifications go or who can control Bageo would change. The backup folder always stays as it is on this computer. A restore never shortens how long things are kept: *Days to keep records* and *Automatic backups to keep* only stay the same or get longer. To shorten them, change them in the console. Call records and *To do* items are added to the ones you already have, and nothing is deleted. Nothing can be restored during a call: try again when it ends. If some changes need a restart, the console says so.
 
 **How automatic backups run:**
 
@@ -354,23 +340,23 @@ Before anything is restored, the console shows when the backup was made, which v
 
 **Moving to a new computer:**
 
-1. On the old computer, click *Export settings* and keep *Keys, passwords and connections* ticked, so you do not have to type them again. To bring call records along, also tick *Call records and recordings*, *Texts* and *To do items*.
+1. On the old computer, click *Export settings* and keep *Keys, passwords and connections* ticked, so you do not have to type them again. To bring call records along, also tick *Call records and recordings* and *To do items*.
 2. Install Bageo on the new computer.
 3. Open the console and click *Import settings*, pick the file, and confirm with *Restore*.
-4. If the phones do not connect by themselves, plug each one in with USB once.
+4. If the phone does not connect by itself, connect it again: see [Phone setup](PHONE.md#connect-it-to-bageo).
 
 ### Advanced
 
 | Setting | Default | What it does |
 |---|---|---|
-| Days to keep records | 15 | Calls and their recordings, text messages, AI errands and *To do* items older than this are deleted automatically (1 to 365). A change takes effect at once. Saved as `retention_days`; `CALLS_RETENTION_DAYS` only sets the default. |
+| Days to keep records | 15 | Calls and their recordings, AI errands and *To do* items older than this are deleted automatically (1 to 365). A change takes effect at once. Saved as `retention_days`; `CALLS_RETENTION_DAYS` only sets the default. |
 | Thinking level | Low | For Live models with "thinking" in their name only: Low, Medium or High. Low answers fastest. Saved as `gemini_thinking_level`. |
 | Console password | empty | Once set, the console and the API ask for the password (the browser remembers it). Needed to open the console on your phone or another computer. A new password needs at least 8 characters; after 10 wrong ones in a row, another device waits a minute. Saved as `ui_password`. |
 | Let other AI tools connect (MCP) | off | Lets AI tools such as Claude or ChatGPT look up your calls and *To do* items. Leave it off if you do not need it. |
 | Network name | `bageo` | The name phones and computers on your network can use instead of the IP: `http://bageo.local/`. Letters, digits and hyphens; empty, `off`, `0`, `none` or `false` turns it off. |
-| Phones can also connect over Wi-Fi | On | A phone plugged in by USB once keeps working over Wi-Fi after you unplug it. Turning it off applies at once and disconnects the phones on Wi-Fi. Stored as `phone_wifi`; `PHONE_WIFI` only sets the default. See [Phone setup → Wi-Fi](PHONE.md#wi-fi). |
+| Phones can also connect over Wi-Fi | On | Needed when the Bluetooth computer and Bageo are on two machines: it connects over the network with a pairing code. Turning it off applies at once and disconnects it. Stored as `phone_wifi`; `PHONE_WIFI` only sets the default. See [Phone setup → Connect it to Bageo](PHONE.md#connect-it-to-bageo). |
 
-**Pair phones again** (under the switch above) replaces the pairing key: every phone on Wi-Fi is disconnected and must be plugged in by USB once more.
+**Pair phones again** (under the switch above) replaces the pairing key: every Bluetooth computer connected over the network is disconnected and needs a new pairing code.
 
 The first time you open the console without a password, it offers to set one.
 
@@ -388,7 +374,7 @@ With the console on this computer only (`AGENT_HOST=127.0.0.1`), notifications c
 
 Bageo answers the *Network name* itself (multicast DNS, UDP port 5353) while the console is open to your network (including the default, with `AGENT_HOST` not set) or *Phones can also connect over Wi-Fi* is on, but not inside a container. On macOS the system's Bonjour answers it instead (Bageo starts `dns-sd` for it).
 
-If the system keeps that port to itself, the log shows a line starting with `mDNS:` and links use the IP address. Older Android phones that cannot open `.local` names can use the IP address or the QR code under *System → About*.
+If the system keeps that port to itself, the log shows a line starting with `mDNS:` and links use the IP address. Devices that cannot open `.local` names can use the IP address or the QR code under *System → About*.
 
 *Country calling code* is set at start-up; see [Country calling code](#country-calling-code).
 
@@ -409,7 +395,7 @@ Set as environment variables or in `.env`. All are optional; a real environment 
 
 In Docker, only the variables listed under `environment:` in `docker-compose.yml` reach Bageo (`CALLS_UI_TOKEN`, `DEVICE_TOKEN`, `PUBLIC_URL`, `CALLS_RETENTION_DAYS`, `TZ`). Add a line there for any other variable you need.
 
-The image itself sets `AGENT_HOST=0.0.0.0`, `ASSETS_DIR=/app/assets`, `CALLS_DATA_DIR=/data/calls` and `USB_BRIDGE=off`.
+The image itself sets `AGENT_HOST=0.0.0.0`, `ASSETS_DIR=/app/assets` and `CALLS_DATA_DIR=/data/calls`.
 
 ### Network and access
 
@@ -419,12 +405,10 @@ The image itself sets `AGENT_HOST=0.0.0.0`, `ASSETS_DIR=/app/assets`, `CALLS_DAT
 | `AGENT_PORT` | `8787` | Port of the web console and of the phones' connection. |
 | `CONSOLE_PORT_80` | *(on)* | With `AGENT_HOST` not set, the console also answers at port 80, so its address needs no `:8787`. `off` = never. When port 80 is taken or not allowed, the log says so in one line and the console stays at `AGENT_PORT`. |
 | `CALLS_UI_TOKEN` | *(empty)* | Password for the web console and API. Send as `?token=…`, `Authorization: Bearer …` or `X-Calls-Token`. **Set it to open the console from other devices**; the console's *Console password* does the same. |
-| `DEVICE_TOKEN` | *(empty)* | Phones that do not come through USB must connect with `…/ws?token=<this>`. **Set it whenever `AGENT_HOST` is set to anything but `127.0.0.1`.** |
+| `DEVICE_TOKEN` | *(empty)* | A Bluetooth computer that runs apart from Bageo can connect with `…/ws?token=<this>`. **Set it whenever `AGENT_HOST` is set to anything but `127.0.0.1`.** |
 | `PUBLIC_URL` | *(empty)* | Same as *Address in notifications* (under [Notifications](#notifications)); the web console's value wins. Empty = automatic (see [Advanced](#advanced)). |
 | `MDNS_NAME` | `bageo` | Same as *Network name*: the console answers at `http://<this>.local/` on your network. The web console's value wins. |
-| `PHONE_WIFI_PORT` | `AGENT_PORT` + 1 (`8788`) | Port phones use over Wi-Fi. Opened on all network interfaces only while `AGENT_HOST` is not set or `127.0.0.1`; it serves only the phones' connection (no console) and always needs the pairing key or `DEVICE_TOKEN`. `0` = never. |
-
-Phones on USB are exempt from `DEVICE_TOKEN` (the USB tunnel ends on the computer itself).
+| `PHONE_WIFI_PORT` | `AGENT_PORT` + 1 (`8788`) | Port the Bluetooth computer uses over the network. Opened on all network interfaces only while `AGENT_HOST` is not set or `127.0.0.1`; it serves only the phones' connection (no console) and always needs the pairing key or `DEVICE_TOKEN`. `0` = never. |
 
 An empty `MDNS_NAME`, `off`, `0`, `none` or `false` turns it off. On Windows an empty value counts as not set, so write `MDNS_NAME=off`.
 
@@ -472,20 +456,6 @@ Times in notifications look like `Nov 13, 08:09`, written the way your language 
 In Docker the container takes the host's zone from the mounted `/etc/localtime` (Linux hosts); put `TZ=Asia/Taipei` in `.env` for another zone.
 
 On Docker Desktop for Windows or macOS, remove the `/etc/localtime` line from `docker-compose.yml` and set `TZ` in `.env`; otherwise the container runs on UTC. Leave `TZ` out rather than empty: an empty `TZ` means UTC.
-
-### Phones on USB
-
-Bageo keeps `adb reverse` up and starts the phone app by itself.
-
-| Variable | Default | Meaning |
-|---|---|---|
-| `USB_BRIDGE` | `on` | `off`: Bageo does not run `adb` at all (Wi-Fi phones, containers, or another computer has the phones). |
-| `ADB_BIN` | *(searched)* | Full path of `adb`. Search order otherwise: `platform-tools/` next to the program, `ANDROID_HOME`, the usual SDK folders, then `adb` on the `PATH`. |
-| `ADB_SERIALS` | *(all)* | Only manage these phones (serials from `adb devices`, comma separated). |
-| `USB_PHONE_PORT` | `8765` | The port the app dials on the phone. Change it only together with the app's address. |
-| `USB_BRIDGE_INTERVAL_SEC` | `15` | How often the USB link is checked, in seconds (5–300). |
-
-If several versions of `adb` are installed, pin one with `ADB_BIN`: different versions restart each other's server and drop the phones.
 
 ### Country calling code
 
