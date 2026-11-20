@@ -12,11 +12,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/h4lo-void/bageo-call/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/h4lo-void/bageo-call/releases/tag/v1.6.9"><img src="https://img.shields.io/badge/release-v1.6.9-brightgreen.svg" alt="Release v1.6.9"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg" alt="许可证：AGPL-3.0-only"></a>
   <a href="COMMERCIAL_LICENSE.md"><img src="https://img.shields.io/badge/商业授权-双重授权-gold.svg" alt="提供商业授权"></a>
 </p>
+
+> **蓝牙版，开发中。** 完整的 Bageo，再加上蓝牙：一台有蓝牙的 Linux 电脑像车载免提一样接你手机的电话，手机不用 root、不用装 App，iPhone 也能用。通过蓝牙还不能收发短信，也不能打白名单急事三方通话。设置方法：[bluetooth/README.zh-CN.md](bluetooth/README.zh-CN.md)。
 
 <table>
   <tr>

@@ -5,22 +5,22 @@ name: Release
 
 # Push a tag like v1.0.0 to build the downloads and attach them to a GitHub
 # Release:
-#   bageo-call-<version>-windows-x64-setup.exe  (installer)
-#   bageo-call-<version>-macos-arm64.dmg / -macos-x64.dmg
-#   bageo-call-<version>-linux-x64.tar.gz
-#   bageo-phone-module-<version>.zip          (phone module, flash in Magisk / KernelSU)
+#   bageo-call-bluetooth-<version>-windows-x64-setup.exe  (installer)
+#   bageo-call-bluetooth-<version>-macos-arm64.dmg / -macos-x64.dmg
+#   bageo-call-bluetooth-<version>-linux-x64.tar.gz       (with bluetooth/)
+# The phone module for rooted Android phones comes from bageo-call's Releases.
 #
 # Each desktop download is the whole of Bageo. Windows: run the installer, then
 # click "Bageo" on the desktop. macOS: drag Bageo to Applications and open it.
 # Both start Bageo in the background with its status icon. Linux: unpack and
-# run start.sh.
+# run start.sh; for Bluetooth answering also run sudo bluetooth/install.sh.
 
 on:
   push:
     tags: ["v*"]
   # Run by hand (Actions → Release → Run workflow) to build the same full
-  # downloads and the signed phone module without publishing anything: for
-  # trying a build before tagging. Download them from the run's artifacts.
+  # downloads without publishing anything: for trying a build before tagging.
+  # Download them from the run's artifacts.
   workflow_dispatch:
 
 permissions:
@@ -63,7 +63,7 @@ jobs:
           else
             version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)-${GITHUB_SHA::7}"
           fi
-          dir="bageo-call-$version-${{ matrix.name }}"
+          dir="bageo-call-bluetooth-$version-${{ matrix.name }}"
           echo "PKG=$dir" >> "$GITHUB_ENV"
           echo "PKG_VERSION=$version" >> "$GITHUB_ENV"
           echo "PKG_NUMBER=$(sed -n 's/^version = "\([0-9.]*\).*"/\1/p' Cargo.toml | head -n 1)" >> "$GITHUB_ENV"
@@ -90,6 +90,10 @@ jobs:
             cp desktop/target/release/bageo-status.exe "dist/$dir/"
           else
             cp start.sh start.command "dist/$dir/"
+            if [ "${{ runner.os }}" = "Linux" ]; then
+              cp -R bluetooth "dist/$dir/"
+              chmod +x "dist/$dir/bluetooth/install.sh" "dist/$dir/bluetooth/uninstall.sh" "dist/$dir/bluetooth/bageo_bluetooth.py"
+            fi
             chmod +x "dist/$dir/agent" "dist/$dir/start.sh" "dist/$dir/start.command"
             tar -C dist -czf "dist/$dir.tar.gz" "$dir"
           fi
@@ -121,85 +125,12 @@ jobs:
             dist/*.dmg
             dist/*.tar.gz
 
-  android:
-    name: phone module
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      # Sign with the project's own key when the repository has one, so an
-      # update installs over the previous release. Without the secrets the APK
-      # is signed with a throw-away debug key (fine for a first install; to
-      # move between differently signed builds remove the module first).
-      - name: Require release signing secrets on tags
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          K_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          K_PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          K_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          K_KEY_PW: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          if [ -z "$K_B64" ] || [ -z "$K_PW" ] || [ -z "$K_ALIAS" ] || [ -z "$K_KEY_PW" ]; then
-            echo "Release signing secrets are required for tag builds." >&2
-            exit 1
-          fi
-      - name: Signing key
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        if: env.KEYSTORE_BASE64 != ''
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
-          echo "PCA_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
-      - name: Build and package the module
-        working-directory: android
-        env:
-          PCA_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          PCA_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          PCA_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: bash scripts/package-uplink-module.sh
-      - name: Verify APK signing
-        env:
-          PCA_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          PCA_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-        run: |
-          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
-          APKSIGNER=$(find "$SDK_ROOT/build-tools" -name apksigner -type f | sort -V | tail -n 1)
-          if [ -z "$APKSIGNER" ]; then
-            echo "apksigner not found under $SDK_ROOT/build-tools" >&2
-            exit 1
-          fi
-          TMP_APK=$(mktemp -d)
-          trap 'rm -rf "$TMP_APK"' EXIT
-          ZIP=$(ls android/magisk/dist/bageo-phone-module-*.zip | head -n 1)
-          unzip -p "$ZIP" system/priv-app/com.pixelcallai.streamer/base.apk > "$TMP_APK/base.apk"
-          CERTS=$("$APKSIGNER" verify --print-certs "$TMP_APK/base.apk")
-          echo "$CERTS"
-          if [[ "${GITHUB_REF:-}" == refs/tags/* ]]; then
-            if echo "$CERTS" | grep -qi "CN=Android Debug"; then
-              echo "Tag build APK must not use Android Debug signing key" >&2
-              exit 1
-            fi
-            EXPECTED_SHA=$(keytool -list -v -keystore "$PCA_KEYSTORE_FILE" -storepass "$PCA_KEYSTORE_PASSWORD" -alias "$PCA_KEY_ALIAS" | awk -F'SHA256: ' '/SHA256:/{gsub(/:/,"",$2); print tolower($2); exit}')
-            ACTUAL_SHA=$(echo "$CERTS" | awk -F'SHA-256 digest: ' '/SHA-256 digest:/{print tolower($2); exit}')
-            if [ -z "$EXPECTED_SHA" ] || [ "$EXPECTED_SHA" != "$ACTUAL_SHA" ]; then
-              echo "APK SHA-256 ($ACTUAL_SHA) does not match release keystore ($EXPECTED_SHA)" >&2
-              exit 1
-            fi
-          fi
-      - uses: actions/upload-artifact@v4
-        with:
-          name: phone-module
-          path: android/magisk/dist/*.zip
-
-  # Publishes whatever was built, as long as there is the phone module and at
-  # least one desktop download. When a system did not get a build machine,
-  # re-run the failed jobs: this job then runs again and adds the missing
-  # files to the same Release.
+  # Publishes whatever was built, as long as there is at least one desktop
+  # download. When a system did not get a build machine, re-run the failed
+  # jobs: this job then runs again and adds the missing files to the same
+  # Release.
   publish:
-    needs: [agent, android]
+    needs: [agent]
     if: ${{ !cancelled() && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
@@ -213,7 +144,7 @@ jobs:
       - name: Check what was built
         run: |
           ls -l dist
-          ls dist/bageo-phone-module-*.zip dist/bageo-call-* > /dev/null
+          ls dist/bageo-call-bluetooth-* > /dev/null
       - name: Checksums
         run: cd dist && sha256sum * > SHA256SUMS.txt
       # The Release page shows only the short notes for this version from

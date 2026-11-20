@@ -2,7 +2,7 @@
 
 > **In development.** It works and has been tested with real calls, but it is still changing. Don't rely on it alone for calls that matter yet (see [Disclaimer](#disclaimer)).
 
-Let [Bageo](https://github.com/h4lo-void/bageo-call) answer your phone's calls over Bluetooth. Works with iPhone and Android, with no app and no root on the phone.
+Let [Bageo](../README.md) answer your phone's calls over Bluetooth. Works with iPhone and Android, with no app and no root on the phone.
 
 A Linux computer with Bluetooth (a Raspberry Pi, a mini PC, a home server) pairs with your phone the way a car does. When a call comes in, it rings briefly, picks up, and hands the call to Bageo. Bageo sees the caller's number, talks to the caller, and hangs up when it's done.
 
@@ -26,15 +26,24 @@ A Linux computer with Bluetooth (a Raspberry Pi, a mini PC, a home server) pairs
 
 ## What you need
 
-- Bageo running on this computer, another computer, or in Docker. Linking to another computer needs Bageo 1.6.9 or later.
+- Bageo: it's in this repository and in every download. Run it on the Bluetooth computer, on another computer (Windows, macOS, Linux) or in Docker.
 - A Linux computer with Bluetooth near the phone (about 10 m): Debian, Ubuntu, or Raspberry Pi OS. Built-in Bluetooth or a USB adapter both work.
 - Windows and macOS can't be the Bluetooth computer: Windows doesn't let programs answer or hang up calls over Bluetooth, and macOS isn't supported yet. Bageo itself still runs on them.
 
 ## Install
 
+**From a download (Linux):** get `bageo-call-bluetooth-<version>-linux-x64.tar.gz` from [Releases](https://github.com/h4lo-void/bageo-call-bluetooth/releases) and unpack it. It holds Bageo and this program:
+
+```sh
+./start.sh                    # starts Bageo; the console is at http://localhost:8787/
+sudo ./bluetooth/install.sh   # adds Bluetooth answering
+```
+
+**From the source:**
+
 ```sh
 git clone https://github.com/h4lo-void/bageo-call-bluetooth.git
-cd bageo-call-bluetooth
+cd bageo-call-bluetooth/bluetooth
 sudo ./install.sh
 ```
 
@@ -93,8 +102,8 @@ sudo ./uninstall.sh
 
 ## Disclaimer
 
-This is self-hosted software provided "AS IS", without warranty. The author runs no service and receives no data. Whoever sets it up is responsible for local laws on call recording, AI disclosure and automated calls, and for carrier and API charges. Don't make it the only way to reach you in an emergency, for medical care, or for safety. Read [LEGAL.md](LEGAL.md) before use; security notes are in [SECURITY.md](SECURITY.md). Not affiliated with Apple, Google or the Bluetooth SIG; iPhone, Android and Bluetooth are their trademarks.
+This is self-hosted software provided "AS IS", without warranty. The author runs no service and receives no data. Whoever sets it up is responsible for local laws on call recording, AI disclosure and automated calls, and for carrier and API charges. Don't make it the only way to reach you in an emergency, for medical care, or for safety. Read [LEGAL.md](../LEGAL.md) before use; security notes are in [SECURITY.md](../SECURITY.md). Not affiliated with Apple, Google or the Bluetooth SIG; iPhone, Android and Bluetooth are their trademarks.
 
 ## License
 
-`AGPL-3.0-only` or a commercial license, the same as bageo-call. See [LICENSING.md](LICENSING.md).
+`AGPL-3.0-only` or a commercial license, the same as bageo-call. See [LICENSING.md](../LICENSING.md).

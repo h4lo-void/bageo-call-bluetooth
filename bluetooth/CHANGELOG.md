@@ -2,6 +2,9 @@
 
 ## 0.2.0
 
+- **Now part of the whole of Bageo.** This repository holds Bageo itself (console, downloads for Windows, macOS and Linux); this program moved into `bluetooth/`, and the Linux download includes it.
+- **現在是完整 Bageo 的一部分。** 這個 repo 就是 Bageo 本身（控制台、Windows／Mac／Linux 下載檔），這個程式搬到 `bluetooth/`，Linux 下載檔裡也有。
+- **现在是完整 Bageo 的一部分。** 这个 repo 就是 Bageo 本身（控制台、Windows／Mac／Linux 下载文件），这个程序搬到 `bluetooth/`，Linux 下载文件里也有。
 - **Switch between AI answering and normal phone from Bageo's console.** In normal phone mode, calls stay on the phone.
 - **從 Bageo 控制台切換「AI 接聽」或「一般手機」。** 一般手機模式下，電話留在手機上。
 - **从 Bageo 控制台切换“AI 接听”或“一般手机”。** 一般手机模式下，电话留在手机上。

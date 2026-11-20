@@ -12,11 +12,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/h4lo-void/bageo-call/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/h4lo-void/bageo-call/releases/tag/v1.6.9"><img src="https://img.shields.io/badge/release-v1.6.9-brightgreen.svg" alt="릴리스 v1.6.9"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg" alt="라이선스: AGPL-3.0-only"></a>
   <a href="COMMERCIAL_LICENSE.md"><img src="https://img.shields.io/badge/commercial-dual%20license-gold.svg" alt="상용 라이선스 제공"></a>
 </p>
+
+> **블루투스 버전(개발 중).** Bageo 전체에 블루투스를 더했습니다. 블루투스가 있는 Linux 컴퓨터가 차량용 핸즈프리처럼 휴대폰 전화를 받으므로, 휴대폰은 루팅도 앱도 필요 없고 iPhone도 쓸 수 있습니다. 블루투스로는 아직 문자와 긴급 3자 통화를 쓸 수 없습니다. 설정 방법: [bluetooth/README.md](bluetooth/README.md)(영어).
 
 <table>
   <tr>

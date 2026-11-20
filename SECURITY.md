@@ -79,4 +79,14 @@ Found a way around any of these? Please report it privately, as above.
 
 See also [Privacy, safety and the law](docs/en/PRIVACY_AND_LEGAL.md), [Legal disclaimer & usage notice](LEGAL.md) and the [v1.0 AI-assisted internal security review note (`gemini-4-carbon`)](AUDIT_REPORT.md).
 
+## Bluetooth hands-free (`bluetooth/`)
+
+The Bluetooth program lets Bageo answer and place calls from your real phone number. Whoever controls the Bluetooth computer can do the same, so treat it like access to your phone.
+
+- Pairing is open only for the first minutes after the service starts (`BT_PAIR_MINUTES`, 10 by default), and any phone that pairs in that time is accepted. Pair your phone right after installing; set `BT_PAIR_MINUTES=0` once it is paired.
+- The key that links this computer to a Bageo elsewhere (`bageo-bluetooth link`) is kept in `/var/lib/bageo-bluetooth/`, readable by root only. Making new pairing codes in Bageo's console does not revoke it; "Pair phones again" in Bageo does.
+- The service runs as root (Bluetooth audio and BlueZ profiles need it). Keep the Bluetooth computer up to date and physically in your control.
+- Calls go to Bageo unencrypted over your local network when Bageo runs on another computer. Keep both on a network you trust; reach them from outside only through a VPN.
+- The log keeps call events and partly hidden numbers, never call audio or words.
+
 <!-- SPDX-FileCopyrightText: h4lo-void <https://github.com/h4lo-void/bageo-call> -->

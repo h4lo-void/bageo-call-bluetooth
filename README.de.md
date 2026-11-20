@@ -12,11 +12,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/h4lo-void/bageo-call/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/h4lo-void/bageo-call/releases/tag/v1.6.9"><img src="https://img.shields.io/badge/release-v1.6.9-brightgreen.svg" alt="Version v1.6.9"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg" alt="Lizenz: AGPL-3.0-only"></a>
   <a href="COMMERCIAL_LICENSE.md"><img src="https://img.shields.io/badge/commercial-dual%20license-gold.svg" alt="Kommerzielle Lizenz erhältlich"></a>
 </p>
+
+> **Bluetooth-Ausgabe, in Entwicklung.** Ganz Bageo, plus Bluetooth: Ein Linux-Rechner mit Bluetooth nimmt die Anrufe deines Handys an wie eine Freisprechanlage im Auto. Das Handy braucht weder Root noch App, und auch iPhones funktionieren. Über Bluetooth gehen SMS und der dringende Dreierruf noch nicht. Einrichtung: [bluetooth/README.md](bluetooth/README.md) (auf Englisch).
 
 <table>
   <tr>

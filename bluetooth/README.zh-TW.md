@@ -2,7 +2,7 @@
 
 > **開發中。** 已經用真的電話測試過、可以使用，但還在持續修改。重要的電話先不要只靠它（見[免責聲明](#免責聲明)）。
 
-讓 [Bageo](https://github.com/h4lo-void/bageo-call) 透過藍牙接你手機的電話。iPhone、Android 都可以，手機不用裝 App、也不用 Root。
+讓 [Bageo](../README.zh-TW.md) 透過藍牙接你手機的電話。iPhone、Android 都可以，手機不用裝 App、也不用 Root。
 
 一台有藍牙的 Linux 電腦（樹莓派、迷你電腦、家裡的伺服器）會像車子一樣跟手機配對。有電話打來時，它響幾秒就接起來，交給 Bageo。Bageo 看得到來電號碼，會跟對方講話，講完自己掛斷。
 
@@ -26,15 +26,24 @@
 
 ## 需要什麼
 
-- 一個在執行的 Bageo：裝在這台電腦、另一台電腦或 Docker 都可以。連到另一台電腦要 Bageo 1.6.9 以上。
+- Bageo：就在這個 repo 和每個下載檔裡。可以跑在藍牙電腦上，也可以跑在另一台電腦（Windows、Mac、Linux）或 Docker。
 - 一台有藍牙、放在手機附近（約 10 公尺內）的 Linux 電腦：Debian、Ubuntu 或 Raspberry Pi OS。內建藍牙或 USB 藍牙都可以。
 - Windows 和 Mac 不能當藍牙電腦：Windows 不讓程式透過藍牙接聽、掛斷電話，Mac 目前還不支援。Bageo 本身照樣可以裝在它們上面。
 
 ## 安裝
 
+**用下載檔（Linux）：** 從 [Releases](https://github.com/h4lo-void/bageo-call-bluetooth/releases) 下載 `bageo-call-bluetooth-<版本>-linux-x64.tar.gz` 並解壓，裡面有 Bageo 和這個程式：
+
+```sh
+./start.sh                    # 啟動 Bageo，控制台在 http://localhost:8787/
+sudo ./bluetooth/install.sh   # 加上藍牙接聽
+```
+
+**用原始碼：**
+
 ```sh
 git clone https://github.com/h4lo-void/bageo-call-bluetooth.git
-cd bageo-call-bluetooth
+cd bageo-call-bluetooth/bluetooth
 sudo ./install.sh
 ```
 
@@ -93,8 +102,8 @@ sudo ./uninstall.sh
 
 ## 免責聲明
 
-本專案是自架軟體，按「現狀」提供、不附任何擔保；作者不維運任何服務，也不會收到你的資料。架設的人要自行遵守當地關於通話錄音、AI 身分揭露和自動撥號的法律，並自負電信與 API 費用。請不要把它當成緊急求救、醫療或安全相關的唯一聯絡方式。使用前請先讀 [LEGAL.md](LEGAL.md)；安全注意事項見 [SECURITY.md](SECURITY.md)。本專案與 Apple、Google 及 Bluetooth SIG 無關；iPhone、Android 與 Bluetooth 為其商標。
+本專案是自架軟體，按「現狀」提供、不附任何擔保；作者不維運任何服務，也不會收到你的資料。架設的人要自行遵守當地關於通話錄音、AI 身分揭露和自動撥號的法律，並自負電信與 API 費用。請不要把它當成緊急求救、醫療或安全相關的唯一聯絡方式。使用前請先讀 [LEGAL.md](../LEGAL.md)；安全注意事項見 [SECURITY.md](../SECURITY.md)。本專案與 Apple、Google 及 Bluetooth SIG 無關；iPhone、Android 與 Bluetooth 為其商標。
 
 ## 授權
 
-`AGPL-3.0-only` 或商業授權，跟 bageo-call 一樣。詳見 [LICENSING.md](LICENSING.md)。
+`AGPL-3.0-only` 或商業授權，跟 bageo-call 一樣。詳見 [LICENSING.md](../LICENSING.md)。

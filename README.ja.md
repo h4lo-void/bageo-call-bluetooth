@@ -12,11 +12,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/h4lo-void/bageo-call/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/h4lo-void/bageo-call/releases/tag/v1.6.9"><img src="https://img.shields.io/badge/release-v1.6.9-brightgreen.svg" alt="リリース v1.6.9"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg" alt="ライセンス：AGPL-3.0-only"></a>
   <a href="COMMERCIAL_LICENSE.md"><img src="https://img.shields.io/badge/commercial-dual%20license-gold.svg" alt="商用ライセンスあり"></a>
 </p>
+
+> **Bluetooth 版（開発中）。** Bageo のすべてに Bluetooth を加えたものです。Bluetooth 付きの Linux パソコンが車のハンズフリーのようにスマホの電話に出るので、スマホは root もアプリも不要で、iPhone でも使えます。Bluetooth ではまだ SMS と緊急時の三者通話は使えません。設定方法：[bluetooth/README.md](bluetooth/README.md)（英語）。
 
 <table>
   <tr>

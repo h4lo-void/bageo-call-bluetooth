@@ -12,11 +12,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/h4lo-void/bageo-call/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml"><img src="https://github.com/h4lo-void/bageo-call-bluetooth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/h4lo-void/bageo-call/releases/tag/v1.6.9"><img src="https://img.shields.io/badge/release-v1.6.9-brightgreen.svg" alt="Versão v1.6.9"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg" alt="Licença: AGPL-3.0-only"></a>
   <a href="COMMERCIAL_LICENSE.md"><img src="https://img.shields.io/badge/commercial-dual%20license-gold.svg" alt="Licença comercial disponível"></a>
 </p>
+
+> **Edição Bluetooth, em desenvolvimento.** Todo o Bageo, mais Bluetooth: um computador Linux com Bluetooth atende as chamadas do seu celular como um carro faz, então o celular não precisa de root nem de app, e o iPhone também funciona. Pelo Bluetooth, SMS e a chamada a três de urgência ainda não funcionam. Configuração: [bluetooth/README.md](bluetooth/README.md) (em inglês).
 
 <table>
   <tr>
