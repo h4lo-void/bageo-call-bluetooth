@@ -1,0 +1,20 @@
+# Settings for bageo-bluetooth. After a change: sudo systemctl restart bageo-bluetooth
+
+# Bageo on this same computer: leave this commented out.
+# Bageo on another computer or in Docker: use "sudo bageo-bluetooth link <address> <pairing code>".
+#BAGEO_URL=ws://127.0.0.1:8787/ws
+
+# Bluetooth name the phone sees.
+BT_NAME=Bageo HF
+
+# Minutes pairing stays open after the service starts (Android phones pair from their own list).
+BT_PAIR_MINUTES=10
+
+# Country of the phone's number, two letters (tw, us, jp...). Only when it is read wrong (dual SIM).
+SIM_COUNTRY=
+
+# Bluetooth adapter, when the computer has more than one.
+BT_ADAPTER=hci0
+
+# 1 = log every hands-free line (numbers partly hidden).
+BT_DEBUG=0
